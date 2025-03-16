@@ -37,11 +37,11 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
-# Build the frontend
+# Build the frontend using Vite
 echo "Building frontend (vite)..."
 npm run build
 
-# Serve the frontend using `serve`
+# Serve the frontend using `serve` from the dist directory
 echo "Starting frontend..."
 npx serve -s dist -l $PORT &  # Use the dynamic port provided by Railway
 
