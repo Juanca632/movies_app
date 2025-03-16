@@ -97,8 +97,32 @@ class API_movies(Thread):
         return self.get_movies(url)
 
     def get_upcoming_movies(self):
-        """Fetch top rated movies."""
+        """Fetch upcoming movies but remove those already in theaters."""
         url = f"{self.API_URL}/movie/upcoming?api_key={self.API_KEY}&language=en-US"
+        upcoming_movies = self.get_movies(url)
+
+        # Get the list of movies currently playing in theaters
+        now_playing_movies = self.get_now_playing()
+        now_playing_ids = {movie["id"] for movie in now_playing_movies}  # Use a set for faster lookups
+
+        # Filter out upcoming movies that are already in the "now playing" list
+        filtered_movies = [movie for movie in upcoming_movies if movie["id"] not in now_playing_ids]
+
+        return filtered_movies
+
+    def get_trending_people(self):
+        """Fetch trending movies."""
+        url = f"{self.API_URL}/person/popular?api_key={self.API_KEY}&language=en-US"
+        return self.get_movies(url)
+
+    def get_popular_tv(self):
+        """Fetch popular TV shows."""
+        url = f"{self.API_URL}/tv/popular?api_key={self.API_KEY}&language=en-US"
+        return self.get_movies(url)
+
+    def get_top_rated_tv(self):
+        """Fetch top rated TV shows."""
+        url = f"{self.API_URL}/tv/top_rated?api_key={self.API_KEY}&language=en-US"
         return self.get_movies(url)
 
     def stop_thread(self):

@@ -70,6 +70,33 @@ async def get_upcoming_movies():
 async def get_upcoming_movies():
     return main_thread.now_playing()
 
+@app.get(
+    path="/trending/person/week",
+    status_code=status.HTTP_200_OK,
+    summary="Trending people",
+    tags=["Trending people"]
+) 
+async def get_upcoming_movies():
+    return main_thread.trending_people()
+
+@app.get(
+    path="/tv/popular",
+    status_code=status.HTTP_200_OK,
+    summary="Popular TV shows",
+    tags=["Popular TV shows"]
+) 
+async def get_upcoming_movies():
+    return main_thread.popular_tv()
+
+@app.get(
+    path="/tv/top_rated",
+    status_code=status.HTTP_200_OK,
+    summary="Top rated TV shows",
+    tags=["Top rated TV shows"]
+) 
+async def get_upcoming_movies():
+    return main_thread.top_rated_tv()
+
 # @app.get(
 #     path="/search/movie?query={movie_name}",
 #     status_code=status.HTTP_200_OK,

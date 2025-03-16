@@ -35,6 +35,15 @@ class MainThread (Thread):
     def upcoming_movies(self):
         return self.API_movies.get_upcoming_movies()
 
+    def trending_people(self):
+        return self.API_movies.get_trending_people()
+
+    def popular_tv(self):
+        return self.API_movies.get_popular_tv()
+
+    def top_rated_tv(self):
+        return self.API_movies.get_top_rated_tv()
+
     def stop_thread(self):
         """Stop the thread"""
         self._stop_event.set()
