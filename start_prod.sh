@@ -8,29 +8,33 @@ BACKEND_DIR="./backend"
 echo "Starting backend..."
 cd "$BACKEND_DIR" || exit 1  # Navigate to the backend directory; exit if it fails
 
-# Ensure virtual environment is activated
-# if [ -d "myvenv" ]; then
-#     source myvenv/bin/activate
-# else
-#     echo "Error: Virtual environment not found. Make sure to create and activate it."
-#     exit 1
-# fi
+# Ensure virtual environment exists, create it if necessary
+if [ ! -d "myvenv" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv myvenv
+fi
+
+# Activate the virtual environment
+source myvenv/bin/activate
+
+# Install backend dependencies
+pip install -r requirements.txt
 
 # Run the FastAPI backend in production mode
 uvicorn main:app --reload &  # Adjust the number of workers as needed
 
+# Move back to the root directory
+cd ..
+
 # Start the frontend in production mode
 echo "Building frontend..."
-cd "../$FRONTEND_DIR" || exit 1  # Navigate to the frontend directory; exit if it fails
+cd "$FRONTEND_DIR" || exit 1  # Navigate to the frontend directory; exit if it fails
 
-# Ensure dependencies are installed
-# if [ ! -d "node_modules" ]; then
-#     echo "Installing frontend dependencies..."
-#     npm install
-# fi
-
-# Build the frontend
-# npm run build
+# Ensure serve is installed
+if ! npx serve --version &> /dev/null; then
+    echo "Installing serve..."
+    npm install -g serve
+fi
 
 # Serve the frontend using `serve`
 echo "Starting frontend..."
