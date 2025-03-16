@@ -20,25 +20,30 @@ source myvenv/bin/activate
 # Install backend dependencies
 pip install -r requirements.txt
 
-# Run the FastAPI backend in production mode
-uvicorn main:app --reload &  # Adjust the number of workers as needed
+# Run the FastAPI backend in production mode without --reload
+echo "Running backend (uvicorn)..."
+uvicorn main:app --host 0.0.0.0 --port $PORT &  # Use the dynamic port provided by Railway
 
 # Move back to the root directory
 cd ..
 
-# Start the frontend in production mode
+# Build and start the frontend
 echo "Building frontend..."
 cd "$FRONTEND_DIR" || exit 1  # Navigate to the frontend directory; exit if it fails
 
-# Ensure serve is installed
-if ! npx serve --version &> /dev/null; then
-    echo "Installing serve..."
-    npm install -g serve
+# Ensure frontend dependencies are installed
+if [ ! -d "node_modules" ]; then
+    echo "Installing frontend dependencies..."
+    npm install
 fi
+
+# Build the frontend
+echo "Building frontend (vite)..."
+npm run build
 
 # Serve the frontend using `serve`
 echo "Starting frontend..."
-npx serve -s dist -l 3000 &  # Serves the static files from `dist` on port 3000
+npx serve -s dist -l $PORT &  # Use the dynamic port provided by Railway
 
 echo "Production application started 🚀"
 wait  # Keep the script running until the processes stop
