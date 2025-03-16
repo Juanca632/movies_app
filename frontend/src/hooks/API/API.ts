@@ -1,5 +1,5 @@
 // const URL = "http://192.168.86.28:8000"; 
-const URL = "http://localhost:8080"; 
+const URL = "https://moviesapp-production-8697.up.railway.app/"; 
 
 export const fetchData = async <T>(endpoint: string, timeout = 3000): Promise<T> => {
     const controller = new AbortController();
