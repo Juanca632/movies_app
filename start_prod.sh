@@ -43,7 +43,8 @@ npm run build
 
 # Serve the frontend using `serve` from the dist directory
 echo "Starting frontend..."
-npx serve -s dist -l $PORT &  # Use the dynamic port provided by Railway
+# Use $((PORT+1)) to increment the port for the frontend
+npx serve -s dist -l $((PORT+1)) &  # Increment the port for the frontend
 
 echo "Production application started 🚀"
 wait  # Keep the script running until the processes stop
