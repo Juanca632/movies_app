@@ -44,6 +44,30 @@ class MainThread (Thread):
     def top_rated_tv(self):
         return self.API_movies.get_top_rated_tv()
 
+    def images_movie(self, movie_id):
+        return self.API_movies.get_images_movie(movie_id)
+
+    def recommended_movies(self,movie_id):
+        return self.API_movies.get_recommended_movies(movie_id)
+
+    def credits_movies(self, movie_id):
+        return self.API_movies.get_credits_movies(movie_id)
+
+    def watch_providers(self, movie_id):
+        return self.API_movies.get_watch_providers(movie_id)
+
+    def recommended_tv(self, tv_id):
+        return self.API_movies.get_recommended_tv(tv_id)
+
+    def credits_tv(self, tv_id):
+        return self.API_movies.get_credits_tv(tv_id)
+
+    def images_tv(self, tv_id):
+        return self.API_movies.get_images_tv(tv_id)
+
+    def watch_providers_tv(self, tv_id):
+        return self.API_movies.get_watch_providers_tv(tv_id)
+
     def stop_thread(self):
         """Stop the thread"""
         self._stop_event.set()

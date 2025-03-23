@@ -6,6 +6,7 @@ import "./Banner.scss";
 import "swiper/swiper-bundle.css";
 import star from "../../assets/star.png";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom"; 
 
 interface MovieType {
   id: number;
@@ -53,6 +54,11 @@ function Banner() {
     const words = text.split(" ");
     return words.length > wordLimit ? words.slice(0, wordLimit).join(" ") + "..." : text;
   };
+
+    const navigate = useNavigate();
+    const goToMoviePage = (id:number,title:string) => {
+      navigate(`${id}/${title}`);
+    };
   
 
   return (
@@ -68,12 +74,25 @@ function Banner() {
       modules={[Autoplay, Pagination, Navigation]}
       className="mySwiper"
     >
-      {movies.length > 0 ? (
-        movies.map((movie) => (
+      {movies.length > 0 && (
+        movies
+        .filter((movie) => movie.poster_path !== null)
+        .map((movie) => (
           <SwiperSlide key={movie.id} className="!w-full !flex !justify-center !items-center 2xl:!h-130 md:!h-100 !h-160 !pt-10">
             <div className="md:w-4/5 w-5/5 h-full grid md:grid-cols-[auto_1fr] grid-rows-[auto_1fr] md:gap-10 gap-2">
-              <div className="2xl:!h-130 md:!h-100 !h-130">
-                <motion.img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} className="h-full w-full object-contain" whileTap={{scale:0.95}}/>
+              <div className="2xl:!h-110 md:!h-100 !h-130">
+                {movie.poster_path == null ?(
+                  <>
+                  <motion.div className="h-full w-full py-5 px-10 movie-loading skeleton relative" whileTap={{scale:0.95}}>
+                  <div className={` rounded-md h-full skeleton-image`}></div>
+                  </motion.div>
+                  </>
+                ):(
+                  <motion.img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} className="h-full w-full object-contain" whileTap={{scale:0.95}}
+                  onClick={() => goToMoviePage(movie.id, movie.title)}
+                  />
+                )
+                }
               </div>
               <div className="grid grid-rows-[35%_1fr]  md:gap-5 gap-2 md:pl-0 pl-5">
                 <div className="flex items-end">
@@ -82,7 +101,7 @@ function Banner() {
                 <div className="flex flex-col gap-10 w-full">
                   <div className="flex items-center gap-5">
                     <img src={star} className="sm:w-10 w-7" />
-                    <span className="md:text-3xl text-lg">{movie.vote_average.toFixed(2)}/10</span>
+                    <span className="md:text-3xl text-lg">{movie.vote_average % 1 === 0 ? movie.vote_average.toFixed(0) : movie.vote_average.toFixed(1)}/10</span>
                     <span className="md:text-3xl text-lg text-gray-500">{movie.release_date?.slice(0, 4)}</span>
                   </div>
                   <div>
@@ -95,24 +114,6 @@ function Banner() {
             </div>
           </SwiperSlide>
         ))
-      ) : ( null
-      //   <div  className="w-full flex !justify-center items-center 2xl:!h-130 md:!h-100 !h-160 ">
-      //   <div className="md:w-4/5 w-full h-full grid md:grid-cols-[1fr_1fr] grid-rows-[1fr_auto] md:gap-10 md:p-0 p-5">
-      //     <div className="2xl:h-full">
-      //       <div className="h-full w-full p-5 skeleton-image"/>
-      //     </div>
-      //     <div className="grid grid-rows-2 gap-10">
-      //       <div className="flex items-end ">
-      //         <span className=" w-2/5 !h-12 skeleton-image"></span>
-      //       </div>
-      //       <div className="flex flex-col gap-5">
-      //         <span className="w-4/5 !h-6 skeleton-image"></span>
-      //         <span className="w-2/5 !h-6 skeleton-image bg-blue-900"></span>
-      //         <span className="w-3/5 !h-6 skeleton-image bg-blue-900"></span>
-      //       </div>
-      //     </div>
-      //   </div>
-      // </div>
       )}
     </Swiper>
   );

@@ -5,7 +5,7 @@ import requests
 
 #---------------------------------------- VARIABLES --------------------------------
 
-WAIT_TIME_RECONNECT = 5
+WAIT_TIME_RECONNECT = 2
 
 #-----------------------------------------------------------------------------------
 
@@ -34,15 +34,16 @@ class API_movies(Thread):
         """Attempt to connect to the API by making a test request"""
         url = f"{self.API_URL}/movie/popular?api_key={self.API_KEY}"
         try:
-            response = self.session.get(url)
+            headers = {"accept": "application/json"}
+            response = self.session.get(url, headers=headers, timeout=3)
             response.raise_for_status()  # Raise an error if the response is not 200
             self.connection_state = API.CONNECTED
             data = response.json()
-            data = data["results"][:1]
-            custom_print(f"Connection successful: {data}",level=Printing_Types.debug)  # Show the first movie
+            # data = data["results"][:1]
+            custom_print(f"Connection successful: ",level=Printing_Types.debug)  # Show the first movie
         except requests.exceptions.RequestException as e:
             custom_print(f"Error connecting to the API: {e}",level=Printing_Types.debug)
-            custom_print("Retrying to connect again in 5 seconds:",level=Printing_Types.debug)
+            custom_print("Retrying to connect again in 2 seconds:",level=Printing_Types.debug)
             self.connection_state = API.RECONNECTING
             self.event.wait(WAIT_TIME_RECONNECT)
         
@@ -52,9 +53,10 @@ class API_movies(Thread):
                 self.on_connect()
             if self.connection_state == API.CONNECTED:
                 try: 
-                    custom_print("Successfully connected to API theMoviedb",level=Printing_Types.debug)
-                    self._event_timer.wait(5)  
-                    self._event_timer.clear()  
+                    pass
+                    # custom_print("Successfully connected to API theMoviedb",level=Printing_Types.debug)
+                    # self._event_timer.wait(5)  
+                    # self._event_timer.clear()  
                 except:
                     custom_print("error",level=Printing_Types.debug)
                     self.connection_state = API.RECONNECTING
@@ -63,7 +65,8 @@ class API_movies(Thread):
         
         try:
             # Make the GET request to the API
-            response = self.session.get(url, timeout = 5)
+            headers = {"accept": "application/json"}
+            response = self.session.get(url, headers=headers, timeout=3)
             response.raise_for_status()  # Check if the request was successful (status 200)
             
             # Parse the response JSON and extract the list of movies
@@ -79,6 +82,13 @@ class API_movies(Thread):
             print(f"Error fetching 'now playing' movies: {e}")
             self.connection_state = API.RECONNECTING
             return []
+    
+    def stop_thread(self):
+        """Stop the thread."""
+        self._stop_event.set()
+
+
+    ####################################### MOVIES ############################################
 
     def get_now_playing(self):
         """Fetch movies currently playing in theaters."""
@@ -110,10 +120,87 @@ class API_movies(Thread):
 
         return filtered_movies
 
+    def get_images_movie(self, movie_id):
+        """Fetch images of a movie"""
+        url = f"{self.API_URL}/movie/{movie_id}/images?api_key={self.API_KEY}"
+        
+        try:
+            headers = {"accept": "application/json"}
+            response = self.session.get(url, headers=headers, timeout=3)
+            response.raise_for_status()
+            data = response.json()
+            
+            return {
+                "backdrops": data.get("backdrops", []),
+                "posters": data.get("posters", [])
+            }
+        
+        except requests.exceptions.RequestException as e:
+            custom_print(f"Error fetching images for movie {movie_id}: {e}", level=Printing_Types.debug)
+            self.connection_state = API.RECONNECTING
+            return {"error": "Could not fetch images"}
+
+    def get_recommended_movies(self,movie_id):
+        """Fetch recommended movies based on selected movie."""
+        url = f"{self.API_URL}/movie/{movie_id}/recommendations?api_key={self.API_KEY}&language=en-US"
+        return self.get_movies(url)
+
+    def transform_movie_credits(self, data):
+        """
+        Transforms the TMDb movie credits structure to what the frontend needs.
+        """
+        transformed_data = []
+
+        for actor in data.get("cast", [])[:15]:
+            transformed_actor = {
+                "adult": actor.get("adult"),
+                "gender": actor.get("gender"),
+                "id": actor.get("id"),
+                "known_for_department": actor.get("known_for_department"),
+                "name": actor.get("name"),
+                "original_name": actor.get("original_name"),
+                "popularity": actor.get("popularity"),
+                "profile_path": actor.get("profile_path"),
+                "known_for": []  
+            }
+            transformed_data.append(transformed_actor)
+
+        return transformed_data
+
+    def get_credits_movies(self, movie_id):
+        """Fetch credits of a movie (actors & crew)."""
+        url = f"{self.API_URL}/movie/{movie_id}/credits?api_key={self.API_KEY}&language=en-US"
+        try:
+            headers = {"accept": "application/json"}
+            response = self.session.get(url, headers=headers, timeout=3)
+            response.raise_for_status()
+            data = response.json()
+            return self.transform_movie_credits(data)  
+
+        except requests.exceptions.RequestException as e:
+            custom_print(f"Error fetching credits for movie {movie_id}: {e}", level=Printing_Types.debug)
+            self.connection_state = API.RECONNECTING
+            return {"error": "Could not fetch credits"}
+
+    def get_watch_providers(self, movie_id, country_code="FR"):
+        """Fetches watch providers for a specific country."""
+        url = f"{self.API_URL}/movie/{movie_id}/watch/providers?api_key={self.API_KEY}&language=en-US"
+        providers = self.get_movies(url)
+        
+        return providers.get(country_code, {}) 
+
+
+
+
+    
+    ####################################### ACTORS/ACTRESSES ############################################
+
     def get_trending_people(self):
         """Fetch trending movies."""
         url = f"{self.API_URL}/person/popular?api_key={self.API_KEY}&language=en-US"
         return self.get_movies(url)
+
+    ####################################### TV SHOWS ############################################
 
     def get_popular_tv(self):
         """Fetch popular TV shows."""
@@ -125,9 +212,54 @@ class API_movies(Thread):
         url = f"{self.API_URL}/tv/top_rated?api_key={self.API_KEY}&language=en-US"
         return self.get_movies(url)
 
-    def stop_thread(self):
-        """Stop the thread."""
-        self._stop_event.set()
+    def get_recommended_tv(self,tv_id):
+        """Fetch recommended Tv Shows based on selected Tv Show."""
+        url = f"{self.API_URL}/tv/{tv_id}/recommendations?api_key={self.API_KEY}&language=en-US"
+        return self.get_movies(url)
+
+    def get_credits_tv(self, tv_id):
+        """Fetch credits of a movie (actors & crew)."""
+        url = f"{self.API_URL}/tv/{tv_id}/aggregate_credits?api_key={self.API_KEY}&language=en-US"
+        try:
+            headers = {"accept": "application/json"}
+            response = self.session.get(url, headers=headers, timeout=3)
+            response.raise_for_status()
+            data = response.json()
+            return self.transform_movie_credits(data)  
+
+        except requests.exceptions.RequestException as e:
+            custom_print(f"Error fetching credits for TV show {tv_id}: {e}", level=Printing_Types.debug)
+            self.connection_state = API.RECONNECTING
+            return {"error": "Could not fetch credits"}
+
+    def get_images_tv(self, tv_id):
+        """Fetch images of a Tv Show"""
+        url = f"{self.API_URL}/tv/{tv_id}/images?api_key={self.API_KEY}"
+        
+        try:
+            headers = {"accept": "application/json"}
+            response = self.session.get(url, headers=headers, timeout=3)
+            response.raise_for_status()
+            data = response.json()
+            
+            return {
+                "backdrops": data.get("backdrops", []),
+                "posters": data.get("posters", [])
+            }
+        
+        except requests.exceptions.RequestException as e:
+            custom_print(f"Error fetching images for the TV show {tv_id}: {e}", level=Printing_Types.debug)
+            self.connection_state = API.RECONNECTING
+            return {"error": "Could not fetch images"}
+
+    def get_watch_providers_tv(self, tv_id, country_code="FR"):
+        """Fetches watch providers for a specific country."""
+        url = f"{self.API_URL}/tv/{tv_id}/watch/providers?api_key={self.API_KEY}&language=en-US"
+        providers = self.get_movies(url)
+        
+        return providers.get(country_code, {}) 
+
+
 
 
 

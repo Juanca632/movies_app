@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import "./MovieList.scss";
 import Movie from "../Movie/Movie";
 import { fetchData } from "../../hooks/API/API";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -22,7 +21,7 @@ interface MovieType {
   known_for_department: string;
 }
 
-function MovieList({ endpoint, title, person }: MovieListProps) {
+function TvShowList({ endpoint, title, person }: MovieListProps) {
   const [movies, setMovies] = useState<MovieType[]>([]);
   const [error, setError] = useState<string | null>(null); // State to manage error
   const [isMobile, setIsMobile] = useState(false);
@@ -74,8 +73,8 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
   }, []);
 
   const navigate = useNavigate();
-  const goToMoviePage = (id:number, title:string) => {
-    navigate(`/movie/${id}/${title}`);
+  const goToTvShowPage = (id:number, title:string) => {
+    navigate(`/tv-show/${id}/${title}`);
   };
 
   return (
@@ -100,7 +99,7 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
                     imageUrl={`https://image.tmdb.org/t/p/w500${movie.profile_path}`}
                     person={true}
                     id={movie.id}
-                    goToPage={goToMoviePage}
+                    goToPage={goToTvShowPage}
                   />
                 </SwiperSlide>
               ))
@@ -112,7 +111,7 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
                   imageUrl={""} // Empty image for "no data"
                   person={true} // You can toggle between true or false depending on person view
                   id={0}
-                  goToPage={goToMoviePage}
+                  goToPage={goToTvShowPage}
                 />
               </SwiperSlide>
             ))
@@ -135,7 +134,7 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
                   imageUrl={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
                   person={false}
                   id={movie.id}
-                  goToPage={goToMoviePage}
+                  goToPage={goToTvShowPage}
                 />
               </SwiperSlide>
             ))
@@ -147,7 +146,7 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
                   imageUrl={""} // Empty image for "no data"
                   person={false} // You can toggle between true or false depending on person view
                   id={0}
-                  goToPage={goToMoviePage}
+                  goToPage={goToTvShowPage}
                 />
               </SwiperSlide>
             ))
@@ -158,4 +157,4 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
   );
 }
 
-export default MovieList;
+export default TvShowList;

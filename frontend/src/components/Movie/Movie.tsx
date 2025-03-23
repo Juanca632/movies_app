@@ -1,20 +1,30 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import "./Movie.scss";
-import { useNavigate } from "react-router-dom"; 
+import user from "../../assets/user.svg"
+
 
 interface MovieProps {
   title: string;
   imageUrl: string;
   person: boolean;
   id: number;
+  goToPage: (id: number, title: string) => void;
 }
 
-function Movie({ title, imageUrl, person, id }: MovieProps) {
-  const isLoading = !title && !imageUrl;
+function Movie({ title, imageUrl, person, id, goToPage }: MovieProps) {
+  const [isLoading, setIsLoading] = useState<boolean>(!title);
   const [isVisible, setIsVisible] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false); 
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof title !== "string" || title.trim() === "") {
+      setIsLoading(true);
+    } else {
+      setIsLoading(false);
+    }
+  }, [title]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -32,10 +42,6 @@ function Movie({ title, imageUrl, person, id }: MovieProps) {
     return () => observer.disconnect();
   }, [hasLoaded]); 
 
-  const navigate = useNavigate();
-  const goToMoviePage = () => {
-    navigate(`${id}/${title}`);
-  };
 
   return (
     <div className="h-full w-full" ref={ref}>
@@ -56,8 +62,10 @@ function Movie({ title, imageUrl, person, id }: MovieProps) {
         )
       ) : person ? (
         // Regular person content
-        <motion.div className="movie rounded-xl relative h-full w-full" whileHover={{ scale: 1, zIndex: 10 }} whileTap={{ scale: 0.9 }}>
-          <img src={imageUrl} alt={title} className="h-full w-full rounded-full object-cover" />
+        
+        <motion.div className={`movie ${imageUrl == "https://image.tmdb.org/t/p/w500null" ? "movie-loading skeleton" : ""} rounded-full relative h-full w-full flex justify-center items-center bg-zinc-800`} whileHover={{ scale: 1, zIndex: 10 }} whileTap={{ scale: 0.9 }}>
+          <img src={imageUrl == "https://image.tmdb.org/t/p/w500null" ? user : imageUrl} alt={title} className={`h-full w-full rounded-full object-cover ${imageUrl == "https://image.tmdb.org/t/p/w500null" ? "!rounded-none flex justify-center items-center !h-3/4 !w-3/4" : ""}`} />
+          {/* <div className={` h-full w-full rounded-full object-cover ${imageUrl == "https://image.tmdb.org/t/p/w500null" ? "skeleton-image" : "hidden"}`}></div> */}
           <motion.div
             className="absolute bg-gradient-to-t from-black to-transparent w-full h-full top-0 right-0 bottom-0 left-0 z-20 rounded-full"
             initial={{ opacity: 0 }}
@@ -65,20 +73,21 @@ function Movie({ title, imageUrl, person, id }: MovieProps) {
             transition={{ duration: 0.3 }}
           >
             <div className="h-full w-full flex items-end justify-center p-2 pb-5">
-              <p className="text-white text-xl text-center w-3/5">{title}</p>
+              <p className="text-white text-xl text-center w-3/5 break-words ">{title}</p>
             </div>
           </motion.div>
         </motion.div>
       ) : (
         // Regular movie content
-        <motion.div className="movie rounded-xl relative h-full" whileHover={{ scale: 1, zIndex: 10 }} whileTap={{ scale: 0.9 }}>
-          <img src={imageUrl} alt={title} className="rounded-md h-full" />
+        <motion.div className={`movie ${imageUrl == "https://image.tmdb.org/t/p/w500null" ? "movie-loading skeleton" : ""} rounded-xl relative h-full`} whileHover={{ scale: 1, zIndex: 10 }} whileTap={{ scale: 0.9 }}>
+          <img src={imageUrl} alt={title} className={`rounded-md h-full ${imageUrl == "https://image.tmdb.org/t/p/w500null" ? "hidden" : ""}`} />
+          <div className={` rounded-md h-full ${imageUrl == "https://image.tmdb.org/t/p/w500null" ? "skeleton-image" : "hidden"}`}></div>
           <motion.div
             className="absolute bg-gradient-to-t from-black to-transparent w-full h-full top-0 right-0 bottom-0 left-0 z-20 rounded-md"
             initial={{ opacity: 0 }}
             whileHover={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            onClick={goToMoviePage}
+            onClick={() => goToPage(id,title)}
           >
             <div className="h-full w-full flex items-end p-2">
               <p className="text-white text-xl text-center w-full">{title}</p>

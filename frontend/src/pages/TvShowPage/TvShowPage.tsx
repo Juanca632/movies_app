@@ -29,7 +29,7 @@ interface ProvidersType{
   flatrate: FlatrateType[];
 }
 
-function MoviePage() {
+function TvShowPage() {
   const { id } = useParams<{ title: string; id: string }>();
   const [dataImage, setDataImage] = useState<DataType | null>(null);
   const [dataProviders, setDataProviders] = useState<ProvidersType | null>(null);
@@ -57,13 +57,13 @@ function MoviePage() {
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const data = await fetchData<DataType>(`movies/${id}/images`); // Ensure the correct endpoint
+        const data = await fetchData<DataType>(`tv/${id}/images`); // Ensure the correct endpoint
         if (data) {
           setDataImage(data);
           setError(null); // Clear any previous error if data is fetched successfully
         }
 
-        const providers = await fetchData<ProvidersType>(`movies/${id}/providers`);
+        const providers = await fetchData<ProvidersType>(`tv/${id}/providers`);
         if (providers) {
           setDataProviders(providers)
         }
@@ -139,27 +139,29 @@ function MoviePage() {
               <p className="text-white xl:text-3xl text-2xl font-bold mb-3">Providers</p>
             )}
             <div className="flex gap-5">
-              {dataProviders?.flatrate?.map((provider, index) => (
-                <a 
-                  key={index} 
-                  href={dataProviders.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                >
-                  <motion.img 
-                    src={`https://image.tmdb.org/t/p/w500${provider.logo_path}`} 
-                    alt={provider.provider_name} 
-                    className="h-30 cursor-pointer rounded-2xl"
-                    whileTap={{scale:0.9}}
-                  />
-                </a>
-              ))}
+            {dataProviders?.flatrate?.map((provider, index) => (
+                provider.provider_name !== "Netflix basic with Ads" && (
+                    <a 
+                    key={index} 
+                    href={dataProviders.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    >
+                    <motion.img 
+                        src={`https://image.tmdb.org/t/p/w500${provider.logo_path}`} 
+                        alt={provider.provider_name} 
+                        className="h-30 cursor-pointer rounded-2xl"
+                        whileTap={{scale:0.9}}
+                    />
+                    </a>
+                )
+                ))}
             </div>
       </div>
 
       <div className="flex flex-col gap-10 py-10">
-        <MovieList endpoint={`movies/${id}/credits`} title={"Casting"} person={true}/>
-        <MovieList endpoint={`movies/${id}/recommendations`} title={"Recommended movies"} person={false}/>
+        <MovieList endpoint={`tv/${id}/credits`} title={"Casting"} person={true}/>
+        <MovieList endpoint={`tv/${id}/recommendations`} title={"Recommended TV shows"} person={false}/>
       </div>
 
 
@@ -167,4 +169,4 @@ function MoviePage() {
   );
 }
 
-export default MoviePage;
+export default TvShowPage;
