@@ -68,6 +68,9 @@ class MainThread (Thread):
     def watch_providers_tv(self, tv_id):
         return self.API_movies.get_watch_providers_tv(tv_id)
 
+    def details_movies(self, movie_id):
+        return self.API_movies.get_details_movies(movie_id)
+
     def stop_thread(self):
         """Stop the thread"""
         self._stop_event.set()

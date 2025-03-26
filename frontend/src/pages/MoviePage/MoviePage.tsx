@@ -3,6 +3,8 @@ import { fetchData } from "../../hooks/API/API";
 import { useParams } from "react-router-dom";
 import MovieList from "../../components/MovieList/MovieList";
 import { motion } from "framer-motion";
+import loading_img from "../../assets/loading_banner_img.jpg"
+import star from "../../assets/star.png"
 
 interface MovieImage {
   aspect_ratio: number;
@@ -29,12 +31,52 @@ interface ProvidersType{
   flatrate: FlatrateType[];
 }
 
+interface MovieDetails {
+  adult: boolean;
+  backdrop_path: string;
+  belongs_to_collection?: {
+    id: number;
+    name: string;
+    poster_path: string;
+    backdrop_path: string;
+  };
+  budget: number;
+  genres: { id: number; name: string }[];
+  homepage: string;
+  id: number;
+  imdb_id: string;
+  origin_country: string[];
+  original_language: string;
+  original_title: string;
+  overview: string;
+  popularity: number;
+  poster_path: string;
+  production_companies: {
+    id: number;
+    logo_path: string;
+    name: string;
+    origin_country: string;
+  }[];
+  production_countries: { iso_3166_1: string; name: string }[];
+  release_date: string;
+  revenue: number;
+  runtime: number;
+  spoken_languages: { english_name: string; iso_639_1: string; name: string }[];
+  status: string;
+  tagline: string;
+  title: string;
+  video: boolean;
+  vote_average: number;
+  vote_count: number;
+}
+
 function MoviePage() {
   const { id } = useParams<{ title: string; id: string }>();
   const [dataImage, setDataImage] = useState<DataType | null>(null);
   const [dataProviders, setDataProviders] = useState<ProvidersType | null>(null);
+  const [movieDetails, setMovieDetails] = useState<MovieDetails | null>(null) 
   const [error, setError] = useState<string | null>(null); // State to manage error
-  const [imagePoster, setImagePoster] =  useState<string | null>("");
+  const [imagePoster, setImagePoster] =  useState<string | null>(null);
 
 
   useEffect(() => {
@@ -42,7 +84,6 @@ function MoviePage() {
       setDataImage(null);
       setDataProviders(null);
   }, [id]);
-
 
   useEffect(() => {
     if (dataImage && dataImage.posters.length > 0) {
@@ -66,7 +107,15 @@ function MoviePage() {
         const providers = await fetchData<ProvidersType>(`movies/${id}/providers`);
         if (providers) {
           setDataProviders(providers)
+          setError(null);
         }
+
+        const detailsMovie = await fetchData<MovieDetails>(`movies/${id}`);
+        if (detailsMovie) {
+          setMovieDetails(detailsMovie)
+          setError(null);
+        }
+
 
       } catch (error) {
         console.error("Error fetching movie:", error);
@@ -108,8 +157,7 @@ function MoviePage() {
 
   return (
     <div className="min-h-screen w-full bg-zinc-900 text-4xl text-white md:py-10 py-0">
-      {dataImage && (
-        <div className="w-full md:py-5 pb-5 md:px-10 px-0">
+        <div className="grid xl:grid-cols-[auto_1fr] xl:grid-rows-[auto] xl:gap-20 gap-5 grid-cols-[auto] grid-rows-[auto-auto]  w-full md:py-5 pb-5 md:px-10 px-0 relative">
           {/* {findImageWithAspectRatio(dataImage.backdrops) && (
             <>
               {(() => {
@@ -123,37 +171,81 @@ function MoviePage() {
                     />
                 );
               })()} */}
-          {imagePoster && (
+          <div className="relative flex justify-center">
+            {imagePoster != null ? (
+                <img
+                  src={imagePoster}
+                  alt={`Backdrop`}
+                  className="object-cover h-full xl:h-100"
+                />            
+            ):(     
+              <>
               <img
-                src={imagePoster}
-                alt={`Backdrop`}
-                className="object-cover h-full xl:h-100"
-              />            
-          )}
+                  src={loading_img}
+                  alt={`Loading image`}
+                  className="object-cover h-full xl:h-100"
+                />
+                <div className="skeleton-image absolute inset-0  z-10"></div>
+              </>
+            )
+          }
+          </div>
+          <div className="w-full flex justify-center flex-col px-5 gap-3">
+              <h1 className="md:text-6xl text-3xl">{movieDetails?.title}</h1>
+              <div className="flex gap-7">
+                <div className="flex gap-2">
+                  {
+                    movieDetails && (
+                      <img src={star} alt="star" className="h-10"/>
+                    )
+                  }
+                  <p>{movieDetails?.vote_average.toFixed(1)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">{movieDetails?.release_date.slice(0, 4)}</p>
+                </div>
+              </div>
+              <ul className="flex gap-3 flex-wrap">
+                  {movieDetails &&
+                    movieDetails.genres.map((genre, index) => (
+                      <motion.li key={index} className="text-sm p-1 px-3 border-2 border-gray-400 rounded-xl text-gray-400 font-bold cursor-pointer"
+                        whileTap={{scale:0.9}}
+                        whileHover={{scale:1.1}}
+                      >{genre.name}</motion.li>
+                    ))
+                  }
+                </ul>
+              <p className="text-base">
+                {movieDetails?.overview}
+              </p>
+          </div>
         </div>
-      )
-    }
+
 
       <div className="flex xl:px-10 px-5 flex-col">
             {dataProviders?.flatrate && (
-              <p className="text-white xl:text-3xl text-2xl font-bold mb-3">Providers</p>
+              <p className="text-white xl:text-3xl text-2xl font-bold mb-3">Where to watch</p>
             )}
-            <div className="flex gap-5">
-              {dataProviders?.flatrate?.map((provider, index) => (
-                <a 
-                  key={index} 
-                  href={dataProviders.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                >
-                  <motion.img 
-                    src={`https://image.tmdb.org/t/p/w500${provider.logo_path}`} 
-                    alt={provider.provider_name} 
-                    className="h-30 cursor-pointer rounded-2xl"
+            <div className="flex flex-wrap gap-5">
+            {dataProviders?.flatrate?.map((provider, index) => (
+                provider.provider_name !== "Netflix basic with Ads" && (
+                    <motion.a 
+                    key={index} 
+                    href={dataProviders.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
                     whileTap={{scale:0.9}}
-                  />
-                </a>
-              ))}
+                    whileHover={{scale:1.1}}
+                    >
+                    <motion.img 
+                        src={`https://image.tmdb.org/t/p/w500${provider.logo_path}`} 
+                        alt={provider.provider_name} 
+                        className="h-20 cursor-pointer rounded-2xl"
+                        whileTap={{scale:0.9}}
+                    />
+                    </motion.a>
+                )
+                ))}
             </div>
       </div>
 
