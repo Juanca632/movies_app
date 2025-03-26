@@ -176,6 +176,15 @@ async def get_providers_tv(tv_id: str):
 async def get_details_movie(movie_id: str):
     return main_thread.details_movies(movie_id)
 
+@app.get(
+    path="/tv/{tv_id}/",
+    status_code=status.HTTP_200_OK,
+    summary="Details of single TV show",
+    tags=["TV shows"]
+) 
+async def get_details_tv(tv_id: str):
+    return main_thread.details_tv(tv_id)
+
 
 
 # @app.get(

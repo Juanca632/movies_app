@@ -3,6 +3,8 @@ import { fetchData } from "../../hooks/API/API";
 import { useParams } from "react-router-dom";
 import MovieList from "../../components/MovieList/MovieList";
 import { motion } from "framer-motion";
+import loading_img from "../../assets/loading_banner_img.jpg"
+import star from "../../assets/star.png"
 
 interface MovieImage {
   aspect_ratio: number;
@@ -29,12 +31,23 @@ interface ProvidersType{
   flatrate: FlatrateType[];
 }
 
+interface TvShowsDetails {
+  name: string;
+  vote_average: number;
+  genres: { id: number; name: string }[];
+  overview: string;
+  number_of_seasons: number;
+  number_of_episodes: number;
+  poster_path: string;
+}
+
 function TvShowPage() {
   const { id } = useParams<{ title: string; id: string }>();
   const [dataImage, setDataImage] = useState<DataType | null>(null);
   const [dataProviders, setDataProviders] = useState<ProvidersType | null>(null);
+  const [tvShowDetails, setTvShowDetails] = useState<TvShowsDetails | null>(null) 
   const [error, setError] = useState<string | null>(null); // State to manage error
-  const [imagePoster, setImagePoster] =  useState<string | null>("");
+  const [imagePoster, setImagePoster] =  useState<string | null>(null);
 
 
   useEffect(() => {
@@ -66,6 +79,13 @@ function TvShowPage() {
         const providers = await fetchData<ProvidersType>(`tv/${id}/providers`);
         if (providers) {
           setDataProviders(providers)
+          setError(null);
+        }
+
+        const DetailsTvShow = await fetchData<TvShowsDetails>(`tv/${id}/`);
+        if (DetailsTvShow) {
+          setTvShowDetails(DetailsTvShow)
+          setError(null);
         }
 
       } catch (error) {
@@ -108,31 +128,65 @@ function TvShowPage() {
 
   return (
     <div className="min-h-screen w-full bg-zinc-900 text-4xl text-white md:py-10 py-0">
-      {dataImage && (
-        <div className="w-full md:py-5 pb-5 md:px-10 px-0">
-          {/* {findImageWithAspectRatio(dataImage.backdrops) && (
-            <>
-              {(() => {
-                const image = findImageWithAspectRatio(dataImage.backdrops)!;
-                const imageUrl = `https://image.tmdb.org/t/p/w500${image.file_path}`;
-                return (
-                    <img
-                      src={imageUrl}
-                      alt={`Backdrop`}
-                      className="object-cover h-full xl:h-80"
-                    />
-                );
-              })()} */}
-          {imagePoster && (
+       <div className="grid xl:grid-cols-[auto_1fr] xl:grid-rows-[auto] xl:gap-20 gap-5 grid-cols-[auto] grid-rows-[auto-auto]  w-full md:py-5 pb-5 md:px-10 px-0 relative">
+          <div className="relative flex justify-center">
+            {imagePoster != null ? (
+                <img
+                  src={imagePoster}
+                  alt={`Backdrop`}
+                  className="object-cover h-full xl:h-100"
+                />            
+            ):(     
+              <>
               <img
-                src={imagePoster}
-                alt={`Backdrop`}
-                className="object-cover h-full xl:h-100"
-              />            
-          )}
+                  src={loading_img}
+                  alt={`Loading image`}
+                  className="object-cover h-full xl:h-100"
+                />
+                <div className="skeleton-image absolute inset-0  z-10"></div>
+              </>
+            )
+          }
+          </div>
+          <div className="w-full flex justify-center flex-col px-5 gap-3">
+              <h1 className="md:text-6xl text-3xl">{tvShowDetails?.name}</h1>
+              <div className="flex gap-7">
+                <div className="flex gap-2">
+                  {
+                    tvShowDetails && (
+                      <img src={star} alt="star" className="h-10"/>
+                    )
+                  }
+                  <p>{tvShowDetails?.vote_average.toFixed(1)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">{}</p>
+                </div>
+              </div>
+                {
+                    tvShowDetails && (
+                  <div className="flex gap-5">
+                    <p className="text-gray-600 text-xl font-bold">{tvShowDetails?.number_of_episodes} episodes</p>
+                    <p className="text-gray-600 text-xl font-bold">{tvShowDetails?.number_of_seasons} seasons</p>
+                  </div>
+                    )
+                  }
+              <ul className="flex gap-3 flex-wrap">
+                  {tvShowDetails &&
+                    tvShowDetails.genres.map((genre, index) => (
+                      <motion.li key={index} className="text-sm p-1 px-3 border-2 border-gray-400 rounded-xl text-gray-400 font-bold cursor-pointer"
+                        whileTap={{scale:0.9}}
+                        whileHover={{scale:1.1}}
+                      >{genre.name}</motion.li>
+                    ))
+                  }
+                </ul>
+              <p className="text-base">
+                {tvShowDetails?.overview}
+              </p>
+          </div>
         </div>
-      )
-    }
+    
 
       <div className="flex xl:px-10 px-5 flex-col">
             {dataProviders?.flatrate && (
@@ -141,19 +195,21 @@ function TvShowPage() {
             <div className="flex gap-5">
             {dataProviders?.flatrate?.map((provider, index) => (
                 provider.provider_name !== "Netflix basic with Ads" && (
-                    <a 
-                    key={index} 
-                    href={dataProviders.link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    >
-                    <motion.img 
-                        src={`https://image.tmdb.org/t/p/w500${provider.logo_path}`} 
-                        alt={provider.provider_name} 
-                        className="h-30 cursor-pointer rounded-2xl"
-                        whileTap={{scale:0.9}}
-                    />
-                    </a>
+                  <motion.a 
+                  key={index} 
+                  href={dataProviders.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  whileTap={{scale:0.9}}
+                  whileHover={{scale:1.1}}
+                  >
+                  <motion.img 
+                      src={`https://image.tmdb.org/t/p/w500${provider.logo_path}`} 
+                      alt={provider.provider_name} 
+                      className="h-20 cursor-pointer rounded-2xl"
+                      whileTap={{scale:0.9}}
+                  />
+                  </motion.a>
                 )
                 ))}
             </div>

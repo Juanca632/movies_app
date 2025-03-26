@@ -158,19 +158,6 @@ function MoviePage() {
   return (
     <div className="min-h-screen w-full bg-zinc-900 text-4xl text-white md:py-10 py-0">
         <div className="grid xl:grid-cols-[auto_1fr] xl:grid-rows-[auto] xl:gap-20 gap-5 grid-cols-[auto] grid-rows-[auto-auto]  w-full md:py-5 pb-5 md:px-10 px-0 relative">
-          {/* {findImageWithAspectRatio(dataImage.backdrops) && (
-            <>
-              {(() => {
-                const image = findImageWithAspectRatio(dataImage.backdrops)!;
-                const imageUrl = `https://image.tmdb.org/t/p/w500${image.file_path}`;
-                return (
-                    <img
-                      src={imageUrl}
-                      alt={`Backdrop`}
-                      className="object-cover h-full xl:h-80"
-                    />
-                );
-              })()} */}
           <div className="relative flex justify-center">
             {imagePoster != null ? (
                 <img

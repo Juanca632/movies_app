@@ -272,6 +272,23 @@ class API_movies(Thread):
         
         return providers.get(country_code, {}) 
 
+    def get_details_tv(self, tv_id):
+        """Fetch detailed information of a specific TV show."""
+        url = f"{self.API_URL}/tv/{tv_id}?api_key={self.API_KEY}&language=en-US"
+
+        try:
+            headers = {"accept": "application/json"}
+            response = self.session.get(url, headers=headers, timeout=3)
+            response.raise_for_status()  # Raise an error if the request was not successful
+
+            data = response.json()  # Parse JSON response
+            return data  # Return TV show details
+
+        except requests.exceptions.RequestException as e:
+            custom_print(f"Error fetching details for TV show {tv_id}: {e}", level=Printing_Types.debug)
+            self.connection_state = API.RECONNECTING
+            return {"error": "Could not fetch TV show details"}
+
 
 
 
