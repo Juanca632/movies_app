@@ -1,5 +1,5 @@
-const URL = "http://localhost:8000"; 
-// const URL = "https://moviesapp-production-8697.up.railway.app"; 
+// const URL = "http://localhost:8000"; 
+const URL = "https://movies-app-backend-gd78.onrender.com"; 
 
 export const fetchData = async <T>(endpoint: string, timeout = 3000): Promise<T> => {
     const controller = new AbortController();
