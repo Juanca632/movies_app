@@ -213,6 +213,108 @@ class API_movies(Thread):
         url = f"{self.API_URL}/person/popular?api_key={self.API_KEY}&language=en-US"
         return self.get_movies(url)
 
+    def get_details_people(self, person_id):
+        """Fetch detailed information of a specific movie."""
+        url = f"{self.API_URL}/person/{person_id}?api_key={self.API_KEY}&language=en-US"
+
+        try:
+            headers = {"accept": "application/json"}
+            response = self.session.get(url, headers=headers, timeout=3)
+            response.raise_for_status()  # Raise an error if the request was not successful
+
+            data = response.json()  # Parse JSON response
+            return data  # Return movie details
+
+        except requests.exceptions.RequestException as e:
+            custom_print(f"Error fetching details {person_id}: {e}", level=Printing_Types.debug)
+            self.connection_state = API.RECONNECTING
+            return {"error": "Could not fetch details"}
+
+    def transform_credits_people(self, data):
+        movies = data.get('cast', [])
+
+        transformed_movies = []
+        
+        for movie in movies:
+            transformed_movie = {
+                "adult": movie.get("adult", False),
+                "backdrop_path": movie.get("backdrop_path", ""),
+                "genre_ids": movie.get("genre_ids", []),
+                "id": movie.get("id"),
+                "original_language": movie.get("original_language", ""),
+                "original_title": movie.get("original_title", ""),
+                "overview": movie.get("overview", ""),
+                "popularity": movie.get("popularity", 0),
+                "poster_path": movie.get("poster_path", ""),
+                "release_date": movie.get("release_date", ""),
+                "title": movie.get("title", ""),
+                "video": movie.get("video", False),
+                "vote_average": movie.get("vote_average", 0),
+                "vote_count": movie.get("vote_count", 0)
+            }
+            transformed_movies.append(transformed_movie)
+        
+        return transformed_movies
+         
+    def get_movie_credits_people(self, person_id):
+        """Fetch detailed information of a specific movie."""
+        url = f"{self.API_URL}/person/{person_id}/movie_credits?api_key={self.API_KEY}&language=en-US"
+
+        try:
+            headers = {"accept": "application/json"}
+            response = self.session.get(url, headers=headers, timeout=3)
+            response.raise_for_status()  # Raise an error if the request was not successful
+
+            data = response.json()  # Parse JSON response
+            return self.transform_credits_people(data)  # Return movie details
+
+        except requests.exceptions.RequestException as e:
+            custom_print(f"Error fetching details {person_id}: {e}", level=Printing_Types.debug)
+            self.connection_state = API.RECONNECTING
+            return {"error": "Could not fetch details"}
+
+    def get_tv_credits_people(self, person_id):
+        """Fetch detailed information of a specific movie."""
+        url = f"{self.API_URL}/person/{person_id}/tv_credits?api_key={self.API_KEY}&language=en-US"
+
+        try:
+            headers = {"accept": "application/json"}
+            response = self.session.get(url, headers=headers, timeout=3)
+            response.raise_for_status()  # Raise an error if the request was not successful
+
+            data = response.json()  # Parse JSON response
+            # Extract and format the relevant TV shows
+            formatted_data = []
+
+            for credit in data.get("cast", []):
+                formatted_show = {
+                    "adult": credit["adult"],
+                    "backdrop_path": credit["backdrop_path"],
+                    "genre_ids": credit["genre_ids"],
+                    "id": credit["id"],
+                    "origin_country": credit["origin_country"],
+                    "original_language": credit["original_language"],
+                    "original_name": credit["original_name"],
+                    "overview": credit["overview"],
+                    "popularity": credit["popularity"],
+                    "poster_path": credit["poster_path"],
+                    "first_air_date": credit["first_air_date"],
+                    "name": credit["name"],
+                    "vote_average": credit["vote_average"],
+                    "vote_count": credit["vote_count"]
+                }
+                formatted_data.append(formatted_show)
+
+            return formatted_data  # Return the formatted data
+
+        except requests.exceptions.RequestException as e:
+            custom_print(f"Error fetching details {person_id}: {e}", level=Printing_Types.debug)
+            self.connection_state = API.RECONNECTING
+            return {"error": "Could not fetch details"}
+
+
+
+
     ####################################### TV SHOWS ############################################
 
     def get_popular_tv(self):

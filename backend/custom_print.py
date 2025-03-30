@@ -10,7 +10,7 @@ class Printing_Types(Enum):
     debug       = 3
 ### CONSTANTS TO CONTROL THE DEBUGGING TYPE OF THE APPLICATION (PRINTING)
 
-PRINT_LEVEL = Printing_Types.debug # Change value here to redefine level of printing
+PRINT_LEVEL = Printing_Types.none # Change value here to redefine level of printing
 
 def custom_print(*args, level:Printing_Types =Printing_Types.debug,sep=" ", end="\n"):
     """

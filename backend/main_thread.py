@@ -74,6 +74,15 @@ class MainThread (Thread):
     def details_tv(self, tv_id):
         return self.API_movies.get_details_tv(tv_id)
 
+    def details_people(self, person_id):
+        return self.API_movies.get_details_people(person_id)
+
+    def movie_credits_people(self, person_id):
+        return self.API_movies.get_movie_credits_people(person_id)
+
+    def tv_credits_people(self, person_id):
+        return self.API_movies.get_tv_credits_people(person_id)
+
     def stop_thread(self):
         """Stop the thread"""
         self._stop_event.set()

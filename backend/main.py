@@ -185,6 +185,33 @@ async def get_details_movie(movie_id: str):
 async def get_details_tv(tv_id: str):
     return main_thread.details_tv(tv_id)
 
+@app.get(
+    path="/person/{person_id}/",
+    status_code=status.HTTP_200_OK,
+    summary="Details of a star",
+    tags=["Stars"]
+) 
+async def get_details_tv(person_id: str):
+    return main_thread.details_people(person_id)
+
+@app.get(
+    path="/person/{person_id}/movies",
+    status_code=status.HTTP_200_OK,
+    summary="",
+    tags=["Stars"]
+) 
+async def get_movie_credits_people(person_id: str):
+    return main_thread.movie_credits_people(person_id)
+
+@app.get(
+    path="/person/{person_id}/tv-shows",
+    status_code=status.HTTP_200_OK,
+    summary="",
+    tags=["Stars"]
+) 
+async def get_tv_credits_people(person_id: str):
+    return main_thread.tv_credits_people(person_id)
+
 
 
 # @app.get(

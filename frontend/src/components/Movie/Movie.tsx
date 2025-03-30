@@ -71,6 +71,7 @@ function Movie({ title, imageUrl, person, id, goToPage }: MovieProps) {
             initial={{ opacity: 0 }}
             whileHover={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
+            onClick={() => goToPage(id,title)}
           >
             <div className="h-full w-full flex items-end justify-center p-2 pb-5">
               <p className="text-white text-xl text-center w-3/5 break-words ">{title}</p>

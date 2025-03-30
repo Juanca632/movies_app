@@ -34,12 +34,11 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
       try {
         const data = await fetchData<MovieType[]>(endpoint);
         if (data) {
-
           setMovies(data);
           setError(null); // Clear any previous error if data is fetched successfully
         }
       } catch (error) {
-        console.error("Error fetching movies:", error);
+        // console.error("Error fetching movies:", error);
         setError("Error fetching data. Retrying..."); // Set an error message
       }
     };
@@ -77,6 +76,9 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
   const goToMoviePage = (id:number, title:string) => {
     navigate(`/movie/${id}/${title}`);
   };
+  const goToPersonPage = (id:number, name:string) => {
+    navigate(`/person/${id}/${name}`);
+  };
 
   return (
     <div className="">
@@ -100,7 +102,7 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
                     imageUrl={`https://image.tmdb.org/t/p/w500${movie.profile_path}`}
                     person={true}
                     id={movie.id}
-                    goToPage={goToMoviePage}
+                    goToPage={goToPersonPage}
                   />
                 </SwiperSlide>
               ))
@@ -112,7 +114,7 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
                   imageUrl={""} // Empty image for "no data"
                   person={true} // You can toggle between true or false depending on person view
                   id={0}
-                  goToPage={goToMoviePage}
+                  goToPage={goToPersonPage}
                 />
               </SwiperSlide>
             ))
@@ -128,8 +130,8 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
           className="swiper w-full flex items-center justify-center xl:!px-10 !px-5"
         >
           {movies.length > 0 ? (
-            movies.map((movie) => (
-              <SwiperSlide key={movie.id} className="sm:!w-[200px] sm:!h-[300px] !w-[133px] !h-[200px]">
+            movies.map((movie,index) => (
+              <SwiperSlide key={index} className="sm:!w-[200px] sm:!h-[300px] !w-[133px] !h-[200px]">
                 <Movie
                   title={movie.title ? movie.title : movie.name}
                   imageUrl={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}

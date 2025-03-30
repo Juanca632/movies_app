@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { fetchData } from "../../hooks/API/API";
 import { useParams } from "react-router-dom";
-import MovieList from "../../components/MovieList/MovieList";
 import { motion } from "framer-motion";
 import loading_img from "../../assets/loading_banner_img.jpg"
 import star from "../../assets/star.png"
+import TvShowList from "../../components/TvShowList/TvShowList";
 
 interface MovieImage {
   aspect_ratio: number;
@@ -129,19 +129,19 @@ function TvShowPage() {
   return (
     <div className="min-h-screen w-full bg-zinc-900 text-4xl text-white md:py-10 py-0">
        <div className="grid xl:grid-cols-[auto_1fr] xl:grid-rows-[auto] xl:gap-20 gap-5 grid-cols-[auto] grid-rows-[auto-auto]  w-full md:py-5 pb-5 md:px-10 px-0 relative">
-          <div className="relative flex justify-center">
+          <div className="relative flex justify-center items-center">
             {imagePoster != null ? (
                 <img
                   src={imagePoster}
                   alt={`Backdrop`}
-                  className="object-cover h-full xl:h-100"
+                  className="object-cover h-full xl:h-150"
                 />            
             ):(     
               <>
               <img
                   src={loading_img}
                   alt={`Loading image`}
-                  className="object-cover h-full xl:h-100"
+                  className="object-cover h-full xl:h-150"
                 />
                 <div className="skeleton-image absolute inset-0  z-10"></div>
               </>
@@ -216,8 +216,8 @@ function TvShowPage() {
       </div>
 
       <div className="flex flex-col gap-10 py-10">
-        <MovieList endpoint={`tv/${id}/credits`} title={"Casting"} person={true}/>
-        <MovieList endpoint={`tv/${id}/recommendations`} title={"Recommended TV shows"} person={false}/>
+        <TvShowList endpoint={`tv/${id}/credits`} title={"Casting"} person={true}/>
+        <TvShowList endpoint={`tv/${id}/recommendations`} title={"Recommended TV shows"} person={false}/>
       </div>
 
 
