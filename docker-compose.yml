@@ -4,23 +4,25 @@ services:
   backend:
     build: ./backend  # Path to the backend Dockerfile
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Exposes backend port
     volumes:
       - ./backend:/app  # Mounts the code for development (optional)
     environment:
-      - ENVIRONMENT=production
+      - ENVIRONMENT=production  # Sets the environment variable
     networks:
-      - mynetwork
+      - mynetwork  # Network for inter-container communication
+    restart: always  # Ensures the container restarts automatically after reboot
 
   frontend:
     build: ./frontend  # Path to the frontend Dockerfile (Nginx)
     ports:
-      - "80:80"  # Serves on port 80
+      - "80:80"  # Exposes frontend port
     depends_on:
-      - backend
+      - backend  # Ensures backend starts before frontend
     networks:
-      - mynetwork
+      - mynetwork  # Network for inter-container communication
+    restart: always  # Ensures the container restarts automatically after reboot
 
 networks:
   mynetwork:
-    driver: bridge
+    driver: bridge  # Defines the network type for containers

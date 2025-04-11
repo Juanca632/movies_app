@@ -1,4 +1,4 @@
-const URL = "/api"; 
+const URL = "http://82.25.115.237:8000"; 
 // const URL = "https://movies-app-backend-gd78.onrender.com"; 
 
 export const fetchData = async <T>(endpoint: string, timeout = 10000): Promise<T> => {

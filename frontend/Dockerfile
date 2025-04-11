@@ -1,21 +1,14 @@
-# Build Stage: Install dependencies and generate the `dist/` folder
-FROM node:20 AS build
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm install
-
-COPY . .
-RUN npm run build
-
-# Serve Stage: Use Nginx to serve the static files
+# Stage 1: Use Nginx to serve the static files
 FROM nginx:alpine
 
-# Copiar la configuración de Nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy the custom Nginx configuration (optional, if you have custom settings)
+# COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copiar la app frontend
-COPY --from=build /app/dist /usr/share/nginx/html
+# Copy the pre-built static files (dist folder) from the local directory or GitHub
+COPY dist/ /usr/share/nginx/html
 
+# Expose port 80 (default HTTP port)
 EXPOSE 80
+
+# Start Nginx in the foreground (daemon off)
 CMD ["nginx", "-g", "daemon off;"]
