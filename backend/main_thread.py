@@ -1,6 +1,8 @@
 from threading import Thread, Event
 from API_movies import API_movies
 
+TIMER = 1
+
 class MainThread (Thread):
 
     def __init__(self, *args, **kwargs) -> None:
@@ -15,9 +17,10 @@ class MainThread (Thread):
                 if (self.API_movies is None):
                     self.startApp()
                     print("Starting to run my app")
-
+                self._event_timer.wait(TIMER)
             except Exception as e:
                 print(f"Exception message: {e}")
+        return super().run()
 
     def startApp(self):
         self.API_movies = API_movies()

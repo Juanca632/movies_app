@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchData } from "../../hooks/API/API";
 import { useParams } from "react-router-dom";
 import MovieList from "../../components/MovieList/MovieList";
-import loading_img from "../../assets/loading_banner_img.jpg"
+// import loading_img from "../../assets/loading_banner_img.jpg"
 import TvShowList from "../../components/TvShowList/TvShowList";
 
 
@@ -66,11 +66,11 @@ function PersonPage() {
                 />            
             ):(     
               <>
-              <img
+              {/* <img
                   src={loading_img}
                   alt={`Loading image`}
-                  className="object-cover h-full xl:h-150"
-                />
+                  className="object-cover h-full xl:h-150 opacity-0"
+                /> */}
                 <div className="skeleton-image absolute inset-0  z-10"></div>
               </>
             )

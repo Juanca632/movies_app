@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchData } from "../../hooks/API/API";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import loading_img from "../../assets/loading_banner_img.jpg"
+// import loading_img from "../../assets/loading_banner_img.jpg"
 import star from "../../assets/star.png"
 import TvShowList from "../../components/TvShowList/TvShowList";
 
@@ -138,11 +138,11 @@ function TvShowPage() {
                 />            
             ):(     
               <>
-              <img
+              {/* <img
                   src={loading_img}
                   alt={`Loading image`}
-                  className="object-cover h-full xl:h-150"
-                />
+                  className="object-cover h-full xl:h-150 opacity-0"
+                /> */}
                 <div className="skeleton-image absolute inset-0  z-10"></div>
               </>
             )

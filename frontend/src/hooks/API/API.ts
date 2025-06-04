@@ -1,5 +1,15 @@
-const URL = "http://82.25.115.237:8000"; 
+// const URL = "http://82.25.115.237:8000"; 
+// const URL = "http://localhost:8000"; 
 // const URL = "https://movies-app-backend-gd78.onrender.com"; 
+
+const PROTOCOL = window.location.protocol; 
+const API_HOST = window.location.hostname;
+
+const isLocal = API_HOST === 'localhost' || API_HOST === '127.0.0.1';
+
+const URL = isLocal 
+  ? `${PROTOCOL}//${API_HOST}:8000`  
+  : `/api`;  
 
 export const fetchData = async <T>(endpoint: string, timeout = 10000): Promise<T> => {
     const controller = new AbortController();

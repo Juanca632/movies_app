@@ -1,14 +1,12 @@
-# Stage 1: Use Nginx to serve the static files
-FROM nginx:alpine
+# FROM node:23-alpine as build
+# WORKDIR /app
+# COPY package*.json ./
+# RUN npm install
+# COPY . .
+# RUN npm run build
 
-# Copy the custom Nginx configuration (optional, if you have custom settings)
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy the pre-built static files (dist folder) from the local directory or GitHub
-COPY dist/ /usr/share/nginx/html
-
-# Expose port 80 (default HTTP port)
-EXPOSE 80
-
-# Start Nginx in the foreground (daemon off)
-CMD ["nginx", "-g", "daemon off;"]
+FROM node:23-alpine
+RUN npm install -g serve
+WORKDIR /app
+COPY --from=build /app/dist ./build
+CMD ["serve", "-s", "build", "-l", "80"]

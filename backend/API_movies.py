@@ -21,8 +21,8 @@ class API_movies(Thread):
     API_KEY = "639da1a2e37a179ed3bf73f6a3ec7c8b"
 
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self._stop_event = Event()
         self._event_timer = Event()
         self.event = Event()
@@ -51,15 +51,10 @@ class API_movies(Thread):
         while not self._stop_event.is_set():
             if self.connection_state != API.CONNECTED:
                 self.on_connect()
-            if self.connection_state == API.CONNECTED:
-                try: 
-                    pass
-                    # custom_print("Successfully connected to API theMoviedb",level=Printing_Types.debug)
-                    # self._event_timer.wait(5)  
-                    # self._event_timer.clear()  
-                except:
-                    custom_print("error",level=Printing_Types.debug)
-                    self.connection_state = API.RECONNECTING
+
+            self.event.wait(3)  
+
+        return super().run()
 
     def get_movies(self, url):
         
