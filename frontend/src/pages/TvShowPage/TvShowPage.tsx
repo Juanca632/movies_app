@@ -82,7 +82,7 @@ function TvShowPage() {
           setError(null);
         }
 
-        const DetailsTvShow = await fetchData<TvShowsDetails>(`tv/${id}/`);
+        const DetailsTvShow = await fetchData<TvShowsDetails>(`tv/${id}`);
         if (DetailsTvShow) {
           setTvShowDetails(DetailsTvShow)
           setError(null);
