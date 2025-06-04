@@ -16,7 +16,7 @@ services:
   frontend:
     build: ./frontend  # Path to the frontend Dockerfile (Nginx)
     ports:
-      - "80:80"  # Exposes frontend port
+      - "3000:3000"  # Exposes frontend port
     depends_on:
       - backend  # Ensures backend starts before frontend
     networks:
