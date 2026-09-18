@@ -41,7 +41,9 @@ app.add_middleware(
 from routers.movies import router as movies_router
 from routers.series import router as series_router
 from routers.stars import router as stars_router
+from routers.test import router as test_router
 
 app.include_router(movies_router)
 app.include_router(series_router)
 app.include_router(stars_router)
+app.include_router(test_router)
