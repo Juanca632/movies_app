@@ -41,9 +41,7 @@ class API_movies(Thread):
             response = self.session.get(url, headers=headers, timeout=3)
             response.raise_for_status()  # Raise an error if the response is not 200
             self.connection_state = API.CONNECTED
-            data = response.json()
-            # data = data["results"][:1]
-            custom_print("Connection successful: ",level=Printing_Types.debug)  # Show the first movie
+            custom_print("Connection successful: ",level=Printing_Types.debug)
         except requests.exceptions.RequestException as e:
             custom_print(f"Error connecting to the API: {e}",level=Printing_Types.debug)
             custom_print("Retrying to connect again in 2 seconds:",level=Printing_Types.debug)

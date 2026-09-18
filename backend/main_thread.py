@@ -20,7 +20,7 @@ class MainThread (Thread):
                     self.startApp()
                     print("Starting to run my app")
                 self._event_timer.wait(TIMER)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - background thread must survive any error
                 print(f"Exception message: {e}")
         return super().run()
 
