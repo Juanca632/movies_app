@@ -1,7 +1,8 @@
 # from variables import PRINT_LEVEL
-from enum import Enum
-from datetime import datetime
 import shutil
+from datetime import datetime, timezone
+from enum import Enum
+
 
 class Printing_Types(Enum):
     none        = 0 
@@ -30,7 +31,7 @@ def custom_print(*args, level:Printing_Types =Printing_Types.debug,sep=" ", end=
     print(message, end=end)
 
 def get_current_timestamp():
-    return datetime.now().timestamp()
+    return datetime.now(timezone.utc).timestamp()
 
 def modify_config(key, new_value,file_path = '.env'):
     """Method to modify .env need to verify mqtt id installation is correct
@@ -40,7 +41,7 @@ def modify_config(key, new_value,file_path = '.env'):
     # Create a backup before modifying
     try:
         shutil.copy(file_path, backup_path)
-    except IOError as e:
+    except OSError as e:
         print(f"Error creating backup: {e}")
         return modified
 
@@ -61,13 +62,13 @@ def modify_config(key, new_value,file_path = '.env'):
         else:
             print(f"Key '{key}' not found, no changes made.")
         
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - last-resort guard to always restore the backup
         # Restore backup if an error occurs
         shutil.copy(backup_path, file_path)
         print(f"Error modifying file: {e}")
         print("Backup restored.")
-    finally:
-        return modified
+
+    return modified
 
 if '__main__'==__name__:
     value = 15

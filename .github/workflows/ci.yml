@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  audit-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Audit Frontend
+        run: |
+          npm install --prefix frontend
+          npm audit --audit-level=high --prefix frontend
+
+      - name: Audit Backend
+        working-directory: ./backend
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt
+
+      - name: Lint Backend
+        working-directory: ./backend
+        run: |
+          pip install ruff==0.16.0
+          ruff check .
+
+      # - name: Test Backend
+      #   working-directory: ./backend
+      #   run: |
+      #     pip install -r requirements.txt
+      #     pytest tests/ -q --tb=short

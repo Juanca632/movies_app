@@ -1,7 +1,8 @@
-from threading import Thread, Event
+from threading import Event, Thread
+
 from API_movies import API_movies
 
-TIMER = 1
+TIMER = 5
 
 class MainThread (Thread):
 
@@ -15,10 +16,11 @@ class MainThread (Thread):
         while not self._stop_event.is_set():
             try:
                 if (self.API_movies is None):
+                    # pass
                     self.startApp()
                     print("Starting to run my app")
                 self._event_timer.wait(TIMER)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - background thread must survive any error
                 print(f"Exception message: {e}")
         return super().run()
 
