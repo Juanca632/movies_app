@@ -2,6 +2,7 @@ from threading import Thread,Event
 from custom_print import custom_print, Printing_Types
 from enum import Enum
 import requests
+from config import THE_MOVIE_DB_API_KEY, THE_MOVIE_DB_API_URL
 
 #---------------------------------------- VARIABLES --------------------------------
 
@@ -17,8 +18,8 @@ class API(Enum):
 
 class API_movies(Thread):
 
-    API_URL = 'https://api.themoviedb.org/3'
-    API_KEY = "639da1a2e37a179ed3bf73f6a3ec7c8b"
+    API_URL = THE_MOVIE_DB_API_URL
+    API_KEY = THE_MOVIE_DB_API_KEY
 
 
     def __init__(self, *args, **kwargs) -> None:
