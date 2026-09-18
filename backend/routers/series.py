@@ -8,7 +8,7 @@ router = APIRouter()
     summary="Popular TV shows",
     tags=["TV shows"]
 ) 
-async def get_upcoming_movies(
+async def get_popular_tv(
     request: Request,
 ):
     App = request.app.state.App
@@ -20,7 +20,7 @@ async def get_upcoming_movies(
     summary="Top rated TV shows",
     tags=["TV shows"]
 ) 
-async def get_upcoming_movies(
+async def get_top_rated_tv(
     request: Request,
 ):
     App = request.app.state.App
