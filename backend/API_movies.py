@@ -1,8 +1,10 @@
-from threading import Thread,Event
-from custom_print import custom_print, Printing_Types
 from enum import Enum
+from threading import Event, Thread
+
 import requests
+
 from config import THE_MOVIE_DB_API_KEY, THE_MOVIE_DB_API_URL
+from custom_print import Printing_Types, custom_print
 
 #---------------------------------------- VARIABLES --------------------------------
 
@@ -41,7 +43,7 @@ class API_movies(Thread):
             self.connection_state = API.CONNECTED
             data = response.json()
             # data = data["results"][:1]
-            custom_print(f"Connection successful: ",level=Printing_Types.debug)  # Show the first movie
+            custom_print("Connection successful: ",level=Printing_Types.debug)  # Show the first movie
         except requests.exceptions.RequestException as e:
             custom_print(f"Error connecting to the API: {e}",level=Printing_Types.debug)
             custom_print("Retrying to connect again in 2 seconds:",level=Printing_Types.debug)

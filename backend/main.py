@@ -1,7 +1,8 @@
-from fastapi import FastAPI, status 
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from main_thread import MainThread
 
 App = MainThread()

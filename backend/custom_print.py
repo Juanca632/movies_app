@@ -1,7 +1,8 @@
 # from variables import PRINT_LEVEL
-from enum import Enum
-from datetime import datetime
 import shutil
+from datetime import datetime
+from enum import Enum
+
 
 class Printing_Types(Enum):
     none        = 0 
@@ -40,7 +41,7 @@ def modify_config(key, new_value,file_path = '.env'):
     # Create a backup before modifying
     try:
         shutil.copy(file_path, backup_path)
-    except IOError as e:
+    except OSError as e:
         print(f"Error creating backup: {e}")
         return modified
 

@@ -1,4 +1,5 @@
-from threading import Thread, Event
+from threading import Event, Thread
+
 from API_movies import API_movies
 
 TIMER = 5
