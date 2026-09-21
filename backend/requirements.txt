@@ -3,6 +3,3 @@ uvicorn[standard]==0.53.0
 httpx==0.28.1
 pydantic-settings==2.15.0
 cachetools==7.2.0
-# legacy (removed with the old backend)
-requests==2.34.2
-python-dotenv==1.2.3

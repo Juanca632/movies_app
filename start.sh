@@ -8,7 +8,7 @@ BACKEND_DIR="./backend"
 echo "Starting backend..."
 cd "$BACKEND_DIR" || exit 1  # Navigate to the backend directory; exit if it fails
 source myvenv/bin/activate  # Activate the Python virtual environment
-uvicorn main:app --reload &  # Run the FastAPI backend in development mode
+uvicorn app.main:app --reload &  # Run the FastAPI backend in development mode
 
 # Start the frontend
 echo "Starting frontend..."
