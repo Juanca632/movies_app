@@ -1,0 +1,11 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+# legacy files are removed in step 5 of the refactor
+extend-exclude = ["myvenv", "API_movies.py", "main_thread.py", "custom_print.py", "config.py", "main.py", "routers"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
