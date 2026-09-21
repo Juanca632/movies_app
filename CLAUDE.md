@@ -41,12 +41,13 @@ Proyecto de portafolio: explorador de películas/series/actores sobre la API de 
 - El frontend no tiene tests, y `serve` sigue en sus dependencias sin usarse.
 - CD solo crea releases; no hay despliegue automático.
 - No hay base de datos todavía; el único estado es la caché en memoria.
-- Los Dockerfiles no se han probado en local (sin Docker en el entorno de desarrollo WSL); los valida el job `docker` del CI.
+- Sin Docker en el WSL de desarrollo: los Dockerfiles solo se validan en el job `docker` del CI (pasó en el PR de la Fase 0).
+- Verificar que el reverse proxy de producción reenvíe `/api/v1/...` al backend (o fijar `VITE_API_URL` al construir).
 
 ## Roadmap
 
-- Fase 0 (hecha en `refactor/backend-v1`): backend reescrito con httpx, API unificada, búsqueda, Docker y CI.
-- Fase 1: refactor del frontend + tests.
+- Fase 0 (HECHA, mergeada a `main`): backend reescrito con httpx, API unificada, búsqueda, Docker y CI.
+- Fase 1 (SIGUIENTE): refactor del frontend + tests.
 - Fase 2: Postgres, login con Google (cookie httpOnly), favoritos y "Mi lista".
 - Fase 3: recomendaciones con IA a partir de favoritos.
 - Fase 4: despliegue real + CD, README con capturas.
