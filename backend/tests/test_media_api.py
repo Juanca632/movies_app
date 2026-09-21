@@ -1,0 +1,174 @@
+import httpx
+import respx
+
+BASE = "https://tmdb.test/3"
+
+MOVIE_ITEM = {
+    "id": 1,
+    "title": "Movie One",
+    "overview": "o",
+    "poster_path": "/p.jpg",
+    "backdrop_path": "/b.jpg",
+    "release_date": "2024-01-01",
+    "vote_average": 7.5,
+    "vote_count": 10,
+    "genre_ids": [28],
+}
+TV_ITEM = {"id": 2, "name": "Show Two", "first_air_date": "2023-05-05", "vote_average": 8}
+
+
+@respx.mock
+async def test_list_movies_normalises_fields(api):
+    respx.get(f"{BASE}/movie/popular").mock(
+        return_value=httpx.Response(
+            200, json={"page": 1, "total_pages": 3, "total_results": 60, "results": [MOVIE_ITEM]}
+        )
+    )
+
+    response = await api.get("/api/v1/movie")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total_pages"] == 3
+    assert body["results"][0]["title"] == "Movie One"
+    assert body["results"][0]["media_type"] == "movie"
+
+
+@respx.mock
+async def test_list_tv_maps_name_and_first_air_date(api):
+    respx.get(f"{BASE}/tv/top_rated").mock(
+        return_value=httpx.Response(200, json={"page": 1, "results": [TV_ITEM]})
+    )
+
+    response = await api.get("/api/v1/tv", params={"category": "top_rated"})
+
+    item = response.json()["results"][0]
+    assert item["title"] == "Show Two"
+    assert item["release_date"] == "2023-05-05"
+    assert item["media_type"] == "tv"
+
+
+async def test_category_not_valid_for_media_type_is_422(api):
+    response = await api.get("/api/v1/tv", params={"category": "upcoming"})
+
+    assert response.status_code == 422
+
+
+async def test_unknown_media_type_is_422(api):
+    assert (await api.get("/api/v1/book")).status_code == 422
+
+
+@respx.mock
+async def test_upcoming_excludes_movies_now_playing(api):
+    respx.get(f"{BASE}/movie/upcoming").mock(
+        return_value=httpx.Response(
+            200, json={"results": [MOVIE_ITEM, {**MOVIE_ITEM, "id": 9, "title": "Soon"}]}
+        )
+    )
+    respx.get(f"{BASE}/movie/now_playing").mock(
+        return_value=httpx.Response(200, json={"results": [MOVIE_ITEM]})
+    )
+
+    response = await api.get("/api/v1/movie", params={"category": "upcoming"})
+
+    assert [m["id"] for m in response.json()["results"]] == [9]
+
+
+@respx.mock
+async def test_movie_detail_aggregates_everything_in_one_tmdb_call(api):
+    route = respx.get(f"{BASE}/movie/1").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                **MOVIE_ITEM,
+                "tagline": "tag",
+                "runtime": 120,
+                "genres": [{"id": 28, "name": "Action"}],
+                "credits": {"cast": [{"id": 5, "name": "Actor", "character": "Hero"}]},
+                "images": {
+                    "backdrops": [{"file_path": "/x.jpg", "width": 10, "height": 5}],
+                    "posters": [],
+                },
+                "watch/providers": {
+                    "results": {
+                        "US": {
+                            "link": "http://w",
+                            "flatrate": [{"provider_id": 8, "provider_name": "Netflix"}],
+                        }
+                    }
+                },
+                "recommendations": {"results": [{**MOVIE_ITEM, "id": 3, "title": "Rec"}]},
+            },
+        )
+    )
+
+    response = await api.get("/api/v1/movie/1")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["runtime"] == 120
+    assert body["genres"] == [{"id": 28, "name": "Action"}]
+    assert body["cast"][0]["character"] == "Hero"
+    assert body["images"]["backdrops"][0]["file_path"] == "/x.jpg"
+    assert body["providers"]["flatrate"][0]["provider_name"] == "Netflix"
+    assert body["recommendations"][0]["title"] == "Rec"
+    assert route.call_count == 1
+    assert "credits" in route.calls.last.request.url.params["append_to_response"]
+
+
+@respx.mock
+async def test_tv_detail_uses_aggregate_credits_and_episode_runtime(api):
+    route = respx.get(f"{BASE}/tv/2").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                **TV_ITEM,
+                "episode_run_time": [45],
+                "number_of_seasons": 3,
+                "aggregate_credits": {
+                    "cast": [{"id": 7, "name": "Star", "roles": [{"character": "Lead"}]}]
+                },
+                "watch/providers": {"results": {}},
+            },
+        )
+    )
+
+    body = (await api.get("/api/v1/tv/2")).json()
+
+    assert body["runtime"] == 45
+    assert body["number_of_seasons"] == 3
+    assert body["cast"][0]["character"] == "Lead"
+    assert body["providers"] is None
+    assert "aggregate_credits" in route.calls.last.request.url.params["append_to_response"]
+
+
+@respx.mock
+async def test_detail_uses_requested_region(api):
+    respx.get(f"{BASE}/movie/1").mock(
+        return_value=httpx.Response(
+            200,
+            json={**MOVIE_ITEM, "watch/providers": {"results": {"FR": {"link": "fr"}}}},
+        )
+    )
+
+    body = (await api.get("/api/v1/movie/1", params={"region": "FR"})).json()
+
+    assert body["providers"]["region"] == "FR"
+
+
+@respx.mock
+async def test_tmdb_404_becomes_404(api):
+    respx.get(f"{BASE}/movie/999").mock(return_value=httpx.Response(404))
+
+    assert (await api.get("/api/v1/movie/999")).status_code == 404
+
+
+@respx.mock
+async def test_tmdb_down_becomes_502(api):
+    respx.get(f"{BASE}/movie/1").mock(return_value=httpx.Response(500))
+
+    assert (await api.get("/api/v1/movie/1")).status_code == 502
+
+
+async def test_health(api):
+    assert (await api.get("/health")).json() == {"status": "ok"}

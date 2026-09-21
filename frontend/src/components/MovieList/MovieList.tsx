@@ -1,43 +1,48 @@
 import { useEffect, useState } from "react";
 import "./MovieList.scss";
 import Movie from "../Movie/Movie";
-import { fetchData } from "../../hooks/API/API";
+import { fetchList } from "../../hooks/API/API";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation, FreeMode } from 'swiper/modules';
 import { useNavigate } from "react-router-dom"; 
 import "swiper/swiper-bundle.css";
 
 interface MovieListProps {
-  endpoint: string;
+  endpoint?: string; // fetched by the list itself
+  items?: MovieType[]; // or already available in the parent page
   title: string;
   person: boolean;
 }
 
+// Loose on purpose: the list renders movies, TV shows, people and cast members.
 interface MovieType {
   id: number;
-  title: string;
-  poster_path: string;
-  name: string;
-  profile_path: string;
-  known_for_department: string;
+  title?: string;
+  poster_path?: string | null;
+  name?: string;
+  profile_path?: string | null;
+  known_for_department?: string;
 }
 
-function MovieList({ endpoint, title, person }: MovieListProps) {
-  const [movies, setMovies] = useState<MovieType[]>([]);
+function MovieList({ endpoint, items, title, person }: MovieListProps) {
+  const [fetchedMovies, setMovies] = useState<MovieType[]>([]);
+  const movies = items ?? fetchedMovies;
   const [error, setError] = useState<string | null>(null); // State to manage error
   const [isMobile, setIsMobile] = useState(false);
   
 
   // useEffect will handle fetching the movies and retrying if necessary
   useEffect(() => {
+    if (!endpoint) return;
+
     const fetchMovies = async () => {
       try {
-        const data = await fetchData<MovieType[]>(endpoint);
+        const data = await fetchList<MovieType>(endpoint);
         if (data) {
           setMovies(data);
           setError(null); // Clear any previous error if data is fetched successfully
         }
-      } catch (error) {
+      } catch {
         // console.error("Error fetching movies:", error);
         setError("Error fetching data. Retrying..."); // Set an error message
       }
@@ -94,11 +99,11 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
         >
           {movies.length > 0 ? (
             movies
-              .filter((movie) => movie.known_for_department === "Acting") // Filter out non-acting entries
+              .filter((movie) => !movie.known_for_department || movie.known_for_department === "Acting") // Filter out non-acting entries
               .map((movie) => (
                 <SwiperSlide key={movie.id} className="sm:!w-[200px] sm:!h-[200px] !w-[150px] !h-[150px] ">
                   <Movie
-                    title={movie.name}
+                    title={movie.name ?? ""}
                     imageUrl={`https://image.tmdb.org/t/p/w500${movie.profile_path}`}
                     person={true}
                     id={movie.id}
@@ -133,7 +138,7 @@ function MovieList({ endpoint, title, person }: MovieListProps) {
             movies.map((movie,index) => (
               <SwiperSlide key={index} className="sm:!w-[200px] sm:!h-[300px] !w-[133px] !h-[200px]">
                 <Movie
-                  title={movie.title ? movie.title : movie.name}
+                  title={movie.title ?? ""}
                   imageUrl={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
                   person={false}
                   id={movie.id}

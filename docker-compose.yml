@@ -1,28 +1,24 @@
-version: "3.8"
- 
 services:
   backend:
-    build: ./backend  # Path to the backend Dockerfile
-    ports:
-      - "8000:8000"  # Exposes backend port
-    volumes:
-      - ./backend:/app  # Mounts the code for development (optional)
+    build: ./backend
+    env_file:
+      - path: ./backend/.env
+        required: false
     environment:
-      - ENVIRONMENT=production  # Sets the environment variable
+      CORS_ORIGINS: '["http://localhost:3000"]'
+    restart: unless-stopped
     networks:
-      - mynetwork  # Network for inter-container communication
-    restart: always  # Ensures the container restarts automatically after reboot
+      - app
 
   frontend:
-    build: ./frontend  # Path to the frontend Dockerfile (Nginx)
+    build: ./frontend
     ports:
-      - "3000:3000"  # Exposes frontend port
+      - "3000:80"
     depends_on:
-      - backend  # Ensures backend starts before frontend
+      - backend
+    restart: unless-stopped
     networks:
-      - mynetwork  # Network for inter-container communication
-    restart: always  # Ensures the container restarts automatically after reboot
+      - app
 
 networks:
-  mynetwork:
-    driver: bridge  # Defines the network type for containers
+  app:
