@@ -4,7 +4,7 @@
 
 ## 🌟 Features
 
-- 🔍 Discover the latest movies and TV shows  
+- 🔍 Discover the latest movies and TV shows, and search across movies, TV and people  
 - 🧑‍🎤 Explore trending actors and their filmography  
 - 📄 Detailed pages with synopsis, genres, cast, biographies, and more  
 - 🎯 Recommendations and similar content  
@@ -13,6 +13,7 @@
 ## 🛠️ Tech Stack
 
 - **Frontend:** React, TypeScript, Vite  
+- **Backend:** FastAPI, httpx (async TMDB client with TTL cache)  
 - **Styling:** Sass  
 - **API:** [TheMovieDB API](https://www.themoviedb.org/documentation/api)  
 - **Deployment:** Docker + Nginx   

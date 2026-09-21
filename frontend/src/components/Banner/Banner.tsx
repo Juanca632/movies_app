@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { fetchData } from "../../hooks/API/API";
+import { fetchList } from "../../hooks/API/API";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import "./Banner.scss";
@@ -24,7 +24,7 @@ function Banner() {
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const data = await fetchData<MovieType[]>("movie/popular");
+        const data = await fetchList<MovieType>("movie");
         if (data) {
           setMovies(data);
           setError(null); // Clear any previous errors if fetch is successful

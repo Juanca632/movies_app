@@ -7,13 +7,22 @@ import { motion } from "framer-motion";
 import star from "../../assets/star.png"
 
 interface MovieImage {
-  aspect_ratio: number;
   file_path: string;
   height: number;
   width: number;
   vote_average: number;
-  vote_count: number;
-  iso_639_1: string
+}
+
+interface CastMember {
+  id: number;
+  name: string;
+  profile_path: string | null;
+}
+
+interface MediaItem {
+  id: number;
+  title: string;
+  poster_path: string | null;
 }
 
 interface DataType {
@@ -22,52 +31,25 @@ interface DataType {
 }
 
 interface FlatrateType{
-  logo_path: string;
+  logo_path: string | null;
   provider_name: string;
 }
 
 interface ProvidersType{
-  link: string;
+  link: string | null;
   flatrate: FlatrateType[];
 }
 
 interface MovieDetails {
-  adult: boolean;
-  backdrop_path: string;
-  belongs_to_collection?: {
-    id: number;
-    name: string;
-    poster_path: string;
-    backdrop_path: string;
-  };
-  budget: number;
-  genres: { id: number; name: string }[];
-  homepage: string;
-  id: number;
-  imdb_id: string;
-  origin_country: string[];
-  original_language: string;
-  original_title: string;
-  overview: string;
-  popularity: number;
-  poster_path: string;
-  production_companies: {
-    id: number;
-    logo_path: string;
-    name: string;
-    origin_country: string;
-  }[];
-  production_countries: { iso_3166_1: string; name: string }[];
-  release_date: string;
-  revenue: number;
-  runtime: number;
-  spoken_languages: { english_name: string; iso_639_1: string; name: string }[];
-  status: string;
-  tagline: string;
   title: string;
-  video: boolean;
+  overview: string;
   vote_average: number;
-  vote_count: number;
+  release_date: string | null;
+  genres: { id: number; name: string }[];
+  images: DataType;
+  providers: ProvidersType | null;
+  cast: CastMember[];
+  recommendations: MediaItem[];
 }
 
 function MoviePage() {
@@ -87,10 +69,7 @@ function MoviePage() {
 
   useEffect(() => {
     if (dataImage && dataImage.posters.length > 0) {
-      const selectedImage = findImageEnglish(dataImage.posters);
-      if (selectedImage) {
-        setImagePoster(`https://image.tmdb.org/t/p/w500${selectedImage.file_path}`);
-      }
+      setImagePoster(`https://image.tmdb.org/t/p/w500${dataImage.posters[0].file_path}`);
     }
   }, [dataImage?.posters]); 
 
@@ -98,24 +77,11 @@ function MoviePage() {
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const data = await fetchData<DataType>(`movies/${id}/images`); // Ensure the correct endpoint
-        if (data) {
-          setDataImage(data);
-          setError(null); // Clear any previous error if data is fetched successfully
-        }
-
-        const providers = await fetchData<ProvidersType>(`movies/${id}/providers`);
-        if (providers) {
-          setDataProviders(providers)
-          setError(null);
-        }
-
-        const detailsMovie = await fetchData<MovieDetails>(`movies/${id}`);
-        if (detailsMovie) {
-          setMovieDetails(detailsMovie)
-          setError(null);
-        }
-
+        const detail = await fetchData<MovieDetails>(`movie/${id}`);
+        setDataImage(detail.images);
+        setDataProviders(detail.providers);
+        setMovieDetails(detail);
+        setError(null);
 
       } catch (error) {
         console.error("Error fetching movie:", error);
@@ -141,19 +107,6 @@ function MoviePage() {
   // const findImageWithAspectRatio = (images: MovieImage[]) => {
   //   return images.find((image) => image.aspect_ratio === 1.778);
   // };
-
-  const findImageEnglish = (images: MovieImage[]) => {
-    const englishImages = images.filter((image) => image.iso_639_1 === "en");
-  
-    if (englishImages.length === 1) {
-      return englishImages[0]; 
-    } else if (englishImages.length > 1) {
-      const randomIndex = Math.floor(Math.random() * (englishImages.length - 1)) + 1;
-      return englishImages[randomIndex];
-    }
-  
-    return null; 
-  };
 
   return (
     <div className="min-h-screen w-full bg-zinc-900 text-4xl text-white md:py-10 py-0">
@@ -189,7 +142,7 @@ function MoviePage() {
                   <p>{movieDetails?.vote_average.toFixed(1)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600">{movieDetails?.release_date.slice(0, 4)}</p>
+                  <p className="text-gray-600">{movieDetails?.release_date?.slice(0, 4)}</p>
                 </div>
               </div>
               <ul className="flex gap-3 flex-wrap">
@@ -218,7 +171,7 @@ function MoviePage() {
                 provider.provider_name !== "Netflix basic with Ads" && (
                     <motion.a 
                     key={index} 
-                    href={dataProviders.link} 
+                    href={dataProviders.link ?? undefined} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     whileTap={{scale:0.9}}
@@ -237,8 +190,8 @@ function MoviePage() {
       </div>
 
       <div className="flex flex-col gap-10 py-10">
-        <MovieList endpoint={`movies/${id}/credits`} title={"Casting"} person={true}/>
-        <MovieList endpoint={`movies/${id}/recommendations`} title={"Recommended movies"} person={false}/>
+        <MovieList items={movieDetails?.cast} title={"Casting"} person={true}/>
+        <MovieList items={movieDetails?.recommendations} title={"Recommended movies"} person={false}/>
       </div>
 
 

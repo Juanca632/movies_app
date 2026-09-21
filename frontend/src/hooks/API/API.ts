@@ -1,15 +1,11 @@
-// const URL = "http://82.25.115.237:8000"; 
-// const URL = "http://localhost:8000"; 
-// const URL = "https://movies-app-backend-gd78.onrender.com"; 
-
-const PROTOCOL = window.location.protocol; 
+const PROTOCOL = window.location.protocol;
 const API_HOST = window.location.hostname;
 
 const isLocal = API_HOST === 'localhost' || API_HOST === '127.0.0.1';
 
-const URL = isLocal 
-  ? `${PROTOCOL}//${API_HOST}:8000`  
-  : `/api`;  
+// VITE_API_URL wins; otherwise talk to the local backend in dev and to the reverse proxy in prod.
+const URL: string = import.meta.env.VITE_API_URL
+  ?? (isLocal ? `${PROTOCOL}//${API_HOST}:8000/api/v1` : `/api/v1`);
 
 export const fetchData = async <T>(endpoint: string, timeout = 10000): Promise<T> => {
     const controller = new AbortController();
@@ -40,3 +36,14 @@ export const fetchData = async <T>(endpoint: string, timeout = 10000): Promise<T
     }
   };
   
+
+export interface Page<T> {
+  page: number;
+  total_pages: number;
+  total_results: number;
+  results: T[];
+}
+
+/** Fetch a paginated endpoint and return only its items. */
+export const fetchList = async <T>(endpoint: string): Promise<T[]> =>
+  (await fetchData<Page<T>>(endpoint)).results;

@@ -14,13 +14,13 @@ function Home() {
         <Banner/>
       </div> */}
       <div className="flex flex-col gap-10 pt-10 pb-10">
-        <MovieList endpoint={"movie/now_playing"} title={"Currently in Theaters"} person={false}/>
-        <MovieList endpoint={"trending/person/week"} title={"Popular Stars"} person={true}/>
-        <MovieList endpoint={"movie/popular"} title={"Trending Now"} person={false}/>
-        <MovieList endpoint={"movie/upcoming"} title={"Coming Soon"} person={false}/>
-        <TvShowList endpoint={"tv/top_rated"} title={"Top Rated TV shows"} person={false}/> 
-        <TvShowList endpoint={"tv/popular"} title={"Popular TV shows"} person={false}/> 
-        <MovieList endpoint={"movie/top_rated"} title={"All-Time Favorites"} person={false}/>
+        <MovieList endpoint={"movie?category=now_playing"} title={"Currently in Theaters"} person={false}/>
+        <MovieList endpoint={"person/trending"} title={"Popular Stars"} person={true}/>
+        <MovieList endpoint={"movie?category=popular"} title={"Trending Now"} person={false}/>
+        <MovieList endpoint={"movie?category=upcoming"} title={"Coming Soon"} person={false}/>
+        <TvShowList endpoint={"tv?category=top_rated"} title={"Top Rated TV shows"} person={false}/> 
+        <TvShowList endpoint={"tv?category=popular"} title={"Popular TV shows"} person={false}/> 
+        <MovieList endpoint={"movie?category=top_rated"} title={"All-Time Favorites"} person={false}/>
       </div>
     </div>
   )
