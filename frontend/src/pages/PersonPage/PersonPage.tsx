@@ -6,12 +6,19 @@ import MovieList from "../../components/MovieList/MovieList";
 import TvShowList from "../../components/TvShowList/TvShowList";
 
 
+interface MediaItem {
+  id: number;
+  title: string;
+  poster_path: string | null;
+}
+
 interface PersonDetails {
-  adult: boolean;
   biography: string;
-  name: boolean;
-  place_of_birth: string;
-  profile_path: string;  
+  name: string;
+  place_of_birth: string | null;
+  profile_path: string | null;
+  movies: MediaItem[];
+  tv_shows: MediaItem[];
 }
 
 function PersonPage() {
@@ -95,8 +102,8 @@ function PersonPage() {
         </div>
 
       <div className="flex flex-col gap-10 py-10">
-        <MovieList endpoint={`person/${id}/movies`} title={"Movies"} person={false}/>
-        <TvShowList endpoint={`person/${id}/tv-shows`} title={"TV shows"} person={false}/>
+        <MovieList items={personDetails?.movies} title={"Movies"} person={false}/>
+        <TvShowList items={personDetails?.tv_shows} title={"TV shows"} person={false}/>
       </div>
 
 
