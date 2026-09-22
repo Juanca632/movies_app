@@ -49,7 +49,7 @@ Proyecto de portafolio: explorador de películas/series/actores sobre la API de 
 ## Roadmap
 
 - Fase 0 (HECHA, mergeada a `main`): backend reescrito con httpx, API unificada, búsqueda, Docker y CI.
-- Fase 1 (EN CURSO, rama `refactor/frontend`): frontend reescrito + rediseño + tests. Next.js descartado por ahora (se puede migrar luego; componentes y hooks son portables).
+- Fase 1 (HECHA en `develop`, pendiente PR a `main`): frontend reescrito + rediseño + buscador con sugerencias + tests. Pendiente elegir nombre de la app (propuesta: "Marquee"). Next.js descartado por ahora (se puede migrar luego; componentes y hooks son portables).
 - Fase 2: Postgres, login con Google (cookie httpOnly), favoritos y "Mi lista".
 - Fase 3: recomendaciones con IA a partir de favoritos.
 - Fase 4: despliegue real + CD, README con capturas.
