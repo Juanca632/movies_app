@@ -16,17 +16,20 @@ Proyecto de portafolio: explorador de películas/series/actores sobre la API de 
   - `api/v1/` routers: `media` (`/{media_type}`, `/{media_type}/{id}`), `people`, `search`. Los routers con prefijo fijo se registran ANTES de `media` en `main.py`.
   - `core/config.py` pydantic-settings (`.env`: `THE_MOVIE_DB_API_KEY`, opcional `CORS_ORIGINS`, ...)
   - `tests/` pytest + respx (TMDB mockeado, sin red)
-- `frontend/` — React 19 + TypeScript + Vite 6, Tailwind 4 + Sass, React Query, Zustand, react-router 7.
-  - `src/hooks/API/API.ts`: `fetchData`/`fetchList`; base `VITE_API_URL` o `:8000/api/v1` en local, `/api/v1` en prod
-  - Pendiente: refactor completo del frontend (hay componentes duplicados, reintentos manuales con setInterval)
+- `frontend/` — React 19 + TypeScript + Vite 6, Tailwind 4 (sin Sass), React Query, react-router 7 (data router, páginas lazy).
+  - `src/api/`: `client.ts` (`getJson`, `ApiError`; base `VITE_API_URL` o `:8000/api/v1` en local, `/api/v1` en prod), `queries.ts` (hooks React Query), `types.ts` (espejo de `backend/app/schemas`)
+  - `src/components/` presentacionales (cards, `Row` carrusel con scroll nativo, `Hero`, `DetailHero`); `src/pages/` una por ruta, `MediaPage` sirve movie y tv
+  - Diseño: estilo streaming oscuro, acento ámbar; tokens en `src/index.css` (`@theme`). Fuentes Inter + Outfit.
+  - URLs públicas: `/movie/:id/:slug`, `/tv-show/:id/:slug` (se mantiene por enlaces antiguos), `/person/:id/:slug`, `/search?q=`
+  - Tests: Vitest + Testing Library; `src/test-utils/render.tsx` monta el router real con `fetch` mockeado
 - `docker-compose.yml` — backend + frontend (nginx :3000→80, proxifica `/api/` al backend).
-- `.github/workflows/ci.yml` (PR a main/develop: backend audit+ruff+pytest, frontend audit+lint+build, docker build) y `cd.yml` (push a main: tag semver + Release; NO despliega).
+- `.github/workflows/ci.yml` (PR a main/develop: backend audit+ruff+pytest, frontend audit+lint+test+build, docker build) y `cd.yml` (push a main: tag semver + Release; NO despliega).
 
 ## Comandos
 
 - Backend: `cd backend && source myvenv/bin/activate && pip install -r requirements-dev.txt && uvicorn app.main:app --reload`
 - Tests/lint backend: `pytest -q` y `ruff check .` (desde `backend/`)
-- Frontend: `cd frontend && npm run dev` | `npm run build` | `npm run lint`
+- Frontend: `cd frontend && npm run dev` | `npm test` | `npm run build` | `npm run lint`
 - Ambos: `./start.sh`
 
 ## Convenciones
@@ -38,7 +41,6 @@ Proyecto de portafolio: explorador de películas/series/actores sobre la API de 
 
 ## Problemas conocidos / deuda
 
-- El frontend no tiene tests, y `serve` sigue en sus dependencias sin usarse.
 - CD solo crea releases; no hay despliegue automático.
 - No hay base de datos todavía; el único estado es la caché en memoria.
 - Sin Docker en el WSL de desarrollo: los Dockerfiles solo se validan en el job `docker` del CI (pasó en el PR de la Fase 0).
@@ -47,7 +49,7 @@ Proyecto de portafolio: explorador de películas/series/actores sobre la API de 
 ## Roadmap
 
 - Fase 0 (HECHA, mergeada a `main`): backend reescrito con httpx, API unificada, búsqueda, Docker y CI.
-- Fase 1 (SIGUIENTE): refactor del frontend + tests.
+- Fase 1 (EN CURSO, rama `refactor/frontend`): frontend reescrito + rediseño + tests. Next.js descartado por ahora (se puede migrar luego; componentes y hooks son portables).
 - Fase 2: Postgres, login con Google (cookie httpOnly), favoritos y "Mi lista".
 - Fase 3: recomendaciones con IA a partir de favoritos.
 - Fase 4: despliegue real + CD, README con capturas.
