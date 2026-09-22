@@ -1,0 +1,166 @@
+import { screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it } from "vitest";
+import { media, mediaDetail, page, person, personDetail } from "../test-utils/fixtures";
+import { mockApi, renderRoute } from "../test-utils/render";
+
+const homeApi = () => ({
+  "movie?category=now_playing": page([media({ id: 10, title: "Dune: Part Two" })]),
+  "movie?category=popular": page([media({ id: 11, title: "Oppenheimer" })]),
+  "movie?category=upcoming": page([media({ id: 12, title: "Avatar 3" })]),
+  "movie?category=top_rated": page([media({ id: 13, title: "The Godfather" })]),
+  "tv?category=popular": page([media({ id: 14, media_type: "tv", title: "The Bear" })]),
+  "tv?category=top_rated": page([media({ id: 15, media_type: "tv", title: "Breaking Bad" })]),
+  "person/trending": page([person()]),
+});
+
+describe("HomePage", () => {
+  it("shows the featured movie and every category row", async () => {
+    mockApi(homeApi());
+    renderRoute("/");
+
+    const hero = await screen.findByRole("region", { name: "Featured" });
+    expect(await within(hero).findByRole("heading", { name: "Oppenheimer" })).toBeInTheDocument();
+
+    const tv = await screen.findByRole("region", { name: "Popular TV Shows" });
+    expect(within(tv).getByRole("link", { name: /The Bear/ })).toHaveAttribute("href", "/tv-show/14/the-bear");
+
+    const stars = screen.getByRole("region", { name: "Popular Stars" });
+    expect(await within(stars).findByRole("link", { name: /Tom Hanks/ })).toHaveAttribute("href", "/person/31/tom-hanks");
+    expect(screen.getByRole("link", { name: /Dune: Part Two/ })).toHaveAttribute("href", "/movie/10/dune-part-two");
+  });
+
+  it("lets a failing row retry on its own", async () => {
+    let calls = 0;
+    mockApi({
+      ...homeApi(),
+      "movie?category=upcoming": () =>
+        ++calls === 1 ? new Response("boom", { status: 500 }) : Response.json(page([media({ id: 12, title: "Avatar 3" })])),
+    });
+    renderRoute("/");
+
+    const row = await screen.findByRole("region", { name: "Coming Soon" });
+    await userEvent.click(await within(row).findByRole("button", { name: "Try again" }));
+    expect(await within(row).findByRole("link", { name: /Avatar 3/ })).toBeInTheDocument();
+  });
+});
+
+describe("MediaPage", () => {
+  it("renders a movie with runtime, genres, cast, providers and recommendations", async () => {
+    mockApi({ "movie/1": mediaDetail() });
+    renderRoute("/movie/1/inception");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Inception" })).toBeInTheDocument();
+    expect(screen.getByText("2h 28m")).toBeInTheDocument();
+    expect(screen.getByText("Science Fiction")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Leonardo DiCaprio/ })).toHaveAttribute("href", "/person/6193/leonardo-dicaprio");
+    expect(screen.getByRole("img", { name: "Netflix" })).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "Netflix basic with Ads" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Interstellar/ })).toHaveAttribute("href", "/movie/2/interstellar");
+    expect(document.title).toBe("Inception · MyMoviesApp");
+  });
+
+  it("asks the tv endpoint for TV shows and shows seasons", async () => {
+    const fetchMock = mockApi({
+      "tv/1396": mediaDetail({ id: 1396, media_type: "tv", title: "Breaking Bad", runtime: null, number_of_seasons: 5, number_of_episodes: 62 }),
+    });
+    renderRoute("/tv-show/1396/breaking-bad");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Breaking Bad" })).toBeInTheDocument();
+    expect(screen.getByText("5 seasons")).toBeInTheDocument();
+    expect(screen.getByText("62 episodes")).toBeInTheDocument();
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/api/v1/tv/1396");
+  });
+
+  it("shows a 404 for an unknown movie", async () => {
+    mockApi({});
+    renderRoute("/movie/999/nope");
+    expect(await screen.findByText("We couldn't find that movie.")).toBeInTheDocument();
+  });
+
+  it("offers a retry when the server fails", async () => {
+    let calls = 0;
+    mockApi({ "movie/1": () => (++calls === 1 ? new Response("boom", { status: 502 }) : Response.json(mediaDetail())) });
+    renderRoute("/movie/1");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Inception" })).toBeInTheDocument();
+  });
+});
+
+describe("PersonPage", () => {
+  it("renders the person with a collapsible biography and credits", async () => {
+    mockApi({ "person/31": personDetail() });
+    renderRoute("/person/31/tom-hanks");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Tom Hanks" })).toBeInTheDocument();
+    expect(screen.getByText(/July 9, 1956 · Concord/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Read more" }));
+    expect(screen.getByRole("button", { name: "Show less" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Forrest Gump/ })).toHaveAttribute("href", "/movie/13/forrest-gump");
+    expect(screen.queryByRole("region", { name: "TV Shows" })).not.toBeInTheDocument();
+  });
+});
+
+describe("SearchPage", () => {
+  it("searches from the navbar and paginates", async () => {
+    mockApi({
+      ...homeApi(),
+      "search?q=tom&page=1": page([media({ title: "Tomb Raider" }), person()], { total_pages: 2, total_results: 30 }),
+      "search?q=tom&page=2": page([media({ id: 99, title: "Tombstone" })], { page: 2, total_pages: 2, total_results: 30 }),
+    });
+    const { router } = renderRoute("/");
+
+    await userEvent.type(await screen.findByRole("combobox"), "tom{Enter}");
+    expect(await screen.findByRole("link", { name: /Tomb Raider/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Tom Hanks/ })).toHaveAttribute("href", "/person/31/tom-hanks");
+    expect(screen.getByText("30 results")).toBeInTheDocument();
+    expect(router.state.location.search).toBe("?q=tom");
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(await screen.findByRole("link", { name: /Tombstone/ })).toBeInTheDocument();
+    expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
+  });
+
+  it("suggests results while typing and opens one with the keyboard", async () => {
+    mockApi({
+      ...homeApi(),
+      "search?q=tom&page=1": page([media({ id: 13, title: "Forrest Gump" }), person()]),
+    });
+    const { router } = renderRoute("/");
+
+    await userEvent.type(await screen.findByRole("combobox"), "tom");
+    const list = await screen.findByRole("listbox", { name: "Suggestions" });
+    expect(await within(list).findByRole("option", { name: /Tom Hanks/ })).toBeInTheDocument();
+    expect(within(list).getByRole("option", { name: /See all results for “tom”/ })).toBeInTheDocument();
+
+    await userEvent.keyboard("{ArrowDown}{Enter}");
+    await waitFor(() => expect(router.state.location.pathname).toBe("/movie/13/forrest-gump"));
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("does not suggest anything for a single character", async () => {
+    const fetchMock = mockApi(homeApi());
+    renderRoute("/");
+
+    await userEvent.type(await screen.findByRole("combobox"), "t");
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("search"))).toBe(false);
+  });
+
+  it("prompts for a query when there is none", async () => {
+    mockApi({});
+    renderRoute("/search");
+    expect(await screen.findByText(/Search for movies, TV shows and people/)).toBeInTheDocument();
+  });
+});
+
+describe("routing", () => {
+  it("shows a 404 page for unknown URLs", async () => {
+    mockApi({});
+    renderRoute("/does/not/exist");
+    await waitFor(() => expect(screen.getByText("We couldn't find that page.")).toBeInTheDocument());
+    expect(screen.getByRole("link", { name: "Back to home" })).toHaveAttribute("href", "/");
+  });
+});
