@@ -111,7 +111,7 @@ describe("SearchPage", () => {
     });
     const { router } = renderRoute("/");
 
-    await userEvent.type(await screen.findByRole("searchbox"), "tom{Enter}");
+    await userEvent.type(await screen.findByRole("combobox"), "tom{Enter}");
     expect(await screen.findByRole("link", { name: /Tomb Raider/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Tom Hanks/ })).toHaveAttribute("href", "/person/31/tom-hanks");
     expect(screen.getByText("30 results")).toBeInTheDocument();
@@ -120,6 +120,33 @@ describe("SearchPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(await screen.findByRole("link", { name: /Tombstone/ })).toBeInTheDocument();
     expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
+  });
+
+  it("suggests results while typing and opens one with the keyboard", async () => {
+    mockApi({
+      ...homeApi(),
+      "search?q=tom&page=1": page([media({ id: 13, title: "Forrest Gump" }), person()]),
+    });
+    const { router } = renderRoute("/");
+
+    await userEvent.type(await screen.findByRole("combobox"), "tom");
+    const list = await screen.findByRole("listbox", { name: "Suggestions" });
+    expect(await within(list).findByRole("option", { name: /Tom Hanks/ })).toBeInTheDocument();
+    expect(within(list).getByRole("option", { name: /See all results for “tom”/ })).toBeInTheDocument();
+
+    await userEvent.keyboard("{ArrowDown}{Enter}");
+    await waitFor(() => expect(router.state.location.pathname).toBe("/movie/13/forrest-gump"));
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("does not suggest anything for a single character", async () => {
+    const fetchMock = mockApi(homeApi());
+    renderRoute("/");
+
+    await userEvent.type(await screen.findByRole("combobox"), "t");
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("search"))).toBe(false);
   });
 
   it("prompts for a query when there is none", async () => {

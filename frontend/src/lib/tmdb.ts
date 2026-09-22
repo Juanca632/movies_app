@@ -1,4 +1,4 @@
-import type { MediaType } from "../api/types";
+import type { MediaType, SearchResult } from "../api/types";
 
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
 
@@ -23,6 +23,9 @@ export const mediaHref = (mediaType: MediaType, id: number, title: string) =>
   `/${MEDIA_PATH[mediaType]}/${id}/${slugify(title)}`;
 
 export const personHref = (id: number, name: string) => `/person/${id}/${slugify(name)}`;
+
+export const resultHref = (result: SearchResult) =>
+  result.media_type === "person" ? personHref(result.id, result.name) : mediaHref(result.media_type, result.id, result.title);
 
 export const year = (date: string | null | undefined) => date?.slice(0, 4) || null;
 
