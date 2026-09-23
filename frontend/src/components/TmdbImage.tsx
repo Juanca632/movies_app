@@ -18,8 +18,11 @@ function TmdbImage({ path, size, alt, className = "", fallback: Fallback = FilmI
   const src = imageUrl(path, size);
 
   if (!src || failed) {
+    // `relative` keeps the absolutely positioned sr-only label inside this box. Without it the
+    // label escapes scrolling rows (e.g. a cast member with no photo), and mobile browsers zoom
+    // the whole page out to fit it.
     return (
-      <div className={`grid size-full place-items-center bg-surface-2 text-subtle ${className}`}>
+      <div className={`relative grid size-full place-items-center bg-surface-2 text-subtle ${className}`}>
         <Fallback className="size-1/3 max-h-16 max-w-16" />
         <span className="sr-only">{alt}</span>
       </div>
