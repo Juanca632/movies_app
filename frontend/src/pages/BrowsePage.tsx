@@ -3,8 +3,8 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useDiscover, useGenres, useProviders, useRegionName } from "../api/queries";
 import { DISCOVER_SORTS, type DiscoverSort, type MediaType } from "../api/types";
 import { CARD_GRID, CardSkeleton, MediaCard } from "../components/cards";
+import Dropdown from "../components/Dropdown";
 import ErrorState from "../components/ErrorState";
-import { ChevronDownIcon } from "../components/icons";
 import { useRegion } from "../lib/region";
 import { isAdTier } from "../lib/tmdb";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
@@ -19,24 +19,6 @@ const SORT_LABELS: Record<DiscoverSort, string> = {
 };
 
 const toId = (value: string | null) => (Number(value) > 0 ? Number(value) : null);
-
-function Select({ label, value, onChange, children }: { label: string; value: string; onChange: (value: string) => void; children: ReactNode }) {
-  return (
-    <label className="flex min-w-0 flex-1 flex-col gap-1.5 sm:flex-none">
-      <span className="text-xs font-semibold uppercase tracking-wider text-subtle">{label}</span>
-      <span className="relative">
-        <select
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="w-full appearance-none truncate rounded-full border border-white/10 bg-surface py-2 pl-4 pr-9 text-sm font-medium text-fg outline-none transition hover:border-white/25 focus:border-accent/70 sm:w-52"
-        >
-          {children}
-        </select>
-        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />
-      </span>
-    </label>
-  );
-}
 
 function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
   return (
@@ -121,22 +103,22 @@ function Browse({ mediaType }: { mediaType: MediaType }) {
         </div>
       )}
 
-      <div className="mb-8 flex gap-3 sm:gap-6">
-        <Select label="Sort by" value={sort} onChange={(value) => update("sort", value)}>
-          {DISCOVER_SORTS.map((s) => (
-            <option key={s} value={s}>
-              {SORT_LABELS[s]}
-            </option>
-          ))}
-        </Select>
-        <Select label={`Streaming in ${regionName}`} value={String(provider ?? "")} onChange={(value) => update("provider", value)}>
-          <option value="">Any service</option>
-          {services?.map((p) => (
-            <option key={p.provider_id} value={p.provider_id}>
-              {p.provider_name}
-            </option>
-          ))}
-        </Select>
+      <div className="mb-8 flex items-end gap-3 sm:gap-6">
+        <Dropdown
+          label="Sort by"
+          value={sort}
+          options={DISCOVER_SORTS.map((s) => ({ value: s, label: SORT_LABELS[s] }))}
+          onChange={(value) => update("sort", value)}
+        />
+        <Dropdown
+          label={`Streaming in ${regionName}`}
+          value={String(provider ?? "")}
+          options={[
+            { value: "", label: "Any service" },
+            ...(services ?? []).map((p) => ({ value: String(p.provider_id), label: p.provider_name })),
+          ]}
+          onChange={(value) => update("provider", value)}
+        />
       </div>
 
       {results.isError && !items.length ? (
