@@ -59,6 +59,11 @@ class Provider(BaseModel):
     logo_path: str | None = None
 
 
+class Video(BaseModel):
+    key: str  # YouTube video id
+    name: str
+
+
 class Region(BaseModel):
     code: str  # ISO 3166-1 alpha-2
     name: str
@@ -84,4 +89,5 @@ class MediaDetail(MediaSummary):
     cast: list[CastMember] = []
     images: Images = Images()
     providers: Providers | None = None
+    trailer: Video | None = None
     recommendations: list[MediaSummary] = []

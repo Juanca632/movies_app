@@ -172,3 +172,48 @@ async def test_tmdb_down_becomes_502(api):
 
 async def test_health(api):
     assert (await api.get("/health")).json() == {"status": "ok"}
+
+
+def video(
+    key: str, kind: str, *, official: bool = True, published: str = "2020-01-01", site="YouTube"
+):
+    return {
+        "key": key,
+        "name": key,
+        "site": site,
+        "type": kind,
+        "official": official,
+        "published_at": published,
+    }
+
+
+@respx.mock
+async def test_detail_picks_the_best_youtube_trailer(api):
+    videos = [
+        video("clip", "Clip"),
+        video("vimeo", "Trailer", site="Vimeo"),
+        video("teaser", "Teaser", published="2024-01-01"),
+        video("fan", "Trailer", official=False, published="2024-06-01"),
+        video("old", "Trailer", published="2019-01-01"),
+        video("new", "Trailer", published="2021-01-01"),
+    ]
+    respx.get(f"{BASE}/movie/1").mock(
+        return_value=httpx.Response(200, json={**MOVIE_ITEM, "videos": {"results": videos}})
+    )
+
+    response = await api.get("/api/v1/movie/1")
+
+    assert response.json()["trailer"] == {"key": "new", "name": "new"}
+
+
+@respx.mock
+async def test_detail_without_trailers_has_none(api):
+    respx.get(f"{BASE}/tv/2").mock(
+        return_value=httpx.Response(
+            200, json={**TV_ITEM, "videos": {"results": [video("clip", "Clip")]}}
+        )
+    )
+
+    response = await api.get("/api/v1/tv/2")
+
+    assert response.json()["trailer"] is None
