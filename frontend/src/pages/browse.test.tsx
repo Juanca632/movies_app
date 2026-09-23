@@ -174,7 +174,8 @@ describe("mobile search", () => {
 
     await userEvent.type(fields[0], "tom{Enter}");
     await waitFor(() => expect(router.state.location.pathname).toBe("/search"));
-    expect(screen.queryByRole("button", { name: "Close search" })).not.toBeInTheDocument();
+    // The bar collapses in the render after the navigation, so wait for it instead of checking once.
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Close search" })).not.toBeInTheDocument());
   });
 
   it("closes with the close button", async () => {
