@@ -50,6 +50,7 @@ export const person = (overrides: Partial<PersonSummary> = {}): PersonSummary =>
   name: "Tom Hanks",
   profile_path: "/hanks.jpg",
   known_for_department: "Acting",
+  known_for: ["Forrest Gump", "Toy Story"],
   popularity: 50,
   ...overrides,
 });

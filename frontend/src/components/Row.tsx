@@ -5,7 +5,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 
 const ITEM_WIDTH = {
   media: "w-32 sm:w-40 xl:w-44",
-  person: "w-24 sm:w-32",
+  person: "w-28 sm:w-32 xl:w-36",
 };
 
 interface RowProps<T> {
@@ -71,7 +71,7 @@ function Row<T>({ title, items, getKey, renderItem, variant = "media", isPending
             {isPending
               ? Array.from({ length: 10 }, (_, i) => (
                   <li key={i} className={`shrink-0 ${ITEM_WIDTH[variant]}`}>
-                    <CardSkeleton variant={variant} />
+                    <CardSkeleton />
                   </li>
                 ))
               : items?.map((item) => (

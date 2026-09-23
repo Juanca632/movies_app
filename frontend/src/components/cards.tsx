@@ -103,15 +103,10 @@ interface PersonCardProps {
 
 export function PersonCard({ id, name, profilePath, subtitle }: PersonCardProps) {
   return (
-    <Link to={personHref(id, name)} className="group block text-center">
-      <div className="mx-auto aspect-square overflow-hidden rounded-full bg-surface ring-2 ring-white/5 transition duration-300 group-hover:ring-accent/70">
-        <TmdbImage
-          path={profilePath}
-          size="w185"
-          alt=""
-          fallback={UserIcon}
-          className="transition duration-500 group-hover:scale-105"
-        />
+    <Link to={personHref(id, name)} className="group block">
+      {/* Portrait, like TMDB's photos, so faces are never cropped. */}
+      <div className="aspect-[2/3] overflow-hidden rounded-lg bg-surface ring-1 ring-white/5 transition duration-300 group-hover:ring-accent/60">
+        <TmdbImage path={profilePath} size="w185" alt="" fallback={UserIcon} />
       </div>
       <p className="mt-2 truncate text-sm font-medium group-hover:text-accent">{name}</p>
       {subtitle && <p className="truncate text-xs text-subtle">{subtitle}</p>}
@@ -119,11 +114,11 @@ export function PersonCard({ id, name, profilePath, subtitle }: PersonCardProps)
   );
 }
 
-export function CardSkeleton({ variant }: { variant: "media" | "person" }) {
+export function CardSkeleton() {
   return (
     <div aria-hidden className="animate-shimmer">
-      <div className={`bg-surface-2 ${variant === "person" ? "aspect-square rounded-full" : "aspect-[2/3] rounded-lg"}`} />
-      <div className={`mt-2 h-3.5 w-3/4 rounded bg-surface-2 ${variant === "person" ? "mx-auto" : ""}`} />
+      <div className="aspect-[2/3] rounded-lg bg-surface-2" />
+      <div className="mt-2 h-3.5 w-3/4 rounded bg-surface-2" />
     </div>
   );
 }

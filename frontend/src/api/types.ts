@@ -87,6 +87,7 @@ export interface PersonSummary {
   name: string;
   profile_path: string | null;
   known_for_department: string | null;
+  known_for: string[]; // titles, most notable first
   popularity: number;
 }
 

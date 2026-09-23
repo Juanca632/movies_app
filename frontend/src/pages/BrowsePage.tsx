@@ -148,7 +148,7 @@ function Browse({ mediaType }: { mediaType: MediaType }) {
           {results.isPending
             ? Array.from({ length: 18 }, (_, i) => (
                 <li key={i}>
-                  <CardSkeleton variant="media" />
+                  <CardSkeleton />
                 </li>
               ))
             : items.map((item) => (

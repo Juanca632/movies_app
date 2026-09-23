@@ -11,7 +11,7 @@ const homeApi = () => ({
   "movie?category=top_rated": page([media({ id: 13, title: "The Godfather" })]),
   "tv?category=popular": page([media({ id: 14, media_type: "tv", title: "The Bear" })]),
   "tv?category=top_rated": page([media({ id: 15, media_type: "tv", title: "Breaking Bad" })]),
-  "person/trending": page([person()]),
+  "person/popular": [person()],
 });
 
 describe("HomePage", () => {
@@ -27,6 +27,7 @@ describe("HomePage", () => {
 
     const stars = screen.getByRole("region", { name: "Popular Stars" });
     expect(await within(stars).findByRole("link", { name: /Tom Hanks/ })).toHaveAttribute("href", "/person/31/tom-hanks");
+    expect(within(stars).getByText("Known for Forrest Gump")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Dune: Part Two/ })).toHaveAttribute("href", "/movie/10/dune-part-two");
   });
 

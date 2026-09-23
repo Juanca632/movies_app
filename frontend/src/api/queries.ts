@@ -102,11 +102,10 @@ export const useDiscover = (mediaType: MediaType, filters: DiscoverFilters, regi
     enabled,
   });
 
-export const useTrendingPeople = () =>
+export const usePopularPeople = () =>
   useQuery({
-    queryKey: ["person", "trending"],
-    queryFn: ({ signal }) => getJson<Page<PersonSummary>>("person/trending", signal),
-    select: (page) => page.results,
+    queryKey: ["person", "popular"],
+    queryFn: ({ signal }) => getJson<PersonSummary[]>("person/popular", signal),
   });
 
 export const usePerson = (id: string) =>
