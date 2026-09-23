@@ -1,10 +1,14 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
+import { setRegion } from "../lib/region";
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  // jsdom's browser language is en-US; every test starts from that country.
+  setRegion("US");
+  localStorage.clear();
 });
 
 // jsdom does not implement scrolling.

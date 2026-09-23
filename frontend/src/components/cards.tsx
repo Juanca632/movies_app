@@ -5,6 +5,10 @@ import Rating from "./Rating";
 import TmdbImage from "./TmdbImage";
 import { UserIcon } from "./icons";
 
+/** Responsive poster grid used by the search and browse pages. */
+export const CARD_GRID =
+  "grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-8 sm:grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))]";
+
 export function MediaCard({ item }: { item: MediaSummary }) {
   return (
     <Link to={mediaHref(item.media_type, item.id, item.title)} className="group block">

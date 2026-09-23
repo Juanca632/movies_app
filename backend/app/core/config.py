@@ -20,6 +20,7 @@ class Settings(BaseSettings):
 
     cache_ttl_lists: int = 600  # seconds: popular, top rated, search...
     cache_ttl_details: int = 3600  # seconds: movie/tv/person details
+    cache_ttl_static: int = 86400  # seconds: genres, countries, streaming services
     cache_max_items: int = 1024
 
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]

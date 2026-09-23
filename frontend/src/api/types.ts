@@ -47,6 +47,11 @@ export interface Provider {
   logo_path: string | null;
 }
 
+export interface Region {
+  code: string;
+  name: string;
+}
+
 export interface Providers {
   region: string;
   link: string | null;
@@ -96,3 +101,12 @@ export const TV_CATEGORIES = ["popular", "top_rated", "airing_today", "on_the_ai
 export type Category<M extends MediaType> = M extends "movie"
   ? (typeof MOVIE_CATEGORIES)[number]
   : (typeof TV_CATEGORIES)[number];
+
+export const DISCOVER_SORTS = ["popular", "top_rated", "newest"] as const;
+export type DiscoverSort = (typeof DISCOVER_SORTS)[number];
+
+export interface DiscoverFilters {
+  genre: number | null;
+  provider: number | null;
+  sort: DiscoverSort;
+}

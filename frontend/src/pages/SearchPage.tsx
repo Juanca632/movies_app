@@ -1,6 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import { useSearch } from "../api/queries";
-import { CardSkeleton, MediaCard, PersonCard } from "../components/cards";
+import { CARD_GRID, CardSkeleton, MediaCard, PersonCard } from "../components/cards";
 import ErrorState from "../components/ErrorState";
 import { SearchIcon } from "../components/icons";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
@@ -46,7 +46,7 @@ function SearchPage() {
 
           <ul
             aria-busy={isPending || isPlaceholderData}
-            className={`grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-8 transition-opacity sm:grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] ${isPlaceholderData ? "opacity-50" : ""}`}
+            className={`${CARD_GRID} transition-opacity ${isPlaceholderData ? "opacity-50" : ""}`}
           >
             {isPending
               ? Array.from({ length: 12 }, (_, i) => (
