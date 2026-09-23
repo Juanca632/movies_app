@@ -1,6 +1,6 @@
 # MyMoviesApp
 
-Proyecto de portafolio: explorador de películas/series/actores sobre la API de TMDB. Demo en producción: https://mymoviesapp.xyz. Se está evolucionando hacia: login con Google, favoritos por usuario y recomendaciones con IA.
+Proyecto de portafolio: explorador de películas/series/actores sobre la API de TMDB. Demo en producción (Vercel): https://movies-app-swart-xi.vercel.app. Se está evolucionando hacia: login con Google, favoritos por usuario y recomendaciones con IA.
 
 ## Producto
 
@@ -52,7 +52,8 @@ Proyecto de portafolio: explorador de películas/series/actores sobre la API de 
 ## Roadmap
 
 - Fase 0 (HECHA, mergeada a `main`): backend reescrito con httpx, API unificada, búsqueda, Docker y CI.
-- Fase 1 (HECHA en `develop`, pendiente PR a `main`): frontend reescrito + rediseño + buscador con sugerencias + tests. Pendiente elegir nombre de la app (propuesta: "Marquee"). Next.js descartado por ahora (se puede migrar luego; componentes y hooks son portables).
+- Fase 1 (HECHA, en `main`): frontend reescrito + rediseño + buscador con sugerencias + tests. Pendiente elegir nombre de la app (propuesta: "Marquee"). Next.js descartado por ahora (se puede migrar luego; componentes y hooks son portables).
 - Fase 2: Postgres, login con Google (cookie httpOnly), favoritos y "Mi lista".
 - Fase 3: recomendaciones con IA a partir de favoritos.
-- Fase 4: despliegue real + CD, README con capturas.
+- Fase 4 (casi HECHA): desplegado en Vercel (se publica al mergear a `main`), README con capturas en `docs/screenshots/`. Falta: dominio propio y, si hace falta, la regla de rate limit del Firewall de Vercel.
+- Extra ya hecho: browse por género/plataforma, país con banderas, hover previews, tráileres, premios/notas (OMDb), revisión de seguridad.
