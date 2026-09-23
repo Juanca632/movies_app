@@ -59,6 +59,28 @@ class Provider(BaseModel):
     logo_path: str | None = None
 
 
+class Video(BaseModel):
+    key: str  # YouTube video id
+    name: str
+
+
+class CriticScore(BaseModel):
+    source: Literal["imdb", "rotten_tomatoes", "metacritic"]
+    value: str  # as displayed: "8.8", "86%", "74"
+
+
+class Acclaim(BaseModel):
+    """Awards and critic scores from OMDb (IMDb data)."""
+
+    awards: str | None = None  # "Won 4 Oscars. 160 wins & 220 nominations total"
+    scores: list[CriticScore] = []
+
+
+class Region(BaseModel):
+    code: str  # ISO 3166-1 alpha-2
+    name: str
+
+
 class Providers(BaseModel):
     region: str
     link: str | None = None
@@ -72,6 +94,7 @@ class MediaDetail(MediaSummary):
     status: str | None = None
     homepage: str | None = None
     original_language: str | None = None
+    imdb_id: str | None = None
     genres: list[Genre] = []
     runtime: int | None = None  # minutes (per episode for TV)
     number_of_seasons: int | None = None
@@ -79,4 +102,5 @@ class MediaDetail(MediaSummary):
     cast: list[CastMember] = []
     images: Images = Images()
     providers: Providers | None = None
+    trailer: Video | None = None
     recommendations: list[MediaSummary] = []

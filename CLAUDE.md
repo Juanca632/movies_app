@@ -12,15 +12,17 @@ Proyecto de portafolio: explorador de películas/series/actores sobre la API de 
 
 - `backend/app/` — FastAPI (Python 3.12), proxy con caché sobre TMDB.
   - `clients/tmdb.py` único punto que habla con TMDB (httpx async, reintentos, caché TTL)
+  - `clients/omdb.py` OMDb (datos de IMDb: premios y notas IMDb/Rotten Tomatoes/Metacritic). Opcional: sin `OMDB_API_KEY` o si falla, `/acclaim/{imdb_id}` devuelve vacío y el frontend oculta la sección. Plan gratis: 1000 peticiones/día (caché 1 día); no usarlo en el hover
   - `services/` lógica y normalización (movie/tv → `title`, `release_date`); `schemas/` modelos de respuesta
-  - `api/v1/` routers: `media` (`/{media_type}`, `/{media_type}/{id}`), `people`, `search`. Los routers con prefijo fijo se registran ANTES de `media` en `main.py`.
-  - `core/config.py` pydantic-settings (`.env`: `THE_MOVIE_DB_API_KEY`, opcional `CORS_ORIGINS`, ...)
+  - `api/v1/` routers: `media` (`/{media_type}`, `/{media_type}/{id}`), `people`, `search`, `acclaim` (`/acclaim/{imdb_id}`), `discover` (`/genres/{mt}`, `/regions`, `/providers/{mt}?region=`, `/discover/{mt}?genre=&provider=&region=&sort=`). Los routers con prefijo fijo se registran ANTES de `media` en `main.py`.
+  - `core/config.py` pydantic-settings (`.env`: `THE_MOVIE_DB_API_KEY`, opcionales `OMDB_API_KEY`, `CORS_ORIGINS`, ...)
   - `tests/` pytest + respx (TMDB mockeado, sin red)
 - `frontend/` — React 19 + TypeScript + Vite 6, Tailwind 4 (sin Sass), React Query, react-router 7 (data router, páginas lazy).
   - `src/api/`: `client.ts` (`getJson`, `ApiError`; base `VITE_API_URL` o `:8000/api/v1` en local, `/api/v1` en prod), `queries.ts` (hooks React Query), `types.ts` (espejo de `backend/app/schemas`)
-  - `src/components/` presentacionales (cards, `Row` carrusel con scroll nativo, `Hero`, `DetailHero`); `src/pages/` una por ruta, `MediaPage` sirve movie y tv
+  - `src/components/` presentacionales (cards, `Row` carrusel con scroll nativo, `Hero`, `DetailHero`, `RegionPicker`); `src/pages/` una por ruta, `MediaPage` sirve movie y tv, `BrowsePage` filtra por género/plataforma
+  - País: `src/lib/region.ts` (store con `useSyncExternalStore`, se detecta de `navigator.languages`, se guarda en `localStorage`). Lo usan los hooks de detalle, estrenos (`now_playing`/`upcoming`) y el filtro de plataformas
   - Diseño: estilo streaming oscuro, acento ámbar; tokens en `src/index.css` (`@theme`). Fuentes Inter + Outfit.
-  - URLs públicas: `/movie/:id/:slug`, `/tv-show/:id/:slug` (se mantiene por enlaces antiguos), `/person/:id/:slug`, `/search?q=`
+  - URLs públicas: `/movie/:id/:slug`, `/tv-show/:id/:slug` (se mantiene por enlaces antiguos), `/person/:id/:slug`, `/search?q=`, `/browse/movie|tv?genre=&provider=&sort=`
   - Tests: Vitest + Testing Library; `src/test-utils/render.tsx` monta el router real con `fetch` mockeado
 - `docker-compose.yml` — backend + frontend (nginx :3000→80, proxifica `/api/` al backend).
 - `.github/workflows/ci.yml` (PR a main/develop: backend audit+ruff+pytest, frontend audit+lint+test+build, docker build) y `cd.yml` (push a main: tag semver + Release; NO despliega).

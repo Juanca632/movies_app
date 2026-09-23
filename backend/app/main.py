@@ -4,16 +4,20 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.v1 import media, people, search
+from app.api.v1 import acclaim, discover, media, people, search
+from app.clients.omdb import OMDbClient
 from app.clients.tmdb import TMDBClient, TMDBNotFoundError, TMDBUnavailableError
 from app.core.config import get_settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.tmdb = TMDBClient(get_settings())
+    settings = get_settings()
+    app.state.tmdb = TMDBClient(settings)
+    app.state.omdb = OMDbClient(settings)
     yield
     await app.state.tmdb.aclose()
+    await app.state.omdb.aclose()
 
 
 def create_app() -> FastAPI:
@@ -40,10 +44,12 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    # Order matters: routers with fixed prefixes (person, search) must be registered
+    # Order matters: routers with fixed prefixes (person, search, discover...) must be registered
     # before the generic /{media_type} routes, otherwise those would swallow them.
     app.include_router(search.router, prefix="/api/v1")
     app.include_router(people.router, prefix="/api/v1")
+    app.include_router(discover.router, prefix="/api/v1")
+    app.include_router(acclaim.router, prefix="/api/v1")
     app.include_router(media.router, prefix="/api/v1")
     return app
 

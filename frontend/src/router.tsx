@@ -19,6 +19,7 @@ export const routes: RouteObject[] = [
         lazy: () => import("./pages/MediaPage").then((m) => ({ element: <m.default mediaType="tv" /> })),
       },
       { path: "person/:id/:slug?", lazy: () => import("./pages/PersonPage").then((m) => ({ Component: m.default })) },
+      { path: "browse/:mediaType", lazy: () => import("./pages/BrowsePage").then((m) => ({ Component: m.default })) },
       { path: "search", lazy: () => import("./pages/SearchPage").then((m) => ({ Component: m.default })) },
       { path: "*", element: <NotFoundPage /> },
     ],

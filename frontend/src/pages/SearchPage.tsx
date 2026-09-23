@@ -1,8 +1,9 @@
 import { useSearchParams } from "react-router-dom";
 import { useSearch } from "../api/queries";
-import { CardSkeleton, MediaCard, PersonCard } from "../components/cards";
+import { CARD_GRID, CardSkeleton, MediaCard, PersonCard } from "../components/cards";
 import ErrorState from "../components/ErrorState";
 import { SearchIcon } from "../components/icons";
+import { personSubtitle } from "../lib/tmdb";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 
 // TMDB never serves pages past 500.
@@ -46,20 +47,18 @@ function SearchPage() {
 
           <ul
             aria-busy={isPending || isPlaceholderData}
-            className={`grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-8 transition-opacity sm:grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] ${isPlaceholderData ? "opacity-50" : ""}`}
+            className={`${CARD_GRID} transition-opacity ${isPlaceholderData ? "opacity-50" : ""}`}
           >
             {isPending
               ? Array.from({ length: 12 }, (_, i) => (
                   <li key={i}>
-                    <CardSkeleton variant="media" />
+                    <CardSkeleton />
                   </li>
                 ))
               : data?.results.map((result) => (
                   <li key={`${result.media_type}-${result.id}`}>
                     {result.media_type === "person" ? (
-                      <div className="px-3 pt-4">
-                        <PersonCard id={result.id} name={result.name} profilePath={result.profile_path} subtitle={result.known_for_department} />
-                      </div>
+                      <PersonCard id={result.id} name={result.name} profilePath={result.profile_path} subtitle={personSubtitle(result)} />
                     ) : (
                       <MediaCard item={result} />
                     )}

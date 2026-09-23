@@ -20,6 +20,7 @@ export const mediaDetail = (overrides: Partial<MediaDetail> = {}): MediaDetail =
   status: "Released",
   homepage: null,
   original_language: "en",
+  imdb_id: "tt1375666",
   genres: [
     { id: 28, name: "Action" },
     { id: 878, name: "Science Fiction" },
@@ -35,10 +36,12 @@ export const mediaDetail = (overrides: Partial<MediaDetail> = {}): MediaDetail =
     flatrate: [
       { provider_id: 8, provider_name: "Netflix", logo_path: "/netflix.png" },
       { provider_id: 1796, provider_name: "Netflix basic with Ads", logo_path: "/netflix-ads.png" },
+      { provider_id: 1899, provider_name: "HBO Max", logo_path: "/max.png" },
     ],
     rent: [],
     buy: [],
   },
+  trailer: { key: "YoHD9XEInc0", name: "Official Trailer" },
   recommendations: [media({ id: 2, title: "Interstellar", release_date: "2014-11-05" })],
   ...overrides,
 });
@@ -49,6 +52,7 @@ export const person = (overrides: Partial<PersonSummary> = {}): PersonSummary =>
   name: "Tom Hanks",
   profile_path: "/hanks.jpg",
   known_for_department: "Acting",
+  known_for: ["Forrest Gump", "Toy Story"],
   popularity: 50,
   ...overrides,
 });

@@ -12,6 +12,7 @@ from app.schemas.media import (
     Page,
     Provider,
     Providers,
+    Video,
 )
 
 CATEGORIES: dict[str, tuple[str, ...]] = {
@@ -21,8 +22,8 @@ CATEGORIES: dict[str, tuple[str, ...]] = {
 
 # Sub-resources fetched in the same TMDB request as the details.
 _APPEND = {
-    "movie": "credits,images,watch/providers,recommendations",
-    "tv": "aggregate_credits,images,watch/providers,recommendations",
+    "movie": "credits,images,watch/providers,recommendations,videos,external_ids",
+    "tv": "aggregate_credits,images,watch/providers,recommendations,videos,external_ids",
 }
 
 MAX_CAST = 15
@@ -89,21 +90,49 @@ def _providers(raw: dict[str, Any], region: str) -> Providers | None:
     )
 
 
+# Preferred kinds of video, best first; clips and featurettes are not trailers.
+_TRAILER_TYPES = ("Trailer", "Teaser")
+
+
+def _trailer(raw: dict[str, Any]) -> Video | None:
+    """Best YouTube trailer: trailers before teasers, official first, then the newest."""
+    candidates = [
+        video
+        for video in raw.get("results", [])
+        if video.get("site") == "YouTube"
+        and video.get("type") in _TRAILER_TYPES
+        and video.get("key")
+    ]
+    if not candidates:
+        return None
+    # Newest first, then a stable sort by kind and officialness keeps that order within ties.
+    candidates.sort(key=lambda video: video.get("published_at") or "", reverse=True)
+    candidates.sort(
+        key=lambda video: (_TRAILER_TYPES.index(video["type"]), not video.get("official"))
+    )
+    best = candidates[0]
+    return Video(key=best["key"], name=best.get("name") or "Trailer")
+
+
 class MediaService:
     def __init__(self, tmdb: TMDBClient, settings: Settings) -> None:
         self._tmdb = tmdb
         self._settings = settings
 
-    async def list(self, media_type: MediaType, category: str, page: int) -> Page[MediaSummary]:
+    async def list(
+        self, media_type: MediaType, category: str, page: int, region: str | None = None
+    ) -> Page[MediaSummary]:
+        # Release-based lists (now playing, upcoming...) differ per country.
+        params: dict[str, Any] = {"page": page, **({"region": region} if region else {})}
         raw = await self._tmdb.get(
-            f"/{media_type}/{category}", {"page": page}, ttl=self._settings.cache_ttl_lists
+            f"/{media_type}/{category}", params, ttl=self._settings.cache_ttl_lists
         )
         results = raw.get("results", [])
 
         if media_type == "movie" and category == "upcoming":
             # Movies already in theatres are not "upcoming" any more.
             playing = await self._tmdb.get(
-                "/movie/now_playing", {"page": page}, ttl=self._settings.cache_ttl_lists
+                "/movie/now_playing", params, ttl=self._settings.cache_ttl_lists
             )
             playing_ids = {movie["id"] for movie in playing.get("results", [])}
             results = [movie for movie in results if movie["id"] not in playing_ids]
@@ -136,6 +165,8 @@ class MediaService:
             status=raw.get("status"),
             homepage=raw.get("homepage") or None,
             original_language=raw.get("original_language"),
+            # Movies carry it at the top level; TV shows only in external_ids.
+            imdb_id=raw.get("imdb_id") or (raw.get("external_ids") or {}).get("imdb_id") or None,
             genres=raw.get("genres", []),
             runtime=runtime,
             number_of_seasons=raw.get("number_of_seasons"),
@@ -143,6 +174,7 @@ class MediaService:
             cast=_cast(credits),
             images=_images(raw.get("images", {})),
             providers=_providers(raw.get("watch/providers", {}), region),
+            trailer=_trailer(raw.get("videos", {})),
             recommendations=[
                 to_summary(item, media_type)
                 for item in raw.get("recommendations", {}).get("results", [])

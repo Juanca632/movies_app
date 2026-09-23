@@ -47,6 +47,26 @@ export interface Provider {
   logo_path: string | null;
 }
 
+export interface Video {
+  key: string; // YouTube video id
+  name: string;
+}
+
+export interface CriticScore {
+  source: "imdb" | "rotten_tomatoes" | "metacritic";
+  value: string; // as displayed: "8.8", "86%", "74"
+}
+
+export interface Acclaim {
+  awards: string | null;
+  scores: CriticScore[];
+}
+
+export interface Region {
+  code: string;
+  name: string;
+}
+
 export interface Providers {
   region: string;
   link: string | null;
@@ -60,6 +80,7 @@ export interface MediaDetail extends MediaSummary {
   status: string | null;
   homepage: string | null;
   original_language: string | null;
+  imdb_id: string | null;
   genres: Genre[];
   runtime: number | null;
   number_of_seasons: number | null;
@@ -67,6 +88,7 @@ export interface MediaDetail extends MediaSummary {
   cast: CastMember[];
   images: { backdrops: Image[]; posters: Image[] };
   providers: Providers | null;
+  trailer: Video | null;
   recommendations: MediaSummary[];
 }
 
@@ -76,6 +98,7 @@ export interface PersonSummary {
   name: string;
   profile_path: string | null;
   known_for_department: string | null;
+  known_for: string[]; // titles, most notable first
   popularity: number;
 }
 
@@ -96,3 +119,12 @@ export const TV_CATEGORIES = ["popular", "top_rated", "airing_today", "on_the_ai
 export type Category<M extends MediaType> = M extends "movie"
   ? (typeof MOVIE_CATEGORIES)[number]
   : (typeof TV_CATEGORIES)[number];
+
+export const DISCOVER_SORTS = ["popular", "top_rated", "newest"] as const;
+export type DiscoverSort = (typeof DISCOVER_SORTS)[number];
+
+export interface DiscoverFilters {
+  genre: number | null;
+  provider: number | null;
+  sort: DiscoverSort;
+}

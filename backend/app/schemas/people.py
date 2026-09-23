@@ -11,6 +11,7 @@ class PersonSummary(BaseModel):
     name: str
     profile_path: str | None = None
     known_for_department: str | None = None
+    known_for: list[str] = []  # titles, most notable first
     popularity: float = 0
 
 

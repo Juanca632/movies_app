@@ -5,7 +5,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 
 const ITEM_WIDTH = {
   media: "w-32 sm:w-40 xl:w-44",
-  person: "w-24 sm:w-32",
+  person: "w-28 sm:w-32 xl:w-36",
 };
 
 interface RowProps<T> {
@@ -51,7 +51,7 @@ function Row<T>({ title, items, getKey, renderItem, variant = "media", isPending
 
   return (
     <section aria-label={title} className="group/row">
-      <h2 className="page-x mb-3 font-display text-xl font-semibold tracking-tight sm:text-2xl">{title}</h2>
+      <h2 className="page-x mb-2 font-display text-xl font-semibold tracking-tight sm:text-2xl">{title}</h2>
 
       {isError ? (
         <ErrorState className="page-x" message={`Couldn't load “${title}”.`} onRetry={onRetry} />
@@ -62,15 +62,16 @@ function Row<T>({ title, items, getKey, renderItem, variant = "media", isPending
               <ChevronLeftIcon className="size-8" />
             </button>
           )}
+          {/* overflow-x also clips vertically: pt-1 keeps the posters' hover ring visible. */}
           <ul
             ref={scroller}
             onScroll={updateEdges}
-            className="page-x flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto pb-2 scrollbar-none sm:scroll-px-8 sm:gap-4 xl:scroll-px-12"
+            className="page-x flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain pt-1 pb-2 scrollbar-none sm:scroll-px-8 sm:gap-4 xl:scroll-px-12"
           >
             {isPending
               ? Array.from({ length: 10 }, (_, i) => (
                   <li key={i} className={`shrink-0 ${ITEM_WIDTH[variant]}`}>
-                    <CardSkeleton variant={variant} />
+                    <CardSkeleton />
                   </li>
                 ))
               : items?.map((item) => (
