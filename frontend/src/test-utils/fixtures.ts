@@ -35,6 +35,7 @@ export const mediaDetail = (overrides: Partial<MediaDetail> = {}): MediaDetail =
     flatrate: [
       { provider_id: 8, provider_name: "Netflix", logo_path: "/netflix.png" },
       { provider_id: 1796, provider_name: "Netflix basic with Ads", logo_path: "/netflix-ads.png" },
+      { provider_id: 1899, provider_name: "HBO Max", logo_path: "/max.png" },
     ],
     rent: [],
     buy: [],

@@ -68,7 +68,7 @@ export function MediaDetailView({ media }: { media: MediaDetail }) {
       </DetailHero>
 
       <div className="mt-6 flex flex-col gap-10 sm:gap-12">
-        <WatchProviders providers={media.providers} />
+        <WatchProviders providers={media.providers} title={media.title} />
         <CastRow cast={media.cast} />
         <MediaRow title="More like this" items={media.recommendations} />
       </div>

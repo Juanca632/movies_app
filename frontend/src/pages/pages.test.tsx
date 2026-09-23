@@ -57,6 +57,9 @@ describe("MediaPage", () => {
     expect(screen.getByRole("link", { name: /Leonardo DiCaprio/ })).toHaveAttribute("href", "/person/6193/leonardo-dicaprio");
     expect(screen.getByRole("img", { name: "Netflix" })).toBeInTheDocument();
     expect(screen.queryByRole("img", { name: "Netflix basic with Ads" })).not.toBeInTheDocument();
+    // Verified services search for the title; the rest fall back to TMDB's watch page.
+    expect(screen.getByRole("link", { name: "Netflix" })).toHaveAttribute("href", "https://www.netflix.com/search?q=Inception");
+    expect(screen.getByRole("link", { name: "HBO Max" })).toHaveAttribute("href", "https://www.themoviedb.org/movie/1/watch");
     expect(screen.getByRole("link", { name: /Interstellar/ })).toHaveAttribute("href", "/movie/2/interstellar");
     expect(document.title).toBe("Inception · MyMoviesApp");
   });
