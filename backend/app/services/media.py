@@ -94,16 +94,20 @@ class MediaService:
         self._tmdb = tmdb
         self._settings = settings
 
-    async def list(self, media_type: MediaType, category: str, page: int) -> Page[MediaSummary]:
+    async def list(
+        self, media_type: MediaType, category: str, page: int, region: str | None = None
+    ) -> Page[MediaSummary]:
+        # Release-based lists (now playing, upcoming...) differ per country.
+        params: dict[str, Any] = {"page": page, **({"region": region} if region else {})}
         raw = await self._tmdb.get(
-            f"/{media_type}/{category}", {"page": page}, ttl=self._settings.cache_ttl_lists
+            f"/{media_type}/{category}", params, ttl=self._settings.cache_ttl_lists
         )
         results = raw.get("results", [])
 
         if media_type == "movie" and category == "upcoming":
             # Movies already in theatres are not "upcoming" any more.
             playing = await self._tmdb.get(
-                "/movie/now_playing", {"page": page}, ttl=self._settings.cache_ttl_lists
+                "/movie/now_playing", params, ttl=self._settings.cache_ttl_lists
             )
             playing_ids = {movie["id"] for movie in playing.get("results", [])}
             results = [movie for movie in results if movie["id"] not in playing_ids]

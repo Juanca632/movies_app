@@ -15,13 +15,14 @@ async def list_media(
     service: MediaServiceDep,
     category: str = "popular",
     page: Annotated[int, Query(ge=1, le=500)] = 1,
+    region: Annotated[str | None, Query(pattern="^[A-Z]{2}$")] = None,
 ) -> Page[MediaSummary]:
     if category not in CATEGORIES[media_type]:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             f"Invalid category for {media_type}. Allowed: {', '.join(CATEGORIES[media_type])}",
         )
-    return await service.list(media_type, category, page)
+    return await service.list(media_type, category, page, region)
 
 
 @router.get("/{media_type}/{media_id}", summary="Movie or TV show with everything the page needs")

@@ -59,6 +59,11 @@ class Provider(BaseModel):
     logo_path: str | None = None
 
 
+class Region(BaseModel):
+    code: str  # ISO 3166-1 alpha-2
+    name: str
+
+
 class Providers(BaseModel):
     region: str
     link: str | None = None
