@@ -82,3 +82,9 @@ export const ChevronDownIcon = (props: IconProps) => (
     <path d="M6 9l6 6 6-6" />
   </svg>
 );
+
+export const CheckIcon = (props: IconProps) => (
+  <svg {...stroke(props)}>
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </svg>
+);
