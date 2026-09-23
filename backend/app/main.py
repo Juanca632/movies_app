@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -8,6 +9,9 @@ from app.api.v1 import acclaim, discover, media, people, search
 from app.clients.omdb import OMDbClient
 from app.clients.tmdb import TMDBClient, TMDBNotFoundError, TMDBUnavailableError
 from app.core.config import get_settings
+
+# httpx logs every request URL at INFO, and TMDB/OMDb keys travel in the query string.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 @asynccontextmanager

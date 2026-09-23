@@ -25,6 +25,7 @@ Proyecto de portafolio: explorador de películas/series/actores sobre la API de 
   - URLs públicas: `/movie/:id/:slug`, `/tv-show/:id/:slug` (se mantiene por enlaces antiguos), `/person/:id/:slug`, `/search?q=`, `/browse/movie|tv?genre=&provider=&sort=`
   - Tests: Vitest + Testing Library; `src/test-utils/render.tsx` monta el router real con `fetch` mockeado
 - `docker-compose.yml` — backend + frontend (nginx :3000→80, proxifica `/api/` al backend).
+- `vercel.json` — despliegue en Vercel (Hobby, gratis) con Services (beta): servicio `frontend` (Vite, con fallback SPA a `index.html`) y `backend` (FastAPI como función, detecta `app/main.py`); `/api/*` va al backend. Las cabeceras de seguridad (CSP...) están duplicadas aquí y en `frontend/nginx.conf`: mantenerlas iguales. Secretos en las env vars del proyecto de Vercel. El límite de peticiones en Vercel es una regla del Firewall (1 por proyecto en Hobby), configurada en el dashboard.
 - `.github/workflows/ci.yml` (PR a main/develop: backend audit+ruff+pytest, frontend audit+lint+test+build, docker build) y `cd.yml` (push a main: tag semver + Release; NO despliega).
 
 ## Comandos
@@ -46,7 +47,7 @@ Proyecto de portafolio: explorador de películas/series/actores sobre la API de 
 - CD solo crea releases; no hay despliegue automático.
 - No hay base de datos todavía; el único estado es la caché en memoria.
 - Sin Docker en el WSL de desarrollo: los Dockerfiles solo se validan en el job `docker` del CI (pasó en el PR de la Fase 0).
-- Verificar que el reverse proxy de producción reenvíe `/api/v1/...` al backend (o fijar `VITE_API_URL` al construir).
+- El dominio `mymoviesapp.xyz` aparece aparcado en Afternic (probablemente caducado): comprobar en el registrador o usar otro dominio.
 
 ## Roadmap
 
