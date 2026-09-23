@@ -26,11 +26,16 @@ function Navbar() {
   useEffect(() => setSearchOpen(false), [key]);
 
   return (
-    <header
-      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
-        scrolled || searchOpen ? "bg-bg/85 backdrop-blur-md" : "bg-gradient-to-b from-bg/80 to-transparent"
-      }`}
-    >
+    <header className="fixed inset-x-0 top-0 z-50">
+      {/* The gradient stays and the solid layer fades in over it: swapping one background for the
+          other left the bar see-through halfway, flashing the bright hero behind it. */}
+      <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-b from-bg/80 to-transparent" />
+      <div
+        aria-hidden
+        className={`absolute inset-0 -z-10 bg-bg/85 backdrop-blur-md transition-opacity duration-300 ${
+          scrolled || searchOpen ? "opacity-100" : "opacity-0"
+        }`}
+      />
       {searchOpen && (
         <div className="page-x flex h-16 items-center gap-2 sm:hidden">
           <SearchBox autoFocus className="" />
