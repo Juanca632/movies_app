@@ -59,9 +59,15 @@ describe("BrowsePage", () => {
     expect(await screen.findByRole("link", { name: /Superbad/ })).toBeInTheDocument();
 
     const services = screen.getByRole("combobox", { name: /Streaming in United States/ });
+    await userEvent.click(services);
+    const list = screen.getByRole("listbox", { name: /Streaming in United States/ });
     // Alphabetical, without the ad-supported tiers.
-    expect(within(services).getAllByRole("option").map((o) => o.textContent)).toEqual(["Any service", "Amazon Prime Video", "Netflix"]);
-    await userEvent.selectOptions(services, "Netflix");
+    expect(within(list).getAllByRole("option").map((o) => o.textContent)).toEqual(["Any service", "Amazon Prime Video", "Netflix"]);
+    await userEvent.click(within(list).getByRole("option", { name: "Netflix" }));
+    // Picking applies the filter and closes the list at once.
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(services).toHaveTextContent("Netflix");
+    expect(services).toHaveFocus();
     expect(await screen.findByRole("link", { name: /Murder Mystery/ })).toBeInTheDocument();
     expect(router.state.location.search).toBe("?genre=35&provider=8");
   });
@@ -72,7 +78,31 @@ describe("BrowsePage", () => {
 
     await pickCountry("Colombia");
     expect(await screen.findByRole("link", { name: /The Mask/ })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: /Streaming in Colombia/ })).toHaveValue("8");
+    expect(screen.getByRole("combobox", { name: /Streaming in Colombia/ })).toHaveTextContent("Netflix");
+  });
+
+  it("sorts with the keyboard and closes the list on Escape", async () => {
+    mockApi({
+      ...browseApi(),
+      "discover/movie?sort=top_rated&page=1": page([media({ id: 7, title: "The Godfather" })]),
+    });
+    const { router } = renderRoute("/browse/movie");
+
+    const sort = await screen.findByRole("combobox", { name: "Sort by" });
+    expect(sort).toHaveTextContent("Most popular");
+    sort.focus();
+    await userEvent.keyboard("{ArrowDown}");
+    expect(screen.getByRole("listbox", { name: "Sort by" })).toHaveFocus();
+    await userEvent.keyboard("{ArrowDown}{Enter}");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(sort).toHaveTextContent("Top rated");
+    expect(router.state.location.search).toBe("?sort=top_rated");
+    expect(await screen.findByRole("link", { name: /The Godfather/ })).toBeInTheDocument();
+
+    await userEvent.click(sort);
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(sort).toHaveTextContent("Top rated");
   });
 
   it("shows a 404 for an unknown media type", async () => {
@@ -127,5 +157,33 @@ describe("country picker search", () => {
     await userEvent.keyboard("{ArrowDown}{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Country: United States" })).toBeInTheDocument();
+  });
+});
+
+describe("mobile search", () => {
+  it("opens a full-width search from the magnifier and closes it after searching", async () => {
+    mockApi({ ...browseApi(), "search?q=tom&page=1": page([media({ title: "Tomb Raider" })]) });
+    const { router } = renderRoute("/browse/movie");
+
+    // jsdom applies no CSS, so the desktop field is in the DOM too; the phone one comes first.
+    expect(await screen.findAllByRole("combobox", { name: /Search movies/ })).toHaveLength(1);
+    await userEvent.click(await screen.findByRole("button", { name: "Search" }));
+    const fields = screen.getAllByRole("combobox", { name: /Search movies/ });
+    expect(fields).toHaveLength(2);
+    expect(fields[0]).toHaveFocus();
+
+    await userEvent.type(fields[0], "tom{Enter}");
+    await waitFor(() => expect(router.state.location.pathname).toBe("/search"));
+    // The bar collapses in the render after the navigation, so wait for it instead of checking once.
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Close search" })).not.toBeInTheDocument());
+  });
+
+  it("closes with the close button", async () => {
+    mockApi(browseApi());
+    renderRoute("/browse/movie");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Search" }));
+    await userEvent.click(screen.getByRole("button", { name: "Close search" }));
+    expect(screen.getAllByRole("combobox", { name: /Search movies/ })).toHaveLength(1);
   });
 });

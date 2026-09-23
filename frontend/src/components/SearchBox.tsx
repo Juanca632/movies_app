@@ -19,7 +19,7 @@ function describe(result: SearchResult) {
 }
 
 /** Navbar search with live suggestions (an ARIA combobox). */
-function SearchBox() {
+function SearchBox({ autoFocus = false, className = "max-w-sm" }: { autoFocus?: boolean; className?: string }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
@@ -80,11 +80,12 @@ function SearchBox() {
     `flex items-center gap-3 px-3 py-2 transition-colors ${i === active ? "bg-accent/15" : ""}`;
 
   return (
-    <div ref={container} className="relative w-full max-w-sm">
+    <div ref={container} className={`relative w-full ${className}`}>
       <form role="search" onSubmit={handleSubmit}>
         <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-subtle" />
         <input
           type="search"
+          autoFocus={autoFocus}
           role="combobox"
           value={query}
           onChange={(event) => {
