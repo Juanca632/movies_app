@@ -5,22 +5,38 @@ BASE = "https://tmdb.test/3"
 
 
 @respx.mock
-async def test_trending_people(api):
-    respx.get(f"{BASE}/trending/person/week").mock(
+async def test_popular_people_keeps_recognisable_stars_with_known_for(api):
+    def person(pid: int, name: str, votes: int, **extra) -> dict:
+        known_for = [
+            {"id": 1, "title": "Minor", "vote_count": 10},
+            {"id": 2, "name": f"{name} Show", "vote_count": votes},
+        ]
+        return {"id": pid, "name": name, "profile_path": "/p.jpg", "known_for": known_for, **extra}
+
+    respx.get(f"{BASE}/person/popular", params={"page": 1}).mock(
         return_value=httpx.Response(
             200,
             json={
-                "page": 1,
-                "total_pages": 2,
-                "results": [{"id": 1, "name": "Ana", "profile_path": "/a.jpg", "popularity": 9}],
+                "results": [
+                    person(1, "Star", 9000),
+                    person(2, "Obscure", 40),
+                    person(3, "No Photo", 9000, profile_path=None),
+                    person(4, "Adult", 9000, adult=True),
+                ]
             },
         )
     )
+    respx.get(f"{BASE}/person/popular", params={"page": 2}).mock(
+        return_value=httpx.Response(
+            200, json={"results": [person(1, "Star", 9000), person(5, "Other", 600)]}
+        )
+    )
 
-    body = (await api.get("/api/v1/person/trending")).json()
+    body = (await api.get("/api/v1/person/popular")).json()
 
-    assert body["results"][0]["name"] == "Ana"
-    assert body["results"][0]["media_type"] == "person"
+    assert [p["name"] for p in body] == ["Star", "Other"]
+    assert body[0]["known_for"] == ["Star Show", "Minor"]
+    assert body[0]["media_type"] == "person"
 
 
 @respx.mock
