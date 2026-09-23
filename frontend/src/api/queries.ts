@@ -2,6 +2,7 @@ import { keepPreviousData, QueryClient, useInfiniteQuery, useQuery } from "@tans
 import { useRegion } from "../lib/region";
 import { ApiError, getJson } from "./client";
 import type {
+  Acclaim,
   Category,
   DiscoverFilters,
   Genre,
@@ -57,6 +58,14 @@ export const useMediaDetail = (mediaType: MediaType, id: string, enabled = true)
     placeholderData: (previous, query) => (query?.queryKey[3] === id ? previous : undefined),
   });
 };
+
+export const useAcclaim = (imdbId: string | null) =>
+  useQuery({
+    queryKey: ["acclaim", imdbId],
+    queryFn: ({ signal }) => getJson<Acclaim>(`acclaim/${imdbId}`, signal),
+    enabled: Boolean(imdbId),
+    ...STATIC,
+  });
 
 export const useGenres = (mediaType: MediaType) =>
   useQuery({

@@ -101,3 +101,9 @@ export const InfoIcon = (props: IconProps) => (
     <path d="M12 11v5M12 7.5v.01" />
   </svg>
 );
+
+export const TrophyIcon = (props: IconProps) => (
+  <svg {...stroke(props)}>
+    <path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4v3h-4z" />
+  </svg>
+);

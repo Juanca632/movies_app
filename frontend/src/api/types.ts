@@ -52,6 +52,16 @@ export interface Video {
   name: string;
 }
 
+export interface CriticScore {
+  source: "imdb" | "rotten_tomatoes" | "metacritic";
+  value: string; // as displayed: "8.8", "86%", "74"
+}
+
+export interface Acclaim {
+  awards: string | null;
+  scores: CriticScore[];
+}
+
 export interface Region {
   code: string;
   name: string;
@@ -70,6 +80,7 @@ export interface MediaDetail extends MediaSummary {
   status: string | null;
   homepage: string | null;
   original_language: string | null;
+  imdb_id: string | null;
   genres: Genre[];
   runtime: number | null;
   number_of_seasons: number | null;

@@ -48,10 +48,22 @@ describe("HomePage", () => {
 
 describe("MediaPage", () => {
   it("renders a movie with runtime, genres, cast, providers and recommendations", async () => {
-    mockApi({ "movie/1?region=US": mediaDetail() });
+    mockApi({
+      "movie/1?region=US": mediaDetail(),
+      "acclaim/tt1375666": {
+        awards: "Won 4 Oscars. 160 wins & 220 nominations total",
+        scores: [
+          { source: "imdb", value: "8.8" },
+          { source: "rotten_tomatoes", value: "86%" },
+        ],
+      },
+    });
     renderRoute("/movie/1/inception");
 
     expect(await screen.findByRole("heading", { level: 1, name: "Inception" })).toBeInTheDocument();
+    const acclaim = await screen.findByRole("region", { name: "Awards and ratings" });
+    expect(within(acclaim).getByText("Won 4 Oscars. 160 wins & 220 nominations total")).toBeInTheDocument();
+    expect(within(acclaim).getByText("Rotten Tomatoes").nextSibling).toHaveTextContent("86%");
     expect(screen.getByText("2h 28m")).toBeInTheDocument();
     expect(screen.getByText("Science Fiction")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Leonardo DiCaprio/ })).toHaveAttribute("href", "/person/6193/leonardo-dicaprio");

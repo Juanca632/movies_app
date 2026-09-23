@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { isNotFound } from "../api/client";
 import { useMediaDetail } from "../api/queries";
 import type { MediaDetail, MediaType } from "../api/types";
+import Acclaim from "../components/Acclaim";
 import { DetailHero, DetailSkeleton } from "../components/DetailLayout";
 import Rating from "../components/Rating";
 import { CastRow, MediaRow } from "../components/rows";
@@ -60,6 +61,8 @@ export function MediaDetailView({ media }: { media: MediaDetail }) {
             ))}
           </ul>
         )}
+
+        <Acclaim imdbId={media.imdb_id} />
 
         {media.overview && <p className="mt-5 max-w-2xl leading-relaxed text-fg/85">{media.overview}</p>}
         {media.trailer && (

@@ -20,6 +20,7 @@ export const mediaDetail = (overrides: Partial<MediaDetail> = {}): MediaDetail =
   status: "Released",
   homepage: null,
   original_language: "en",
+  imdb_id: "tt1375666",
   genres: [
     { id: 28, name: "Action" },
     { id: 878, name: "Science Fiction" },
