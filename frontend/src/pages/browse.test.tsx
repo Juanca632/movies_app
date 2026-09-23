@@ -16,7 +16,11 @@ const browseApi = () => ({
     { id: 28, name: "Action" },
     { id: 35, name: "Comedy" },
   ],
-  "providers/movie?region=US": [NETFLIX, { provider_id: 1796, provider_name: "Netflix basic with Ads", logo_path: null }],
+  "providers/movie?region=US": [
+    NETFLIX,
+    { provider_id: 1796, provider_name: "Netflix basic with Ads", logo_path: null },
+    { provider_id: 9, provider_name: "Amazon Prime Video", logo_path: null },
+  ],
   "providers/movie?region=CO": [NETFLIX],
   "discover/movie?sort=popular&page=1": page([media({ id: 1, title: "Inception" })], { total_pages: 2, total_results: 40 }),
   "discover/movie?sort=popular&page=2": page([media({ id: 3, title: "Tenet" })], { page: 2, total_pages: 2, total_results: 40 }),
@@ -55,8 +59,8 @@ describe("BrowsePage", () => {
     expect(await screen.findByRole("link", { name: /Superbad/ })).toBeInTheDocument();
 
     const services = screen.getByRole("combobox", { name: /Streaming in United States/ });
-    // Ad tiers are hidden from the service list.
-    expect(within(services).queryByRole("option", { name: /with Ads/ })).not.toBeInTheDocument();
+    // Alphabetical, without the ad-supported tiers.
+    expect(within(services).getAllByRole("option").map((o) => o.textContent)).toEqual(["Any service", "Amazon Prime Video", "Netflix"]);
     await userEvent.selectOptions(services, "Netflix");
     expect(await screen.findByRole("link", { name: /Murder Mystery/ })).toBeInTheDocument();
     expect(router.state.location.search).toBe("?genre=35&provider=8");

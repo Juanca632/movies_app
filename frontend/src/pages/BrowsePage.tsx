@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useDiscover, useGenres, useProviders, useRegionName } from "../api/queries";
 import { DISCOVER_SORTS, type DiscoverSort, type MediaType } from "../api/types";
@@ -63,7 +63,13 @@ function Browse({ mediaType }: { mediaType: MediaType }) {
   const sortParam = params.get("sort") as DiscoverSort;
   const sort = DISCOVER_SORTS.includes(sortParam) ? sortParam : "popular";
   const genre = toId(params.get("genre"));
-  const services = providers.data?.filter((p) => !isAdTier(p));
+  const services = useMemo(
+    () =>
+      providers.data
+        ?.filter((p) => !isAdTier(p))
+        .sort((a, b) => a.provider_name.localeCompare(b.provider_name, "en", { sensitivity: "base" })),
+    [providers.data],
+  );
   // A service from another country (shared link, or the user switched country) is ignored.
   const providerParam = toId(params.get("provider"));
   const provider = services?.some((p) => p.provider_id === providerParam) ? providerParam : null;
