@@ -2,8 +2,10 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 
+from app.clients.omdb import OMDbClient
 from app.clients.tmdb import TMDBClient
 from app.core.config import Settings, get_settings
+from app.services.acclaim import AcclaimService
 from app.services.discover import DiscoverService
 from app.services.media import MediaService
 from app.services.people import PeopleService
@@ -11,6 +13,10 @@ from app.services.people import PeopleService
 
 def get_tmdb(request: Request) -> TMDBClient:
     return request.app.state.tmdb
+
+
+def get_omdb(request: Request) -> OMDbClient:
+    return request.app.state.omdb
 
 
 def get_media_service(
@@ -41,3 +47,10 @@ def get_discover_service(
 
 
 DiscoverServiceDep = Annotated[DiscoverService, Depends(get_discover_service)]
+
+
+def get_acclaim_service(omdb: Annotated[OMDbClient, Depends(get_omdb)]) -> AcclaimService:
+    return AcclaimService(omdb)
+
+
+AcclaimServiceDep = Annotated[AcclaimService, Depends(get_acclaim_service)]

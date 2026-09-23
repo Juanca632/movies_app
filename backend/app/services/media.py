@@ -22,8 +22,8 @@ CATEGORIES: dict[str, tuple[str, ...]] = {
 
 # Sub-resources fetched in the same TMDB request as the details.
 _APPEND = {
-    "movie": "credits,images,watch/providers,recommendations,videos",
-    "tv": "aggregate_credits,images,watch/providers,recommendations,videos",
+    "movie": "credits,images,watch/providers,recommendations,videos,external_ids",
+    "tv": "aggregate_credits,images,watch/providers,recommendations,videos,external_ids",
 }
 
 MAX_CAST = 15
@@ -165,6 +165,8 @@ class MediaService:
             status=raw.get("status"),
             homepage=raw.get("homepage") or None,
             original_language=raw.get("original_language"),
+            # Movies carry it at the top level; TV shows only in external_ids.
+            imdb_id=raw.get("imdb_id") or (raw.get("external_ids") or {}).get("imdb_id") or None,
             genres=raw.get("genres", []),
             runtime=runtime,
             number_of_seasons=raw.get("number_of_seasons"),
