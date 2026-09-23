@@ -16,7 +16,7 @@ function Navbar() {
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
-        scrolled ? "border-b border-white/5 bg-bg/85 backdrop-blur-md" : "bg-gradient-to-b from-bg/80 to-transparent"
+        scrolled ? "bg-bg/85 backdrop-blur-md" : "bg-gradient-to-b from-bg/80 to-transparent"
       }`}
     >
       <nav className="page-x flex h-16 items-center justify-between gap-4">

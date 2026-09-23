@@ -40,6 +40,9 @@
 @layer base {
   html {
     color-scheme: dark;
+    /* Nothing should scroll the page sideways; horizontal scrolling belongs to the rows. */
+    overflow-x: clip;
+    overscroll-behavior-x: none;
     scrollbar-color: var(--color-surface-2) transparent;
   }
 

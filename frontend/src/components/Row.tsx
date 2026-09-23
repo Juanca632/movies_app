@@ -65,7 +65,7 @@ function Row<T>({ title, items, getKey, renderItem, variant = "media", isPending
           <ul
             ref={scroller}
             onScroll={updateEdges}
-            className="page-x flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto pb-2 scrollbar-none sm:scroll-px-8 sm:gap-4 xl:scroll-px-12"
+            className="page-x flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain pb-2 scrollbar-none sm:scroll-px-8 sm:gap-4 xl:scroll-px-12"
           >
             {isPending
               ? Array.from({ length: 10 }, (_, i) => (
