@@ -21,11 +21,12 @@ function length(detail: MediaDetail | undefined) {
 interface HoverPreviewProps {
   item: MediaSummary;
   anchor: DOMRect;
-  onClose: () => void;
+  leaving: boolean;
+  onClose: (animate?: boolean) => void;
 }
 
 /** Netflix-style card that grows out of a poster on hover (pointer devices only). */
-function HoverPreview({ item, anchor, onClose }: HoverPreviewProps) {
+function HoverPreview({ item, anchor, leaving, onClose }: HoverPreviewProps) {
   const panel = useRef<HTMLDivElement>(null);
   // Fetching the detail here also makes opening the full page instant.
   const { data: detail } = useMediaDetail(item.media_type, String(item.id));
@@ -52,13 +53,14 @@ function HoverPreview({ item, anchor, onClose }: HoverPreviewProps) {
       if (!panel.current?.contains(event.target as Node)) onClose();
     };
     document.addEventListener("pointermove", onPointerMove);
-    // Its position is only valid for the current scroll offset.
-    window.addEventListener("scroll", onClose, { capture: true, passive: true });
-    window.addEventListener("resize", onClose);
+    // Its position is only valid for the current scroll offset, so these close it at once.
+    const closeNow = () => onClose(false);
+    window.addEventListener("scroll", closeNow, { capture: true, passive: true });
+    window.addEventListener("resize", closeNow);
     return () => {
       document.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("scroll", onClose, { capture: true });
-      window.removeEventListener("resize", onClose);
+      window.removeEventListener("scroll", closeNow, { capture: true });
+      window.removeEventListener("resize", closeNow);
     };
   }, [onClose]);
 
@@ -76,10 +78,10 @@ function HoverPreview({ item, anchor, onClose }: HoverPreviewProps) {
       role="group"
       aria-label={`${item.title} preview`}
       style={{ left, width, top: anchor.top }}
-      className="fixed z-40 animate-pop-in overflow-hidden rounded-xl bg-surface shadow-2xl shadow-black/80 ring-1 ring-white/10"
+      className={`fixed z-40 overflow-hidden ${leaving ? "pointer-events-none animate-pop-out" : "animate-pop-in"} rounded-xl bg-surface shadow-2xl shadow-black/80 ring-1 ring-white/10 motion-reduce:animate-none`}
     >
-      <Link to={href} onClick={onClose} tabIndex={-1} className="relative block aspect-video overflow-hidden bg-surface-2">
-        {image && <img src={image} alt="" className="size-full animate-ken-burns object-cover" />}
+      <Link to={href} onClick={() => onClose(false)} tabIndex={-1} className="relative block aspect-video overflow-hidden bg-surface-2">
+        {image && <img src={image} alt="" className="size-full animate-ken-burns object-cover motion-reduce:animate-none" />}
         <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/10 to-transparent" />
         <h3 className="absolute inset-x-4 bottom-2 line-clamp-2 font-display text-xl font-bold leading-tight tracking-tight drop-shadow">
           {item.title}
@@ -103,7 +105,7 @@ function HoverPreview({ item, anchor, onClose }: HoverPreviewProps) {
           )}
           <Link
             to={href}
-            onClick={onClose}
+            onClick={() => onClose(false)}
             className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold text-fg ring-1 ring-white/20 transition hover:bg-white/10"
           >
             <InfoIcon className="size-4" />

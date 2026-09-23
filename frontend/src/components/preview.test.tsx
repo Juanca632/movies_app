@@ -35,7 +35,8 @@ describe("hover preview", () => {
       "src",
       "https://www.youtube-nocookie.com/embed/YoHD9XEInc0?autoplay=1&rel=0",
     );
-    expect(screen.queryByRole("group", { name: "Superbad preview" })).not.toBeInTheDocument();
+    // The preview fades out underneath the player.
+    await waitFor(() => expect(screen.queryByRole("group", { name: "Superbad preview" })).not.toBeInTheDocument());
 
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

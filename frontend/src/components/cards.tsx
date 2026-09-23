@@ -14,24 +14,59 @@ export const CARD_GRID =
 // Previews only make sense with a real mouse; touch screens go straight to the page.
 const canHover = () => window.matchMedia?.("(hover: hover) and (pointer: fine)").matches ?? false;
 const PREVIEW_DELAY_MS = 500;
+const PREVIEW_EXIT_MS = 150; // matches --animate-pop-out
 
 /** Opens a hover preview, anchored to the poster, after the mouse rests on a card for a moment. */
 function useHoverPreview() {
   const [anchor, setAnchor] = useState<DOMRect | null>(null);
-  const timer = useRef<number>(undefined);
-  const close = useCallback(() => setAnchor(null), []);
+  const [leaving, setLeaving] = useState(false);
+  const leavingRef = useRef(false);
+  const openTimer = useRef<number>(undefined);
+  const exitTimer = useRef<number>(undefined);
 
-  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const setLeavingState = (value: boolean) => {
+    leavingRef.current = value;
+    setLeaving(value);
+  };
+
+  // `animate: false` for scrolling or navigating, where a lingering panel would look detached.
+  const close = useCallback((animate = true) => {
+    window.clearTimeout(exitTimer.current);
+    if (!animate) {
+      setLeavingState(false);
+      setAnchor(null);
+      return;
+    }
+    if (leavingRef.current) return;
+    setLeavingState(true);
+    exitTimer.current = window.setTimeout(() => {
+      setLeavingState(false);
+      setAnchor(null);
+    }, PREVIEW_EXIT_MS);
+  }, []);
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(openTimer.current);
+      window.clearTimeout(exitTimer.current);
+    },
+    [],
+  );
 
   const handlers = {
     onPointerEnter: (event: PointerEvent<HTMLElement>) => {
       if (event.pointerType !== "mouse" || !canHover()) return;
       const poster = event.currentTarget.firstElementChild ?? event.currentTarget;
-      timer.current = window.setTimeout(() => setAnchor(poster.getBoundingClientRect()), PREVIEW_DELAY_MS);
+      openTimer.current = window.setTimeout(() => {
+        // Hovering again right after leaving must not be undone by a pending fade-out.
+        window.clearTimeout(exitTimer.current);
+        setLeavingState(false);
+        setAnchor(poster.getBoundingClientRect());
+      }, PREVIEW_DELAY_MS);
     },
-    onPointerLeave: () => window.clearTimeout(timer.current),
+    onPointerLeave: () => window.clearTimeout(openTimer.current),
   };
-  return { anchor, close, handlers };
+  return { anchor, leaving, close, handlers };
 }
 
 export function MediaCard({ item }: { item: MediaSummary }) {
@@ -40,7 +75,7 @@ export function MediaCard({ item }: { item: MediaSummary }) {
   return (
     <>
       <Link to={mediaHref(item.media_type, item.id, item.title)} className="group block" {...preview.handlers}>
-        <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-surface ring-1 ring-white/5 transition duration-300 group-hover:-translate-y-1 group-hover:ring-accent/60 group-hover:shadow-xl group-hover:shadow-black/50">
+        <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-surface ring-1 ring-white/5 transition duration-300 group-hover:ring-accent/60">
           <TmdbImage path={item.poster_path} size="w342" alt="" />
           {item.vote_average > 0 && (
             <Rating
@@ -54,7 +89,7 @@ export function MediaCard({ item }: { item: MediaSummary }) {
           {[year(item.release_date), item.media_type === "tv" ? "TV" : null].filter(Boolean).join(" · ") || " "}
         </p>
       </Link>
-      {preview.anchor && <HoverPreview item={item} anchor={preview.anchor} onClose={preview.close} />}
+      {preview.anchor && <HoverPreview item={item} anchor={preview.anchor} leaving={preview.leaving} onClose={preview.close} />}
     </>
   );
 }
