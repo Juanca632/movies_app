@@ -1,4 +1,4 @@
-import type { MediaType, SearchResult } from "../api/types";
+import type { MediaType, Provider, SearchResult } from "../api/types";
 
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
 
@@ -47,3 +47,6 @@ export const formatDate = (date: string | null | undefined) =>
         day: "numeric",
       })
     : null;
+
+// TMDB lists ad-supported tiers as separate providers ("Netflix basic with Ads"); they only add noise.
+export const isAdTier = (provider: Provider) => /with ads$/i.test(provider.provider_name);
