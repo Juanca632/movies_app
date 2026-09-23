@@ -1,20 +1,14 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Query
+from fastapi import APIRouter
 
 from app.api.deps import PeopleServiceDep
-from app.schemas.media import Page
 from app.schemas.people import PersonDetail, PersonSummary
 
 router = APIRouter(prefix="/person", tags=["People"])
 
 
-@router.get("/trending", summary="Trending people this week")
-async def trending_people(
-    service: PeopleServiceDep,
-    page: Annotated[int, Query(ge=1, le=500)] = 1,
-) -> Page[PersonSummary]:
-    return await service.trending(page)
+@router.get("/popular", summary="Well-known people right now")
+async def popular_people(service: PeopleServiceDep) -> list[PersonSummary]:
+    return await service.popular()
 
 
 @router.get("/{person_id}", summary="Person with their movie and TV credits")

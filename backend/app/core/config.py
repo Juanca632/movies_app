@@ -14,6 +14,10 @@ class Settings(BaseSettings):
         default="https://api.themoviedb.org/3",
         validation_alias=AliasChoices("TMDB_API_URL", "THE_MOVIE_DB_API_URL"),
     )
+    # Optional: awards and critic scores. Without a key those sections are simply hidden.
+    omdb_api_key: str | None = None
+    omdb_api_url: str = "https://www.omdbapi.com/"
+
     tmdb_language: str = "en-US"
     tmdb_timeout: float = 5.0
     tmdb_retries: int = 2

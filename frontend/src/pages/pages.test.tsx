@@ -11,7 +11,7 @@ const homeApi = () => ({
   "movie?category=top_rated": page([media({ id: 13, title: "The Godfather" })]),
   "tv?category=popular": page([media({ id: 14, media_type: "tv", title: "The Bear" })]),
   "tv?category=top_rated": page([media({ id: 15, media_type: "tv", title: "Breaking Bad" })]),
-  "person/trending": page([person()]),
+  "person/popular": [person()],
 });
 
 describe("HomePage", () => {
@@ -27,6 +27,7 @@ describe("HomePage", () => {
 
     const stars = screen.getByRole("region", { name: "Popular Stars" });
     expect(await within(stars).findByRole("link", { name: /Tom Hanks/ })).toHaveAttribute("href", "/person/31/tom-hanks");
+    expect(within(stars).getByText("Known for Forrest Gump")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Dune: Part Two/ })).toHaveAttribute("href", "/movie/10/dune-part-two");
   });
 
@@ -47,15 +48,30 @@ describe("HomePage", () => {
 
 describe("MediaPage", () => {
   it("renders a movie with runtime, genres, cast, providers and recommendations", async () => {
-    mockApi({ "movie/1?region=US": mediaDetail() });
+    mockApi({
+      "movie/1?region=US": mediaDetail(),
+      "acclaim/tt1375666": {
+        awards: "Won 4 Oscars. 160 wins & 220 nominations total",
+        scores: [
+          { source: "imdb", value: "8.8" },
+          { source: "rotten_tomatoes", value: "86%" },
+        ],
+      },
+    });
     renderRoute("/movie/1/inception");
 
     expect(await screen.findByRole("heading", { level: 1, name: "Inception" })).toBeInTheDocument();
+    const acclaim = await screen.findByRole("region", { name: "Awards and ratings" });
+    expect(within(acclaim).getByText("Won 4 Oscars. 160 wins & 220 nominations total")).toBeInTheDocument();
+    expect(within(acclaim).getByText("Rotten Tomatoes").nextSibling).toHaveTextContent("86%");
     expect(screen.getByText("2h 28m")).toBeInTheDocument();
     expect(screen.getByText("Science Fiction")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Leonardo DiCaprio/ })).toHaveAttribute("href", "/person/6193/leonardo-dicaprio");
     expect(screen.getByRole("img", { name: "Netflix" })).toBeInTheDocument();
     expect(screen.queryByRole("img", { name: "Netflix basic with Ads" })).not.toBeInTheDocument();
+    // Verified services search for the title; the rest fall back to TMDB's watch page.
+    expect(screen.getByRole("link", { name: "Netflix" })).toHaveAttribute("href", "https://www.netflix.com/search?q=Inception");
+    expect(screen.getByRole("link", { name: "HBO Max" })).toHaveAttribute("href", "https://www.themoviedb.org/movie/1/watch");
     expect(screen.getByRole("link", { name: /Interstellar/ })).toHaveAttribute("href", "/movie/2/interstellar");
     expect(document.title).toBe("Inception · MyMoviesApp");
   });

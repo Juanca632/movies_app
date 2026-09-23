@@ -27,6 +27,10 @@ export const personHref = (id: number, name: string) => `/person/${id}/${slugify
 export const resultHref = (result: SearchResult) =>
   result.media_type === "person" ? personHref(result.id, result.name) : mediaHref(result.media_type, result.id, result.title);
 
+/** "Known for Forrest Gump", falling back to the department ("Acting"). */
+export const personSubtitle = (person: { known_for: string[]; known_for_department: string | null }) =>
+  person.known_for[0] ? `Known for ${person.known_for[0]}` : person.known_for_department;
+
 export const year = (date: string | null | undefined) => date?.slice(0, 4) || null;
 
 export const formatRating = (vote: number) => (vote > 0 ? vote.toFixed(1) : null);

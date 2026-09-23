@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 from app.clients.tmdb import TMDBClient
@@ -7,15 +8,40 @@ from app.schemas.people import PersonDetail, PersonSummary, SearchResult
 from app.services.media import to_summary
 
 MAX_CREDITS = 40
+MAX_KNOWN_FOR = 3
+
+# TMDB's popular/trending people are polluted with performers from erotic productions that
+# are not flagged as adult. Requiring a photo and one widely rated title keeps "stars" to
+# people most visitors would recognise.
+STAR_MIN_VOTES = 500
+STAR_PAGES = (1, 2)
+MAX_STARS = 20
 
 
 def to_person(raw: dict[str, Any]) -> PersonSummary:
+    known_for = sorted(
+        raw.get("known_for") or [], key=lambda item: item.get("vote_count") or 0, reverse=True
+    )
     return PersonSummary(
         id=raw["id"],
         name=raw.get("name") or "",
         profile_path=raw.get("profile_path"),
         known_for_department=raw.get("known_for_department"),
+        known_for=[
+            title
+            for item in known_for[:MAX_KNOWN_FOR]
+            if (title := item.get("title") or item.get("name"))
+        ],
         popularity=raw.get("popularity") or 0,
+    )
+
+
+def _is_star(raw: dict[str, Any]) -> bool:
+    votes = (item.get("vote_count") or 0 for item in raw.get("known_for") or [])
+    return (
+        not raw.get("adult")
+        and bool(raw.get("profile_path"))
+        and max(votes, default=0) >= STAR_MIN_VOTES
     )
 
 
@@ -35,16 +61,23 @@ class PeopleService:
         self._tmdb = tmdb
         self._settings = settings
 
-    async def trending(self, page: int) -> Page[PersonSummary]:
-        raw = await self._tmdb.get(
-            "/trending/person/week", {"page": page}, ttl=self._settings.cache_ttl_lists
+    async def popular(self) -> list[PersonSummary]:
+        """Well-known people right now (see STAR_MIN_VOTES for why this is filtered)."""
+        pages = await asyncio.gather(
+            *(
+                self._tmdb.get(
+                    "/person/popular", {"page": page}, ttl=self._settings.cache_ttl_lists
+                )
+                for page in STAR_PAGES
+            )
         )
-        return Page[PersonSummary](
-            page=raw.get("page", page),
-            total_pages=raw.get("total_pages", 1),
-            total_results=raw.get("total_results", 0),
-            results=[to_person(item) for item in raw.get("results", [])],
-        )
+        seen: set[int] = set()
+        stars = []
+        for raw in (item for page in pages for item in page.get("results", [])):
+            if raw["id"] not in seen and _is_star(raw):
+                seen.add(raw["id"])
+                stars.append(to_person(raw))
+        return stars[:MAX_STARS]
 
     async def detail(self, person_id: int) -> PersonDetail:
         raw = await self._tmdb.get(

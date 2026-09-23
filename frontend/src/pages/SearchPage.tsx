@@ -3,6 +3,7 @@ import { useSearch } from "../api/queries";
 import { CARD_GRID, CardSkeleton, MediaCard, PersonCard } from "../components/cards";
 import ErrorState from "../components/ErrorState";
 import { SearchIcon } from "../components/icons";
+import { personSubtitle } from "../lib/tmdb";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 
 // TMDB never serves pages past 500.
@@ -51,15 +52,13 @@ function SearchPage() {
             {isPending
               ? Array.from({ length: 12 }, (_, i) => (
                   <li key={i}>
-                    <CardSkeleton variant="media" />
+                    <CardSkeleton />
                   </li>
                 ))
               : data?.results.map((result) => (
                   <li key={`${result.media_type}-${result.id}`}>
                     {result.media_type === "person" ? (
-                      <div className="px-3 pt-4">
-                        <PersonCard id={result.id} name={result.name} profilePath={result.profile_path} subtitle={result.known_for_department} />
-                      </div>
+                      <PersonCard id={result.id} name={result.name} profilePath={result.profile_path} subtitle={personSubtitle(result)} />
                     ) : (
                       <MediaCard item={result} />
                     )}

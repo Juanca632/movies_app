@@ -88,3 +88,22 @@ export const CheckIcon = (props: IconProps) => (
     <path d="M5 12.5l4.5 4.5L19 7.5" />
   </svg>
 );
+
+export const CloseIcon = (props: IconProps) => (
+  <svg {...stroke(props)}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+);
+
+export const InfoIcon = (props: IconProps) => (
+  <svg {...stroke(props)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5M12 7.5v.01" />
+  </svg>
+);
+
+export const TrophyIcon = (props: IconProps) => (
+  <svg {...stroke(props)}>
+    <path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4v3h-4z" />
+  </svg>
+);

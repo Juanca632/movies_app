@@ -2,6 +2,7 @@ import { keepPreviousData, QueryClient, useInfiniteQuery, useQuery } from "@tans
 import { useRegion } from "../lib/region";
 import { ApiError, getJson } from "./client";
 import type {
+  Acclaim,
   Category,
   DiscoverFilters,
   Genre,
@@ -47,15 +48,24 @@ export const useMediaList = <M extends MediaType>(mediaType: M, category: Catego
   });
 };
 
-export const useMediaDetail = (mediaType: MediaType, id: string) => {
+export const useMediaDetail = (mediaType: MediaType, id: string, enabled = true) => {
   const region = useRegion();
   return useQuery({
+    enabled,
     queryKey: ["media", mediaType, "detail", id, region],
     queryFn: ({ signal }) => getJson<MediaDetail>(`${mediaType}/${id}?region=${region}`, signal),
     // Switching country only changes the providers; keep the page on screen meanwhile.
     placeholderData: (previous, query) => (query?.queryKey[3] === id ? previous : undefined),
   });
 };
+
+export const useAcclaim = (imdbId: string | null) =>
+  useQuery({
+    queryKey: ["acclaim", imdbId],
+    queryFn: ({ signal }) => getJson<Acclaim>(`acclaim/${imdbId}`, signal),
+    enabled: Boolean(imdbId),
+    ...STATIC,
+  });
 
 export const useGenres = (mediaType: MediaType) =>
   useQuery({
@@ -101,11 +111,10 @@ export const useDiscover = (mediaType: MediaType, filters: DiscoverFilters, regi
     enabled,
   });
 
-export const useTrendingPeople = () =>
+export const usePopularPeople = () =>
   useQuery({
-    queryKey: ["person", "trending"],
-    queryFn: ({ signal }) => getJson<Page<PersonSummary>>("person/trending", signal),
-    select: (page) => page.results,
+    queryKey: ["person", "popular"],
+    queryFn: ({ signal }) => getJson<PersonSummary[]>("person/popular", signal),
   });
 
 export const usePerson = (id: string) =>

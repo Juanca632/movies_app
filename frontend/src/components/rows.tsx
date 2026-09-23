@@ -1,6 +1,7 @@
 import type { UseQueryResult } from "@tanstack/react-query";
-import { useMediaList, useTrendingPeople } from "../api/queries";
+import { useMediaList, usePopularPeople } from "../api/queries";
 import type { CastMember, Category, MediaSummary, MediaType, PersonSummary } from "../api/types";
+import { personSubtitle } from "../lib/tmdb";
 import { MediaCard, PersonCard } from "./cards";
 import Row from "./Row";
 
@@ -43,8 +44,8 @@ export function CastRow({ cast }: { cast: CastMember[] }) {
   );
 }
 
-export function TrendingPeopleRow({ title }: { title: string }) {
-  const query = useTrendingPeople();
+export function PopularPeopleRow({ title }: { title: string }) {
+  const query = usePopularPeople();
   return (
     <Row<PersonSummary>
       title={title}
@@ -52,7 +53,7 @@ export function TrendingPeopleRow({ title }: { title: string }) {
       items={query.data}
       getKey={(person) => person.id}
       renderItem={(person) => (
-        <PersonCard id={person.id} name={person.name} profilePath={person.profile_path} subtitle={person.known_for_department} />
+        <PersonCard id={person.id} name={person.name} profilePath={person.profile_path} subtitle={personSubtitle(person)} />
       )}
       isPending={query.isPending}
       isError={query.isError}
