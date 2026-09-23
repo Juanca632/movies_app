@@ -47,6 +47,11 @@ export interface Provider {
   logo_path: string | null;
 }
 
+export interface Video {
+  key: string; // YouTube video id
+  name: string;
+}
+
 export interface Region {
   code: string;
   name: string;
@@ -72,6 +77,7 @@ export interface MediaDetail extends MediaSummary {
   cast: CastMember[];
   images: { backdrops: Image[]; posters: Image[] };
   providers: Providers | null;
+  trailer: Video | null;
   recommendations: MediaSummary[];
 }
 

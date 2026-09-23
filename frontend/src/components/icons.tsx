@@ -88,3 +88,16 @@ export const CheckIcon = (props: IconProps) => (
     <path d="M5 12.5l4.5 4.5L19 7.5" />
   </svg>
 );
+
+export const CloseIcon = (props: IconProps) => (
+  <svg {...stroke(props)}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+);
+
+export const InfoIcon = (props: IconProps) => (
+  <svg {...stroke(props)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5M12 7.5v.01" />
+  </svg>
+);

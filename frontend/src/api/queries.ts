@@ -47,9 +47,10 @@ export const useMediaList = <M extends MediaType>(mediaType: M, category: Catego
   });
 };
 
-export const useMediaDetail = (mediaType: MediaType, id: string) => {
+export const useMediaDetail = (mediaType: MediaType, id: string, enabled = true) => {
   const region = useRegion();
   return useQuery({
+    enabled,
     queryKey: ["media", mediaType, "detail", id, region],
     queryFn: ({ signal }) => getJson<MediaDetail>(`${mediaType}/${id}?region=${region}`, signal),
     // Switching country only changes the providers; keep the page on screen meanwhile.

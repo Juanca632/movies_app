@@ -1,6 +1,8 @@
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { Link } from "react-router-dom";
 import type { MediaSummary } from "../api/types";
 import { mediaHref, personHref, year } from "../lib/tmdb";
+import HoverPreview from "./HoverPreview";
 import Rating from "./Rating";
 import TmdbImage from "./TmdbImage";
 import { UserIcon } from "./icons";
@@ -9,23 +11,51 @@ import { UserIcon } from "./icons";
 export const CARD_GRID =
   "grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-8 sm:grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))]";
 
+// Previews only make sense with a real mouse; touch screens go straight to the page.
+const canHover = () => window.matchMedia?.("(hover: hover) and (pointer: fine)").matches ?? false;
+const PREVIEW_DELAY_MS = 500;
+
+/** Opens a hover preview, anchored to the poster, after the mouse rests on a card for a moment. */
+function useHoverPreview() {
+  const [anchor, setAnchor] = useState<DOMRect | null>(null);
+  const timer = useRef<number>(undefined);
+  const close = useCallback(() => setAnchor(null), []);
+
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  const handlers = {
+    onPointerEnter: (event: PointerEvent<HTMLElement>) => {
+      if (event.pointerType !== "mouse" || !canHover()) return;
+      const poster = event.currentTarget.firstElementChild ?? event.currentTarget;
+      timer.current = window.setTimeout(() => setAnchor(poster.getBoundingClientRect()), PREVIEW_DELAY_MS);
+    },
+    onPointerLeave: () => window.clearTimeout(timer.current),
+  };
+  return { anchor, close, handlers };
+}
+
 export function MediaCard({ item }: { item: MediaSummary }) {
+  const preview = useHoverPreview();
+
   return (
-    <Link to={mediaHref(item.media_type, item.id, item.title)} className="group block">
-      <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-surface ring-1 ring-white/5 transition duration-300 group-hover:-translate-y-1 group-hover:ring-accent/60 group-hover:shadow-xl group-hover:shadow-black/50">
-        <TmdbImage path={item.poster_path} size="w342" alt="" />
-        {item.vote_average > 0 && (
-          <Rating
-            value={item.vote_average}
-            className="absolute left-2 top-2 rounded-md bg-black/70 px-1.5 py-0.5 text-xs backdrop-blur-sm"
-          />
-        )}
-      </div>
-      <p className="mt-2 truncate text-sm font-medium text-fg group-hover:text-accent">{item.title}</p>
-      <p className="text-xs text-subtle">
-        {[year(item.release_date), item.media_type === "tv" ? "TV" : null].filter(Boolean).join(" · ") || " "}
-      </p>
-    </Link>
+    <>
+      <Link to={mediaHref(item.media_type, item.id, item.title)} className="group block" {...preview.handlers}>
+        <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-surface ring-1 ring-white/5 transition duration-300 group-hover:-translate-y-1 group-hover:ring-accent/60 group-hover:shadow-xl group-hover:shadow-black/50">
+          <TmdbImage path={item.poster_path} size="w342" alt="" />
+          {item.vote_average > 0 && (
+            <Rating
+              value={item.vote_average}
+              className="absolute left-2 top-2 rounded-md bg-black/70 px-1.5 py-0.5 text-xs backdrop-blur-sm"
+            />
+          )}
+        </div>
+        <p className="mt-2 truncate text-sm font-medium text-fg group-hover:text-accent">{item.title}</p>
+        <p className="text-xs text-subtle">
+          {[year(item.release_date), item.media_type === "tv" ? "TV" : null].filter(Boolean).join(" · ") || " "}
+        </p>
+      </Link>
+      {preview.anchor && <HoverPreview item={item} anchor={preview.anchor} onClose={preview.close} />}
+    </>
   );
 }
 

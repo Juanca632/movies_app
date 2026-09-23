@@ -8,7 +8,7 @@ function HomePage() {
   return (
     <>
       <Hero />
-      <div className="relative z-10 -mt-4 flex flex-col gap-10 sm:gap-12">
+      <div className="relative z-10 -mt-4 flex flex-col gap-10 sm:gap-12 lg:-mt-24">
         <CategoryRow title="Now Playing in Theaters" mediaType="movie" category="now_playing" />
         <CategoryRow title="Trending Movies" mediaType="movie" category="popular" />
         <TrendingPeopleRow title="Popular Stars" />

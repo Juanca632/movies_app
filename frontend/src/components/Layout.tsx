@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Outlet, ScrollRestoration, useNavigation } from "react-router-dom";
 import Navbar from "./Navbar";
+import TrailerModal from "./TrailerModal";
 
 function Layout({ children }: { children?: ReactNode }) {
   const navigation = useNavigation();
@@ -26,6 +27,7 @@ function Layout({ children }: { children?: ReactNode }) {
           </a>
         </div>
       </footer>
+      <TrailerModal />
       <ScrollRestoration />
     </div>
   );

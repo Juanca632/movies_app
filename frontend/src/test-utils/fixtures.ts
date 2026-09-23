@@ -39,6 +39,7 @@ export const mediaDetail = (overrides: Partial<MediaDetail> = {}): MediaDetail =
     rent: [],
     buy: [],
   },
+  trailer: { key: "YoHD9XEInc0", name: "Official Trailer" },
   recommendations: [media({ id: 2, title: "Interstellar", release_date: "2014-11-05" })],
   ...overrides,
 });

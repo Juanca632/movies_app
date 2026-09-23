@@ -6,6 +6,7 @@ import { DetailHero, DetailSkeleton } from "../components/DetailLayout";
 import Rating from "../components/Rating";
 import { CastRow, MediaRow } from "../components/rows";
 import TmdbImage from "../components/TmdbImage";
+import TrailerButton from "../components/TrailerButton";
 import WatchProviders from "../components/WatchProviders";
 import { formatRuntime, year } from "../lib/tmdb";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
@@ -61,6 +62,9 @@ export function MediaDetailView({ media }: { media: MediaDetail }) {
         )}
 
         {media.overview && <p className="mt-5 max-w-2xl leading-relaxed text-fg/85">{media.overview}</p>}
+        {media.trailer && (
+          <TrailerButton mediaType={media.media_type} id={media.id} title={media.title} className="mt-6 px-5 py-2.5 text-sm" />
+        )}
       </DetailHero>
 
       <div className="mt-6 flex flex-col gap-10 sm:gap-12">
