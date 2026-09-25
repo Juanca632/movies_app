@@ -98,6 +98,11 @@ class PeopleService:
             {"append_to_response": "movie_credits,tv_credits"},
             ttl=self._settings.cache_ttl_details,
         )
+        directed = _crew(raw, lambda item: item.get("job") == "Director")
+        created = _crew(raw, lambda item: item.get("job") == "Creator")
+        written = _crew(raw, lambda item: item.get("department") == "Writing")
+        # Writer-directors write most of what they direct; "Written" lists the rest.
+        made = {(item.media_type, item.id) for item in directed + created}
         return PersonDetail(
             **to_person(raw).model_dump(),
             biography=raw.get("biography") or "",
@@ -109,9 +114,9 @@ class PeopleService:
                 [(item, "movie") for item in raw.get("movie_credits", {}).get("cast", [])]
             ),
             tv_shows=_credits([(item, "tv") for item in raw.get("tv_credits", {}).get("cast", [])]),
-            directed=_crew(raw, lambda item: item.get("job") == "Director"),
-            created=_crew(raw, lambda item: item.get("job") == "Creator"),
-            written=_crew(raw, lambda item: item.get("department") == "Writing"),
+            directed=directed,
+            created=created,
+            written=[item for item in written if (item.media_type, item.id) not in made],
         )
 
     async def search(self, query: str, page: int) -> Page[SearchResult]:

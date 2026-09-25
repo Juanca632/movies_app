@@ -128,9 +128,9 @@ async def test_person_detail_groups_crew_credits_across_movies_and_tv(api):
 
     assert [m["title"] for m in body["created"]] == ["Breaking Bad"]
     assert [m["title"] for m in body["directed"]] == ["Breaking Bad"]
-    # Same id on a movie and a TV show are different titles; one credit each.
+    # Breaking Bad is already under Created/Directed. Same id on a movie and a TV show are
+    # different titles.
     assert [(m["media_type"], m["title"]) for m in body["written"]] == [
-        ("tv", "Breaking Bad"),
         ("movie", "Film"),
         ("tv", "Show with the film's id"),
     ]
