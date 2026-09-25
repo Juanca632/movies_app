@@ -15,6 +15,7 @@ Proyecto de portafolio: explorador de películas/series/actores sobre la API de 
   - `clients/omdb.py` OMDb (datos de IMDb: premios y notas IMDb/Rotten Tomatoes/Metacritic). Opcional: sin `OMDB_API_KEY` o si falla, `/acclaim/{imdb_id}` devuelve vacío y el frontend oculta la sección. Plan gratis: 1000 peticiones/día (caché 1 día); no usarlo en el hover
   - `services/` lógica y normalización (movie/tv → `title`, `release_date`); `schemas/` modelos de respuesta
   - `api/v1/` routers: `media` (`/{media_type}`, `/{media_type}/{id}`), `people`, `search`, `acclaim` (`/acclaim/{imdb_id}`), `discover` (`/genres/{mt}`, `/regions`, `/providers/{mt}?region=`, `/discover/{mt}?genre=&provider=&region=&sort=`). Los routers con prefijo fijo se registran ANTES de `media` en `main.py`.
+  - `api/share.py` + `services/share.py`: vistas previas de enlaces (Open Graph) en las URLs públicas (`/movie/...`, `/tv-show/...`, `/person/...`, fuera de `/api`). Solo las reciben los bots de vista previa (WhatsApp, Telegram...): la regla por user-agent está duplicada en `vercel.json` y `frontend/nginx.conf`, mantenerlas iguales
   - `core/config.py` pydantic-settings (`.env`: `THE_MOVIE_DB_API_KEY`, opcionales `OMDB_API_KEY`, `CORS_ORIGINS`, ...)
   - `tests/` pytest + respx (TMDB mockeado, sin red)
 - `frontend/` — React 19 + TypeScript + Vite 6, Tailwind 4 (sin Sass), React Query, react-router 7 (data router, páginas lazy).
@@ -56,4 +57,4 @@ Proyecto de portafolio: explorador de películas/series/actores sobre la API de 
 - Fase 2: Postgres, login con Google (cookie httpOnly), favoritos y "Mi lista".
 - Fase 3: recomendaciones con IA a partir de favoritos.
 - Fase 4 (casi HECHA): desplegado en Vercel (se publica al mergear a `main`), README con capturas en `docs/screenshots/`. Falta: dominio propio y, si hace falta, la regla de rate limit del Firewall de Vercel.
-- Extra ya hecho: browse por género/plataforma, país con banderas, hover previews, tráileres, premios/notas (OMDb), revisión de seguridad.
+- Extra ya hecho: vistas previas de enlaces compartidos (Open Graph), browse por género/plataforma, país con banderas, hover previews, tráileres, premios/notas (OMDb), revisión de seguridad.

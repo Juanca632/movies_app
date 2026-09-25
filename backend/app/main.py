@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api import share
 from app.api.v1 import acclaim, discover, media, people, search
 from app.clients.omdb import OMDbClient
 from app.clients.tmdb import TMDBClient, TMDBNotFoundError, TMDBUnavailableError
@@ -55,6 +56,8 @@ def create_app() -> FastAPI:
     app.include_router(discover.router, prefix="/api/v1")
     app.include_router(acclaim.router, prefix="/api/v1")
     app.include_router(media.router, prefix="/api/v1")
+    # Link previews for crawlers, on the SPA's own URLs (/movie/..., /person/...).
+    app.include_router(share.router)
     return app
 
 

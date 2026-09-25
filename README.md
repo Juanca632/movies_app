@@ -14,6 +14,7 @@ A streaming-style explorer for movies, TV shows and people, built on the TMDB AP
 - **Trailers** in a modal player, from the home spotlight, the previews and every detail page.
 - **Awards and critic scores**: IMDb, Rotten Tomatoes and Metacritic, plus the awards summary ("Won 4 Oscars…").
 - **Live search** across movies, TV shows and people, with suggestions and keyboard navigation.
+- **Link previews**: sharing a movie, show or person on WhatsApp, Telegram, Discord… shows a card with its image, title and synopsis.
 - **Mobile first**: collapsible search, touch-friendly dropdowns, no horizontal overflow.
 
 <table>
