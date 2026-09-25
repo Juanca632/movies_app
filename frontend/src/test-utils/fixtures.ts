@@ -28,6 +28,7 @@ export const mediaDetail = (overrides: Partial<MediaDetail> = {}): MediaDetail =
   runtime: 148,
   number_of_seasons: null,
   number_of_episodes: null,
+  creators: [{ id: 525, name: "Christopher Nolan" }],
   cast: [{ id: 6193, name: "Leonardo DiCaprio", character: "Cobb", profile_path: null }],
   images: { backdrops: [], posters: [] },
   providers: {
@@ -66,6 +67,9 @@ export const personDetail = (overrides: Partial<PersonDetail> = {}): PersonDetai
   also_known_as: [],
   movies: [media({ id: 13, title: "Forrest Gump", release_date: "1994-06-23" })],
   tv_shows: [],
+  directed: [],
+  created: [],
+  written: [],
   ...overrides,
 });
 

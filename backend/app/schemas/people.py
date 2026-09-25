@@ -23,6 +23,10 @@ class PersonDetail(PersonSummary):
     also_known_as: list[str] = []
     movies: list[MediaSummary] = []
     tv_shows: list[MediaSummary] = []
+    # Behind the camera, movies and TV shows together.
+    directed: list[MediaSummary] = []
+    created: list[MediaSummary] = []
+    written: list[MediaSummary] = []
 
 
 SearchResult = Annotated[MediaSummary | PersonSummary, Field(discriminator="media_type")]

@@ -1,4 +1,5 @@
-import { useParams } from "react-router-dom";
+import { Fragment } from "react";
+import { Link, useParams } from "react-router-dom";
 import { isNotFound } from "../api/client";
 import { useMediaDetail } from "../api/queries";
 import type { MediaDetail, MediaType } from "../api/types";
@@ -9,7 +10,7 @@ import { CastRow, MediaRow } from "../components/rows";
 import TmdbImage from "../components/TmdbImage";
 import TrailerButton from "../components/TrailerButton";
 import WatchProviders from "../components/WatchProviders";
-import { formatRuntime, year } from "../lib/tmdb";
+import { formatRuntime, personHref, year } from "../lib/tmdb";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 import { LoadErrorPage, NotFoundPage } from "./StatusPages";
 
@@ -22,6 +23,25 @@ function facts(media: MediaDetail) {
     media.number_of_seasons ? plural(media.number_of_seasons, "season") : null,
     media.number_of_episodes ? plural(media.number_of_episodes, "episode") : null,
   ];
+}
+
+/** "Directed by A and B" for movies, "Created by A, B and C" for TV shows. */
+function Creators({ media }: { media: MediaDetail }) {
+  const people = media.creators;
+  if (people.length === 0) return null;
+  return (
+    <p className="mt-3 text-sm text-muted">
+      {media.media_type === "movie" ? "Directed by " : "Created by "}
+      {people.map((person, index) => (
+        <Fragment key={person.id}>
+          {index > 0 && (index === people.length - 1 ? " and " : ", ")}
+          <Link to={personHref(person.id, person.name)} className="font-medium text-fg hover:text-accent">
+            {person.name}
+          </Link>
+        </Fragment>
+      ))}
+    </p>
+  );
 }
 
 export function MediaDetailView({ media }: { media: MediaDetail }) {
@@ -51,6 +71,8 @@ export function MediaDetailView({ media }: { media: MediaDetail }) {
               </span>
             ))}
         </div>
+
+        <Creators media={media} />
 
         {media.genres.length > 0 && (
           <ul className="mt-4 flex flex-wrap gap-2">

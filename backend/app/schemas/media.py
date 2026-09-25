@@ -41,6 +41,13 @@ class CastMember(BaseModel):
     profile_path: str | None = None
 
 
+class PersonRef(BaseModel):
+    """Just enough to link to a person: a director, a show's creator..."""
+
+    id: int
+    name: str
+
+
 class Image(BaseModel):
     file_path: str
     width: int
@@ -99,6 +106,7 @@ class MediaDetail(MediaSummary):
     runtime: int | None = None  # minutes (per episode for TV)
     number_of_seasons: int | None = None
     number_of_episodes: int | None = None
+    creators: list[PersonRef] = []  # directors of a movie, creators of a TV show
     cast: list[CastMember] = []
     images: Images = Images()
     providers: Providers | None = None

@@ -217,3 +217,33 @@ async def test_detail_without_trailers_has_none(api):
     response = await api.get("/api/v1/tv/2")
 
     assert response.json()["trailer"] is None
+
+
+@respx.mock
+async def test_detail_credits_movie_directors_and_tv_creators(api):
+    respx.get(f"{BASE}/movie/1").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                **MOVIE_ITEM,
+                "credits": {
+                    "crew": [
+                        {"id": 525, "name": "Christopher Nolan", "job": "Director"},
+                        {"id": 9, "name": "Assistant", "job": "First Assistant Director"},
+                        {"id": 525, "name": "Christopher Nolan", "job": "Writer"},
+                    ]
+                },
+            },
+        )
+    )
+    respx.get(f"{BASE}/tv/2").mock(
+        return_value=httpx.Response(
+            200, json={**TV_ITEM, "created_by": [{"id": 66633, "name": "Vince Gilligan"}]}
+        )
+    )
+
+    movie = (await api.get("/api/v1/movie/1")).json()
+    tv = (await api.get("/api/v1/tv/2")).json()
+
+    assert movie["creators"] == [{"id": 525, "name": "Christopher Nolan"}]
+    assert tv["creators"] == [{"id": 66633, "name": "Vince Gilligan"}]
