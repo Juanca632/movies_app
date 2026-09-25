@@ -15,6 +15,7 @@ import type {
   PersonSummary,
   Provider,
   Region,
+  ReleaseKind,
   SearchResult,
   Season,
 } from "./types";
@@ -126,6 +127,17 @@ export const useDiscover = (mediaType: MediaType, filters: DiscoverFilters, regi
     getNextPageParam: (last) => (last.page < last.total_pages ? last.page + 1 : undefined),
     enabled,
   });
+
+/** A month's releases ("2026-10"); movies are dated in the user's country, TV worldwide. */
+export const useReleases = (kind: ReleaseKind, month: string) => {
+  const userRegion = useRegion();
+  const region = kind === "tv" ? null : userRegion;
+  return useQuery({
+    queryKey: ["releases", kind, month, region],
+    queryFn: ({ signal }) =>
+      getJson<MediaSummary[]>(`releases/${kind}?month=${month}${region ? `&region=${region}` : ""}`, signal),
+  });
+};
 
 export const usePopularPeople = () =>
   useQuery({
