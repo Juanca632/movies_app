@@ -21,8 +21,8 @@ function CollectionRow({ collectionId, currentId }: { collectionId: number; curr
   if (!collection || collection.parts.length < 2) return null;
 
   return (
-    <div className="relative isolate py-8">
-      <Backdrop path={collection.backdrop_path} blur />
+    <div className="relative isolate py-12">
+      <Backdrop path={collection.backdrop_path} blur fadeTop />
       <MediaRow title={collection.name} description={summary(collection)} items={collection.parts} currentId={currentId} />
     </div>
   );
