@@ -11,6 +11,9 @@ A streaming-style explorer for movies, TV shows and people, built on the TMDB AP
 - **Browse like a streaming service.** Home rows for what's in theaters, coming soon, popular and top rated; plus Movies and TV Shows pages filtered by genre, sorted by popularity, rating or release date, and shareable through the URL.
 - **Where to watch, in your country.** The country is detected from the browser language (and can be changed with a flag picker). It drives the streaming, rent and buy options on each title, the "Streaming in…" filter (e.g. *comedies on Netflix in Colombia*) and local release dates. The logos of the main services (Netflix, Prime Video, Apple TV, Google Play, YouTube…) open a search for the title on that service.
 - **Hover previews.** Resting the mouse on a poster grows it into a card with the backdrop, rating, runtime, genres, synopsis and a trailer button (pointer devices only).
+- **Seasons and episodes** for every show, starting from the latest season on air, plus the next scheduled episode.
+- **Directors, creators and sagas**: who made each title, directors' and writers' filmographies, and every movie of a saga in release order.
+- **Release calendar**: what opens in theaters or at home each month in your country, and new series premiering.
 - **Trailers** in a modal player, from the home spotlight, the previews and every detail page.
 - **Awards and critic scores**: IMDb, Rotten Tomatoes and Metacritic, plus the awards summary ("Won 4 Oscars…").
 - **Live search** across movies, TV shows and people, with suggestions and keyboard navigation.

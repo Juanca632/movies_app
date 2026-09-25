@@ -1,8 +1,9 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useDiscover, useGenres, useProviders, useRegionName } from "../api/queries";
 import { DISCOVER_SORTS, type DiscoverSort, type MediaType } from "../api/types";
 import { CARD_GRID, CardSkeleton, MediaCard } from "../components/cards";
+import Chip from "../components/Chip";
 import Dropdown from "../components/Dropdown";
 import ErrorState from "../components/ErrorState";
 import { useRegion } from "../lib/region";
@@ -19,21 +20,6 @@ const SORT_LABELS: Record<DiscoverSort, string> = {
 };
 
 const toId = (value: string | null) => (Number(value) > 0 ? Number(value) : null);
-
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
-        active ? "border-accent bg-accent text-bg" : "border-white/10 bg-surface/60 text-muted hover:border-white/25 hover:text-fg"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
 
 function Browse({ mediaType }: { mediaType: MediaType }) {
   const [params, setParams] = useSearchParams();

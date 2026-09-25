@@ -173,6 +173,9 @@ export type Category<M extends MediaType> = M extends "movie"
 export const DISCOVER_SORTS = ["popular", "top_rated", "newest"] as const;
 export type DiscoverSort = (typeof DISCOVER_SORTS)[number];
 
+export const RELEASE_KINDS = ["theaters", "home", "tv"] as const;
+export type ReleaseKind = (typeof RELEASE_KINDS)[number];
+
 export interface DiscoverFilters {
   genre: number | null;
   provider: number | null;
