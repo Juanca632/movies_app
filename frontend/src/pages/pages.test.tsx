@@ -102,6 +102,43 @@ describe("MediaPage", () => {
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/api/v1/tv/1396?region=US"))).toBe(true);
   });
 
+  it("lists the movie's saga in order and marks the current part", async () => {
+    mockApi({
+      "movie/673?region=US": mediaDetail({
+        id: 673,
+        title: "Harry Potter and the Prisoner of Azkaban",
+        collection: { id: 1241, name: "Harry Potter Collection", poster_path: null, backdrop_path: "/hp.jpg" },
+        recommendations: [media({ id: 671, title: "Philosopher's Stone" }), media({ id: 2, title: "Interstellar" })],
+      }),
+      "collection/1241": {
+        id: 1241,
+        name: "Harry Potter Collection",
+        overview: "",
+        poster_path: null,
+        backdrop_path: "/hp.jpg",
+        parts: [
+          media({ id: 671, title: "Philosopher's Stone", release_date: "2001-11-16" }),
+          media({ id: 673, title: "Prisoner of Azkaban", release_date: "2004-05-31" }),
+          media({ id: 12445, title: "Deathly Hallows: Part 2", release_date: "2011-07-12" }),
+        ],
+      },
+    });
+    renderRoute("/movie/673");
+
+    const saga = await screen.findByRole("region", { name: "Harry Potter Collection" });
+    expect(within(saga).getByText("3 movies · 2001–2011")).toBeInTheDocument();
+    const links = within(saga).getAllByRole("link");
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/movie/671/philosopher-s-stone",
+      "/movie/673/prisoner-of-azkaban",
+      "/movie/12445/deathly-hallows-part-2",
+    ]);
+    expect(links[1]).toHaveAttribute("aria-current", "page");
+    expect(within(links[1]).getByText("You're here")).toBeInTheDocument();
+    const more = screen.getByRole("region", { name: "More like this" });
+    expect(within(more).getAllByRole("link").map((link) => link.textContent)).toEqual([expect.stringContaining("Interstellar")]);
+  });
+
   it("shows a 404 for an unknown movie", async () => {
     mockApi({});
     renderRoute("/movie/999/nope");

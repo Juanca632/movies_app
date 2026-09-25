@@ -1,11 +1,12 @@
 import { Fragment } from "react";
 import { Link, useParams } from "react-router-dom";
 import { isNotFound } from "../api/client";
-import { useMediaDetail } from "../api/queries";
+import { useCollection, useMediaDetail } from "../api/queries";
 import type { MediaDetail, MediaType } from "../api/types";
 import Acclaim from "../components/Acclaim";
 import { DetailHero, DetailSkeleton } from "../components/DetailLayout";
 import Rating from "../components/Rating";
+import CollectionRow from "../components/CollectionRow";
 import { CastRow, MediaRow } from "../components/rows";
 import TmdbImage from "../components/TmdbImage";
 import TrailerButton from "../components/TrailerButton";
@@ -47,6 +48,10 @@ function Creators({ media }: { media: MediaDetail }) {
 export function MediaDetailView({ media }: { media: MediaDetail }) {
   useDocumentTitle(media.title);
   const backdrop = media.backdrop_path ?? media.images.backdrops[0]?.file_path;
+  // The saga has its own row, so its parts would only repeat under "More like this".
+  const { data: collection } = useCollection(media.collection?.id ?? null);
+  const sagaIds = new Set(collection?.parts.map((part) => part.id));
+  const recommendations = media.recommendations.filter((item) => !sagaIds.has(item.id));
 
   return (
     <article>
@@ -95,7 +100,8 @@ export function MediaDetailView({ media }: { media: MediaDetail }) {
       <div className="mt-6 flex flex-col gap-10 sm:gap-12">
         <WatchProviders providers={media.providers} title={media.title} />
         <CastRow cast={media.cast} />
-        <MediaRow title="More like this" items={media.recommendations} />
+        {media.collection && <CollectionRow collectionId={media.collection.id} currentId={media.id} />}
+        <MediaRow title="More like this" items={recommendations} />
       </div>
     </article>
   );

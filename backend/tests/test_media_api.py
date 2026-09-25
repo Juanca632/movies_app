@@ -247,3 +247,70 @@ async def test_detail_credits_movie_directors_and_tv_creators(api):
 
     assert movie["creators"] == [{"id": 525, "name": "Christopher Nolan"}]
     assert tv["creators"] == [{"id": 66633, "name": "Vince Gilligan"}]
+
+
+@respx.mock
+async def test_movie_detail_links_its_collection(api):
+    respx.get(f"{BASE}/movie/673").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                **MOVIE_ITEM,
+                "id": 673,
+                "belongs_to_collection": {
+                    "id": 1241,
+                    "name": "Harry Potter Collection",
+                    "poster_path": "/hp.jpg",
+                    "backdrop_path": "/hpb.jpg",
+                },
+            },
+        )
+    )
+    respx.get(f"{BASE}/movie/1").mock(return_value=httpx.Response(200, json=MOVIE_ITEM))
+
+    saga = (await api.get("/api/v1/movie/673")).json()
+    standalone = (await api.get("/api/v1/movie/1")).json()
+
+    assert saga["collection"]["id"] == 1241
+    assert saga["collection"]["name"] == "Harry Potter Collection"
+    assert standalone["collection"] is None
+
+
+@respx.mock
+async def test_collection_lists_parts_in_release_order(api):
+    respx.get(f"{BASE}/collection/1241").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "id": 1241,
+                "name": "Harry Potter Collection",
+                "overview": "Wizards.",
+                "parts": [
+                    {"id": 674, "title": "Goblet of Fire", "release_date": "2005-11-16"},
+                    {"id": 999, "title": "Unannounced", "release_date": ""},
+                    {"id": 671, "title": "Philosopher's Stone", "release_date": "2001-11-16"},
+                    {"id": 673, "title": "Prisoner of Azkaban", "release_date": "2004-05-31"},
+                ],
+            },
+        )
+    )
+
+    response = await api.get("/api/v1/collection/1241")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "Harry Potter Collection"
+    assert [part["title"] for part in body["parts"]] == [
+        "Philosopher's Stone",
+        "Prisoner of Azkaban",
+        "Goblet of Fire",
+        "Unannounced",
+    ]
+    assert body["parts"][0]["media_type"] == "movie"
+
+
+@respx.mock
+async def test_unknown_collection_is_404(api):
+    respx.get(f"{BASE}/collection/404").mock(return_value=httpx.Response(404))
+
+    assert (await api.get("/api/v1/collection/404")).status_code == 404
