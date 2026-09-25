@@ -139,6 +139,97 @@ describe("MediaPage", () => {
     expect(within(more).getAllByRole("link").map((link) => link.textContent)).toEqual([expect.stringContaining("Interstellar")]);
   });
 
+  it("lists a show's episodes by season, starting from the latest one on air", async () => {
+    const episode = (season: number, n: number, name: string, airDate: string | null) => ({
+      id: season * 100 + n,
+      season_number: season,
+      episode_number: n,
+      name,
+      overview: "",
+      air_date: airDate,
+      runtime: 47,
+      still_path: null,
+      vote_average: 8.2,
+    });
+    const season = (n: number, episodes: ReturnType<typeof episode>[]) => ({
+      season_number: n,
+      name: n === 0 ? "Specials" : `Season ${n}`,
+      air_date: episodes[0].air_date,
+      episode_count: episodes.length,
+      poster_path: null,
+      overview: "",
+      episodes,
+    });
+    const s1 = season(1, [episode(1, 1, "Pilot", "2008-01-20")]);
+    const s2 = season(2, [episode(2, 1, "Seven Thirty-Seven", "2009-03-08")]);
+    const s3 = season(3, [episode(3, 1, "Future Episode", "2999-01-01")]);
+    const specials = season(0, [episode(0, 1, "Minisode", null)]);
+    const summary = ({ season_number, name, air_date, episode_count, poster_path }: ReturnType<typeof season>) => ({
+      season_number,
+      name,
+      air_date,
+      episode_count,
+      poster_path,
+    });
+    mockApi({
+      "tv/1396?region=US": mediaDetail({
+        id: 1396,
+        media_type: "tv",
+        title: "Breaking Bad",
+        seasons: [summary(s1), summary(s2), summary(s3), summary(specials)],
+        next_episode: episode(3, 1, "Future Episode", "2999-01-01"),
+      }),
+      "tv/1396/season/1": s1,
+      "tv/1396/season/2": s2,
+      "tv/1396/season/3": s3,
+      "tv/1396/season/0": specials,
+    });
+    const { router } = renderRoute("/tv-show/1396/breaking-bad");
+
+    expect((await screen.findByText("Next episode")).parentElement).toHaveTextContent("Next episode · S3 E1 “Future Episode” · January 1, 2999");
+    const episodes = screen.getByRole("region", { name: "Episodes" });
+    // Neither the specials nor season 3, which has not started yet: the latest season on air.
+    expect(await within(episodes).findByRole("heading", { name: /Seven Thirty-Seven/ })).toBeInTheDocument();
+    expect(within(episodes).getByText("March 8, 2009 · 47m · ★ 8.2")).toBeInTheDocument();
+
+    await userEvent.click(within(episodes).getByRole("combobox", { name: "Season" }));
+    await userEvent.click(within(episodes).getByRole("option", { name: /Season 3/ }));
+    expect(await within(episodes).findByRole("heading", { name: /Future Episode/ })).toBeInTheDocument();
+    expect(within(episodes).getByText("Airs January 1, 2999")).toBeInTheDocument();
+    expect(router.state.location.search).toBe("?season=3");
+  });
+
+  it("opens the season given in the URL", async () => {
+    const pilot = {
+      id: 1,
+      season_number: 1,
+      episode_number: 1,
+      name: "Pilot",
+      overview: "",
+      air_date: "2008-01-20",
+      runtime: null,
+      still_path: null,
+      vote_average: 0,
+    };
+    mockApi({
+      "tv/1396?region=US": mediaDetail({
+        id: 1396,
+        media_type: "tv",
+        title: "Breaking Bad",
+        seasons: [
+          { season_number: 1, name: "Season 1", air_date: "2008-01-20", episode_count: 1, poster_path: null },
+          { season_number: 2, name: "Season 2", air_date: "2009-03-08", episode_count: 13, poster_path: null },
+        ],
+      }),
+      "tv/1396/season/1": { season_number: 1, name: "Season 1", air_date: null, episode_count: 1, poster_path: null, overview: "", episodes: [pilot] },
+    });
+    renderRoute("/tv-show/1396/breaking-bad?season=1");
+
+    const episodes = await screen.findByRole("region", { name: "Episodes" });
+    expect(await within(episodes).findByRole("heading", { name: /Pilot/ })).toBeInTheDocument();
+    expect(within(episodes).getByRole("combobox", { name: "Season" })).toHaveTextContent("Season 1 · 1 episode");
+  });
+
   it("shows a 404 for an unknown movie", async () => {
     mockApi({});
     renderRoute("/movie/999/nope");

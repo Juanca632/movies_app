@@ -16,6 +16,7 @@ import type {
   Provider,
   Region,
   SearchResult,
+  Season,
 } from "./types";
 
 export function createQueryClient() {
@@ -59,6 +60,13 @@ export const useMediaDetail = (mediaType: MediaType, id: string, enabled = true)
     placeholderData: (previous, query) => (query?.queryKey[3] === id ? previous : undefined),
   });
 };
+
+export const useSeason = (tvId: number, seasonNumber: number | null) =>
+  useQuery({
+    queryKey: ["media", "tv", tvId, "season", seasonNumber],
+    queryFn: ({ signal }) => getJson<Season>(`tv/${tvId}/season/${seasonNumber}`, signal),
+    enabled: seasonNumber !== null,
+  });
 
 export const useCollection = (id: number | null) =>
   useQuery({

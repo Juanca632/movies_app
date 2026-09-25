@@ -314,3 +314,80 @@ async def test_unknown_collection_is_404(api):
     respx.get(f"{BASE}/collection/404").mock(return_value=httpx.Response(404))
 
     assert (await api.get("/api/v1/collection/404")).status_code == 404
+
+
+@respx.mock
+async def test_tv_detail_orders_seasons_and_shows_the_next_episode(api):
+    respx.get(f"{BASE}/tv/2").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                **TV_ITEM,
+                "seasons": [
+                    {"season_number": 0, "name": "Specials", "episode_count": 3},
+                    {"season_number": 2, "name": "Season 2", "episode_count": 8},
+                    {"season_number": 1, "name": "Season 1", "episode_count": 10},
+                    {"season_number": 3, "name": "Season 3", "episode_count": 0},
+                ],
+                "next_episode_to_air": {
+                    "id": 55,
+                    "season_number": 2,
+                    "episode_number": 5,
+                    "name": "Next One",
+                    "air_date": "2026-10-03",
+                },
+            },
+        )
+    )
+
+    body = (await api.get("/api/v1/tv/2")).json()
+
+    assert [season["name"] for season in body["seasons"]] == ["Season 1", "Season 2", "Specials"]
+    assert body["next_episode"]["episode_number"] == 5
+    assert body["next_episode"]["air_date"] == "2026-10-03"
+
+
+@respx.mock
+async def test_season_lists_its_episodes(api):
+    respx.get(f"{BASE}/tv/1396/season/1").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "season_number": 1,
+                "name": "Season 1",
+                "overview": "Walter White.",
+                "air_date": "2008-01-20",
+                "episodes": [
+                    {
+                        "id": 62085,
+                        "season_number": 1,
+                        "episode_number": 1,
+                        "name": "Pilot",
+                        "air_date": "2008-01-20",
+                        "runtime": 59,
+                        "still_path": "/pilot.jpg",
+                        "vote_average": 8.5,
+                        "crew": [{"id": 1}],
+                    },
+                    {"id": 62086, "season_number": 1, "episode_number": 2, "name": "Cat's in"},
+                ],
+            },
+        )
+    )
+
+    response = await api.get("/api/v1/tv/1396/season/1")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["episode_count"] == 2
+    assert body["episodes"][0]["name"] == "Pilot"
+    assert body["episodes"][0]["runtime"] == 59
+    assert body["episodes"][1]["air_date"] is None
+    assert "crew" not in body["episodes"][0]
+
+
+@respx.mock
+async def test_unknown_season_is_404(api):
+    respx.get(f"{BASE}/tv/1396/season/99").mock(return_value=httpx.Response(404))
+
+    assert (await api.get("/api/v1/tv/1396/season/99")).status_code == 404

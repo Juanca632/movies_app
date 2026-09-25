@@ -11,7 +11,8 @@ import { CastRow, MediaRow } from "../components/rows";
 import TmdbImage from "../components/TmdbImage";
 import TrailerButton from "../components/TrailerButton";
 import WatchProviders from "../components/WatchProviders";
-import { formatRuntime, personHref, year } from "../lib/tmdb";
+import Seasons from "../components/Seasons";
+import { formatDate, formatRuntime, personHref, year } from "../lib/tmdb";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 import { LoadErrorPage, NotFoundPage } from "./StatusPages";
 
@@ -41,6 +42,19 @@ function Creators({ media }: { media: MediaDetail }) {
           </Link>
         </Fragment>
       ))}
+    </p>
+  );
+}
+
+function NextEpisode({ media }: { media: MediaDetail }) {
+  const next = media.next_episode;
+  if (!next) return null;
+  const date = formatDate(next.air_date);
+  return (
+    <p className="mt-2 text-sm text-muted">
+      <span className="font-semibold text-accent">Next episode</span> · S{next.season_number} E{next.episode_number}
+      {next.name && ` “${next.name}”`}
+      {date && ` · ${date}`}
     </p>
   );
 }
@@ -78,6 +92,7 @@ export function MediaDetailView({ media }: { media: MediaDetail }) {
         </div>
 
         <Creators media={media} />
+        <NextEpisode media={media} />
 
         {media.genres.length > 0 && (
           <ul className="mt-4 flex flex-wrap gap-2">
@@ -99,6 +114,7 @@ export function MediaDetailView({ media }: { media: MediaDetail }) {
 
       <div className="mt-6 flex flex-col gap-10 sm:gap-12">
         <WatchProviders providers={media.providers} title={media.title} />
+        {media.seasons.length > 0 && <Seasons tvId={media.id} seasons={media.seasons} />}
         <CastRow cast={media.cast} />
         {media.collection && <CollectionRow collectionId={media.collection.id} currentId={media.id} />}
         <MediaRow title="More like this" items={recommendations} />
