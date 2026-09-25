@@ -10,6 +10,7 @@ const ITEM_WIDTH = {
 
 interface RowProps<T> {
   title: string;
+  description?: ReactNode;
   items: T[] | undefined;
   getKey: (item: T) => string | number;
   renderItem: (item: T) => ReactNode;
@@ -20,7 +21,7 @@ interface RowProps<T> {
 }
 
 /** A titled, horizontally scrollable row of cards with desktop arrows. */
-function Row<T>({ title, items, getKey, renderItem, variant = "media", isPending, isError, onRetry }: RowProps<T>) {
+function Row<T>({ title, description, items, getKey, renderItem, variant = "media", isPending, isError, onRetry }: RowProps<T>) {
   const scroller = useRef<HTMLUListElement>(null);
   const [edges, setEdges] = useState({ start: true, end: true });
 
@@ -52,6 +53,7 @@ function Row<T>({ title, items, getKey, renderItem, variant = "media", isPending
   return (
     <section aria-label={title} className="group/row">
       <h2 className="page-x mb-2 font-display text-xl font-semibold tracking-tight sm:text-2xl">{title}</h2>
+      {description && <p className="page-x -mt-1 mb-3 text-sm text-muted">{description}</p>}
 
       {isError ? (
         <ErrorState className="page-x" message={`Couldn't load “${title}”.`} onRetry={onRetry} />

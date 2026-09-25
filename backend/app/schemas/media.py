@@ -48,6 +48,15 @@ class PersonRef(BaseModel):
     name: str
 
 
+class CollectionRef(BaseModel):
+    """The saga a movie belongs to (Harry Potter, Star Wars...)."""
+
+    id: int
+    name: str
+    poster_path: str | None = None
+    backdrop_path: str | None = None
+
+
 class Image(BaseModel):
     file_path: str
     width: int
@@ -112,3 +121,9 @@ class MediaDetail(MediaSummary):
     providers: Providers | None = None
     trailer: Video | None = None
     recommendations: list[MediaSummary] = []
+    collection: CollectionRef | None = None  # movies only
+
+
+class Collection(CollectionRef):
+    overview: str = ""
+    parts: list[MediaSummary] = []  # in release order, unreleased last

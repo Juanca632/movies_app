@@ -39,6 +39,18 @@ export interface PersonRef {
   name: string;
 }
 
+export interface CollectionRef {
+  id: number;
+  name: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+}
+
+export interface Collection extends CollectionRef {
+  overview: string;
+  parts: MediaSummary[]; // in release order, unreleased last
+}
+
 export interface Image {
   file_path: string;
   width: number;
@@ -96,6 +108,7 @@ export interface MediaDetail extends MediaSummary {
   providers: Providers | null;
   trailer: Video | null;
   recommendations: MediaSummary[];
+  collection: CollectionRef | null; // movies only
 }
 
 export interface PersonSummary {

@@ -4,6 +4,8 @@ from app.clients.tmdb import TMDBClient
 from app.core.config import Settings
 from app.schemas.media import (
     CastMember,
+    Collection,
+    CollectionRef,
     Image,
     Images,
     MediaDetail,
@@ -189,4 +191,25 @@ class MediaService:
                 to_summary(item, media_type)
                 for item in raw.get("recommendations", {}).get("results", [])
             ],
+            collection=(
+                CollectionRef.model_validate(raw["belongs_to_collection"])
+                if raw.get("belongs_to_collection")
+                else None
+            ),
+        )
+
+    async def collection(self, collection_id: int) -> Collection:
+        raw = await self._tmdb.get(
+            f"/collection/{collection_id}", ttl=self._settings.cache_ttl_details
+        )
+        parts = [to_summary(part, "movie") for part in raw.get("parts", [])]
+        # TMDB lists parts in no particular order; undated (unannounced) ones go last.
+        parts.sort(key=lambda part: (part.release_date is None, part.release_date or ""))
+        return Collection(
+            id=raw["id"],
+            name=raw.get("name") or "",
+            overview=raw.get("overview") or "",
+            poster_path=raw.get("poster_path"),
+            backdrop_path=raw.get("backdrop_path"),
+            parts=parts,
         )

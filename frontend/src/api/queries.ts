@@ -4,6 +4,7 @@ import { ApiError, getJson } from "./client";
 import type {
   Acclaim,
   Category,
+  Collection,
   DiscoverFilters,
   Genre,
   MediaDetail,
@@ -58,6 +59,13 @@ export const useMediaDetail = (mediaType: MediaType, id: string, enabled = true)
     placeholderData: (previous, query) => (query?.queryKey[3] === id ? previous : undefined),
   });
 };
+
+export const useCollection = (id: number | null) =>
+  useQuery({
+    queryKey: ["collection", id],
+    queryFn: ({ signal }) => getJson<Collection>(`collection/${id}`, signal),
+    enabled: id !== null,
+  });
 
 export const useAcclaim = (imdbId: string | null) =>
   useQuery({

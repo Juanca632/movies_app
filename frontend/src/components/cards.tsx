@@ -69,19 +69,29 @@ function useHoverPreview() {
   return { anchor, leaving, close, handlers };
 }
 
-export function MediaCard({ item }: { item: MediaSummary }) {
+export function MediaCard({ item, current = false }: { item: MediaSummary; current?: boolean }) {
   const preview = useHoverPreview();
 
   return (
     <>
-      <Link to={mediaHref(item.media_type, item.id, item.title)} className="group block" {...preview.handlers}>
-        <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-surface ring-1 ring-white/5 transition duration-300 group-hover:ring-accent/60">
+      <Link
+        to={mediaHref(item.media_type, item.id, item.title)}
+        aria-current={current ? "page" : undefined}
+        className="group block"
+        {...preview.handlers}
+      >
+        <div
+          className={`relative aspect-[2/3] overflow-hidden rounded-lg bg-surface transition duration-300 ${current ? "ring-2 ring-accent" : "ring-1 ring-white/5 group-hover:ring-accent/60"}`}
+        >
           <TmdbImage path={item.poster_path} size="w342" alt="" />
           {item.vote_average > 0 && (
             <Rating
               value={item.vote_average}
               className="absolute left-2 top-2 rounded-md bg-black/70 px-1.5 py-0.5 text-xs backdrop-blur-sm"
             />
+          )}
+          {current && (
+            <span className="absolute inset-x-0 bottom-0 bg-accent py-1 text-center text-xs font-semibold text-black">You're here</span>
           )}
         </div>
         <p className="mt-2 truncate text-sm font-medium text-fg group-hover:text-accent">{item.title}</p>
