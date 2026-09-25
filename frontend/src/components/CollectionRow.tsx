@@ -21,7 +21,9 @@ function CollectionRow({ collectionId, currentId }: { collectionId: number; curr
   if (!collection || collection.parts.length < 2) return null;
 
   return (
-    <div className="relative isolate py-12">
+    // The band's padding cancels out against the page's gap between rows (gap-10 sm:gap-12 in
+    // MediaPage), so the backdrop fills that gap instead of adding to it.
+    <div className="relative isolate -my-10 py-10 sm:-my-12 sm:py-12">
       <Backdrop path={collection.backdrop_path} blur fadeTop />
       <MediaRow title={collection.name} description={summary(collection)} items={collection.parts} currentId={currentId} />
     </div>
