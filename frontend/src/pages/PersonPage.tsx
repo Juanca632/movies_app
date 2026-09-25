@@ -29,6 +29,21 @@ function Biography({ text }: { text: string }) {
   );
 }
 
+/** Credit rows, leading with what the person is known for: acting, or work behind the camera. */
+function creditRows(person: PersonDetail) {
+  const acting = [
+    { title: "Movies", items: person.movies },
+    { title: "TV Shows", items: person.tv_shows },
+  ];
+  const crew = [
+    { title: "Directed", items: person.directed },
+    { title: "Created", items: person.created },
+    { title: "Written", items: person.written },
+  ];
+  const actsFirst = !person.known_for_department || person.known_for_department === "Acting";
+  return actsFirst ? [...acting, ...crew] : [...crew, ...acting];
+}
+
 export function PersonDetailView({ person }: { person: PersonDetail }) {
   useDocumentTitle(person.name);
   // Their best-known work sets the mood of the header.
@@ -69,8 +84,9 @@ export function PersonDetailView({ person }: { person: PersonDetail }) {
       </DetailHero>
 
       <div className="mt-6 flex flex-col gap-10 sm:gap-12">
-        <MediaRow title="Movies" items={person.movies} />
-        <MediaRow title="TV Shows" items={person.tv_shows} />
+        {creditRows(person).map((row) => (
+          <MediaRow key={row.title} title={row.title} items={row.items} />
+        ))}
       </div>
     </article>
   );

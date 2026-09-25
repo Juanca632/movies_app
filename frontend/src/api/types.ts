@@ -34,6 +34,11 @@ export interface CastMember {
   profile_path: string | null;
 }
 
+export interface PersonRef {
+  id: number;
+  name: string;
+}
+
 export interface Image {
   file_path: string;
   width: number;
@@ -85,6 +90,7 @@ export interface MediaDetail extends MediaSummary {
   runtime: number | null;
   number_of_seasons: number | null;
   number_of_episodes: number | null;
+  creators: PersonRef[]; // directors of a movie, creators of a TV show
   cast: CastMember[];
   images: { backdrops: Image[]; posters: Image[] };
   providers: Providers | null;
@@ -110,6 +116,10 @@ export interface PersonDetail extends PersonSummary {
   also_known_as: string[];
   movies: MediaSummary[];
   tv_shows: MediaSummary[];
+  // Behind the camera, movies and TV shows together.
+  directed: MediaSummary[];
+  created: MediaSummary[];
+  written: MediaSummary[];
 }
 
 export type SearchResult = MediaSummary | PersonSummary;

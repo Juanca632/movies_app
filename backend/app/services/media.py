@@ -10,6 +10,7 @@ from app.schemas.media import (
     MediaSummary,
     MediaType,
     Page,
+    PersonRef,
     Provider,
     Providers,
     Video,
@@ -64,6 +65,14 @@ def _cast(raw: dict[str, Any]) -> list[CastMember]:
             )
         )
     return members
+
+
+def _creators(raw: dict[str, Any], credits: dict[str, Any]) -> list[PersonRef]:
+    """Who made it: a movie's directors, or a TV show's creators."""
+    people = raw.get("created_by") or [
+        member for member in credits.get("crew", []) if member.get("job") == "Director"
+    ]
+    return [PersonRef(id=person["id"], name=person["name"]) for person in people]
 
 
 def _images(raw: dict[str, Any]) -> Images:
@@ -171,6 +180,7 @@ class MediaService:
             runtime=runtime,
             number_of_seasons=raw.get("number_of_seasons"),
             number_of_episodes=raw.get("number_of_episodes"),
+            creators=_creators(raw, credits),
             cast=_cast(credits),
             images=_images(raw.get("images", {})),
             providers=_providers(raw.get("watch/providers", {}), region),

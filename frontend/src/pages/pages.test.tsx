@@ -65,6 +65,8 @@ describe("MediaPage", () => {
     expect(within(acclaim).getByText("Won 4 Oscars. 160 wins & 220 nominations total")).toBeInTheDocument();
     expect(within(acclaim).getByText("Rotten Tomatoes").nextSibling).toHaveTextContent("86%");
     expect(screen.getByText("2h 28m")).toBeInTheDocument();
+    expect(screen.getByText(/Directed by/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Christopher Nolan" })).toHaveAttribute("href", "/person/525/christopher-nolan");
     expect(screen.getByText("Science Fiction")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Leonardo DiCaprio/ })).toHaveAttribute("href", "/person/6193/leonardo-dicaprio");
     expect(screen.getByRole("img", { name: "Netflix" })).toBeInTheDocument();
@@ -78,13 +80,25 @@ describe("MediaPage", () => {
 
   it("asks the tv endpoint for TV shows and shows seasons", async () => {
     const fetchMock = mockApi({
-      "tv/1396?region=US": mediaDetail({ id: 1396, media_type: "tv", title: "Breaking Bad", runtime: null, number_of_seasons: 5, number_of_episodes: 62 }),
+      "tv/1396?region=US": mediaDetail({
+        id: 1396,
+        media_type: "tv",
+        title: "Breaking Bad",
+        runtime: null,
+        number_of_seasons: 5,
+        number_of_episodes: 62,
+        creators: [
+          { id: 66633, name: "Vince Gilligan" },
+          { id: 1, name: "Peter Gould" },
+        ],
+      }),
     });
     renderRoute("/tv-show/1396/breaking-bad");
 
     expect(await screen.findByRole("heading", { level: 1, name: "Breaking Bad" })).toBeInTheDocument();
     expect(screen.getByText("5 seasons")).toBeInTheDocument();
     expect(screen.getByText("62 episodes")).toBeInTheDocument();
+    expect(screen.getByText(/Created by/)).toHaveTextContent("Created by Vince Gilligan and Peter Gould");
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/api/v1/tv/1396?region=US"))).toBe(true);
   });
 
@@ -115,6 +129,27 @@ describe("PersonPage", () => {
     expect(screen.getByRole("button", { name: "Show less" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Forrest Gump/ })).toHaveAttribute("href", "/movie/13/forrest-gump");
     expect(screen.queryByRole("region", { name: "TV Shows" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Directed" })).not.toBeInTheDocument();
+  });
+
+  it("leads with the work behind the camera for directors", async () => {
+    mockApi({
+      "person/525": personDetail({
+        id: 525,
+        name: "Christopher Nolan",
+        known_for_department: "Directing",
+        movies: [media({ id: 7, title: "Cameo" })],
+        directed: [media({ id: 27205, title: "Inception" })],
+        written: [media({ id: 27205, title: "Inception" })],
+      }),
+    });
+    renderRoute("/person/525/christopher-nolan");
+
+    await screen.findByRole("heading", { level: 1, name: "Christopher Nolan" });
+    const rows = screen.getAllByRole("region").map((region) => region.getAttribute("aria-label"));
+    expect(rows).toEqual(["Directed", "Written", "Movies"]);
+    const directed = screen.getByRole("region", { name: "Directed" });
+    expect(within(directed).getByRole("link", { name: /Inception/ })).toHaveAttribute("href", "/movie/27205/inception");
   });
 });
 
