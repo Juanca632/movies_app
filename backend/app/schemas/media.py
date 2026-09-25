@@ -57,6 +57,31 @@ class CollectionRef(BaseModel):
     backdrop_path: str | None = None
 
 
+class Episode(BaseModel):
+    id: int
+    season_number: int
+    episode_number: int
+    name: str
+    overview: str = ""
+    air_date: str | None = None
+    runtime: int | None = None  # minutes
+    still_path: str | None = None
+    vote_average: float = 0
+
+
+class SeasonSummary(BaseModel):
+    season_number: int  # 0 holds the specials
+    name: str
+    air_date: str | None = None
+    episode_count: int = 0
+    poster_path: str | None = None
+
+
+class Season(SeasonSummary):
+    overview: str = ""
+    episodes: list[Episode] = []
+
+
 class Image(BaseModel):
     file_path: str
     width: int
@@ -115,6 +140,8 @@ class MediaDetail(MediaSummary):
     runtime: int | None = None  # minutes (per episode for TV)
     number_of_seasons: int | None = None
     number_of_episodes: int | None = None
+    seasons: list[SeasonSummary] = []  # TV only: regular seasons in order, specials last
+    next_episode: Episode | None = None  # TV only, when one is scheduled
     creators: list[PersonRef] = []  # directors of a movie, creators of a TV show
     cast: list[CastMember] = []
     images: Images = Images()

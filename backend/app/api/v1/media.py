@@ -1,9 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Path, Query, status
 
 from app.api.deps import MediaServiceDep
-from app.schemas.media import MediaDetail, MediaSummary, MediaType, Page
+from app.schemas.media import MediaDetail, MediaSummary, MediaType, Page, Season
 from app.services.media import CATEGORIES
 
 router = APIRouter(tags=["Media"])
@@ -23,6 +23,15 @@ async def list_media(
             f"Invalid category for {media_type}. Allowed: {', '.join(CATEGORIES[media_type])}",
         )
     return await service.list(media_type, category, page, region)
+
+
+@router.get("/tv/{tv_id}/season/{season_number}", summary="A TV season with its episodes")
+async def get_season(
+    tv_id: int,
+    season_number: Annotated[int, Path(ge=0, le=1000)],
+    service: MediaServiceDep,
+) -> Season:
+    return await service.season(tv_id, season_number)
 
 
 @router.get("/{media_type}/{media_id}", summary="Movie or TV show with everything the page needs")

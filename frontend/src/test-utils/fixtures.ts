@@ -28,6 +28,8 @@ export const mediaDetail = (overrides: Partial<MediaDetail> = {}): MediaDetail =
   runtime: 148,
   number_of_seasons: null,
   number_of_episodes: null,
+  seasons: [],
+  next_episode: null,
   creators: [{ id: 525, name: "Christopher Nolan" }],
   cast: [{ id: 6193, name: "Leonardo DiCaprio", character: "Cobb", profile_path: null }],
   images: { backdrops: [], posters: [] },
