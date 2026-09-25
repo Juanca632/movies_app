@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { CloseIcon, PlayIcon, SearchIcon } from "./icons";
+import { CalendarIcon, CloseIcon, PlayIcon, SearchIcon } from "./icons";
 import RegionPicker from "./RegionPicker";
 import SearchBox from "./SearchBox";
 
+// On phones the calendar shrinks to an icon, or the links would run into the search button.
 const LINKS = [
   { to: "/browse/movie", label: "Movies" },
   { to: "/browse/tv", label: "TV Shows" },
+  { to: "/calendar", label: "Calendar", Icon: CalendarIcon },
 ];
 
 function Navbar() {
@@ -61,13 +63,15 @@ function Navbar() {
         </Link>
 
         <ul className="flex shrink-0 items-center gap-4 text-sm font-medium sm:gap-5">
-          {LINKS.map(({ to, label }) => (
+          {LINKS.map(({ to, label, Icon }) => (
             <li key={to}>
               <NavLink
                 to={to}
-                className={({ isActive }) => `whitespace-nowrap transition-colors hover:text-fg ${isActive ? "text-fg" : "text-muted"}`}
+                aria-label={Icon ? label : undefined}
+                className={({ isActive }) => `block whitespace-nowrap transition-colors hover:text-fg ${isActive ? "text-fg" : "text-muted"}`}
               >
-                {label}
+                {Icon && <Icon className="size-5 sm:hidden" />}
+                <span className={Icon ? "hidden sm:inline" : undefined}>{label}</span>
               </NavLink>
             </li>
           ))}

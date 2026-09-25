@@ -34,6 +34,48 @@ export interface CastMember {
   profile_path: string | null;
 }
 
+export interface PersonRef {
+  id: number;
+  name: string;
+}
+
+export interface CollectionRef {
+  id: number;
+  name: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+}
+
+export interface Collection extends CollectionRef {
+  overview: string;
+  parts: MediaSummary[]; // in release order, unreleased last
+}
+
+export interface Episode {
+  id: number;
+  season_number: number;
+  episode_number: number;
+  name: string;
+  overview: string;
+  air_date: string | null;
+  runtime: number | null; // minutes
+  still_path: string | null;
+  vote_average: number;
+}
+
+export interface SeasonSummary {
+  season_number: number; // 0 holds the specials
+  name: string;
+  air_date: string | null;
+  episode_count: number;
+  poster_path: string | null;
+}
+
+export interface Season extends SeasonSummary {
+  overview: string;
+  episodes: Episode[];
+}
+
 export interface Image {
   file_path: string;
   width: number;
@@ -85,11 +127,15 @@ export interface MediaDetail extends MediaSummary {
   runtime: number | null;
   number_of_seasons: number | null;
   number_of_episodes: number | null;
+  seasons: SeasonSummary[]; // TV only: regular seasons in order, specials last
+  next_episode: Episode | null; // TV only, when one is scheduled
+  creators: PersonRef[]; // directors of a movie, creators of a TV show
   cast: CastMember[];
   images: { backdrops: Image[]; posters: Image[] };
   providers: Providers | null;
   trailer: Video | null;
   recommendations: MediaSummary[];
+  collection: CollectionRef | null; // movies only
 }
 
 export interface PersonSummary {
@@ -110,6 +156,10 @@ export interface PersonDetail extends PersonSummary {
   also_known_as: string[];
   movies: MediaSummary[];
   tv_shows: MediaSummary[];
+  // Behind the camera, movies and TV shows together.
+  directed: MediaSummary[];
+  created: MediaSummary[];
+  written: MediaSummary[];
 }
 
 export type SearchResult = MediaSummary | PersonSummary;
@@ -122,6 +172,9 @@ export type Category<M extends MediaType> = M extends "movie"
 
 export const DISCOVER_SORTS = ["popular", "top_rated", "newest"] as const;
 export type DiscoverSort = (typeof DISCOVER_SORTS)[number];
+
+export const RELEASE_KINDS = ["theaters", "home", "tv"] as const;
+export type ReleaseKind = (typeof RELEASE_KINDS)[number];
 
 export interface DiscoverFilters {
   genre: number | null;

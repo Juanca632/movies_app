@@ -28,6 +28,9 @@ export const mediaDetail = (overrides: Partial<MediaDetail> = {}): MediaDetail =
   runtime: 148,
   number_of_seasons: null,
   number_of_episodes: null,
+  seasons: [],
+  next_episode: null,
+  creators: [{ id: 525, name: "Christopher Nolan" }],
   cast: [{ id: 6193, name: "Leonardo DiCaprio", character: "Cobb", profile_path: null }],
   images: { backdrops: [], posters: [] },
   providers: {
@@ -43,6 +46,7 @@ export const mediaDetail = (overrides: Partial<MediaDetail> = {}): MediaDetail =
   },
   trailer: { key: "YoHD9XEInc0", name: "Official Trailer" },
   recommendations: [media({ id: 2, title: "Interstellar", release_date: "2014-11-05" })],
+  collection: null,
   ...overrides,
 });
 
@@ -66,6 +70,9 @@ export const personDetail = (overrides: Partial<PersonDetail> = {}): PersonDetai
   also_known_as: [],
   movies: [media({ id: 13, title: "Forrest Gump", release_date: "1994-06-23" })],
   tv_shows: [],
+  directed: [],
+  created: [],
+  written: [],
   ...overrides,
 });
 

@@ -2,7 +2,7 @@ import type { MediaType, Provider, SearchResult } from "../api/types";
 
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
 
-type ImageSize = "w92" | "w185" | "w342" | "w500" | "w780" | "w1280" | "original";
+type ImageSize = "w92" | "w185" | "w300" | "w342" | "w500" | "w780" | "w1280" | "original";
 
 /** Full TMDB image URL, or null when TMDB has no image for it. */
 export const imageUrl = (path: string | null | undefined, size: ImageSize) =>

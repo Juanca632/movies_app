@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Callable
 from typing import Any
 
 from app.clients.tmdb import TMDBClient
@@ -45,15 +46,27 @@ def _is_star(raw: dict[str, Any]) -> bool:
     )
 
 
-def _credits(items: list[dict[str, Any]], media_type: MediaType) -> list[MediaSummary]:
-    """Most popular first, each title once (an actor can have several roles in it)."""
-    seen: set[int] = set()
+def _credits(items: list[tuple[dict[str, Any], MediaType]]) -> list[MediaSummary]:
+    """Most popular first, each title once (a person can have several roles in it)."""
+    seen: set[tuple[MediaType, int]] = set()
     credits = []
-    for item in sorted(items, key=lambda i: i.get("popularity") or 0, reverse=True):
-        if item["id"] not in seen:
-            seen.add(item["id"])
+    for item, media_type in sorted(items, key=lambda i: i[0].get("popularity") or 0, reverse=True):
+        if (media_type, item["id"]) not in seen:
+            seen.add((media_type, item["id"]))
             credits.append(to_summary(item, media_type))
     return credits[:MAX_CREDITS]
+
+
+def _crew(raw: dict[str, Any], matches: Callable[[dict[str, Any]], bool]) -> list[MediaSummary]:
+    """Crew credits of both movies and TV shows that match a job or department."""
+    return _credits(
+        [
+            (item, media_type)
+            for key, media_type in (("movie_credits", "movie"), ("tv_credits", "tv"))
+            for item in raw.get(key, {}).get("crew", [])
+            if matches(item)
+        ]
+    )
 
 
 class PeopleService:
@@ -85,6 +98,11 @@ class PeopleService:
             {"append_to_response": "movie_credits,tv_credits"},
             ttl=self._settings.cache_ttl_details,
         )
+        directed = _crew(raw, lambda item: item.get("job") == "Director")
+        created = _crew(raw, lambda item: item.get("job") == "Creator")
+        written = _crew(raw, lambda item: item.get("department") == "Writing")
+        # Writer-directors write most of what they direct; "Written" lists the rest.
+        made = {(item.media_type, item.id) for item in directed + created}
         return PersonDetail(
             **to_person(raw).model_dump(),
             biography=raw.get("biography") or "",
@@ -92,8 +110,13 @@ class PeopleService:
             deathday=raw.get("deathday"),
             place_of_birth=raw.get("place_of_birth"),
             also_known_as=raw.get("also_known_as", []),
-            movies=_credits(raw.get("movie_credits", {}).get("cast", []), "movie"),
-            tv_shows=_credits(raw.get("tv_credits", {}).get("cast", []), "tv"),
+            movies=_credits(
+                [(item, "movie") for item in raw.get("movie_credits", {}).get("cast", [])]
+            ),
+            tv_shows=_credits([(item, "tv") for item in raw.get("tv_credits", {}).get("cast", [])]),
+            directed=directed,
+            created=created,
+            written=[item for item in written if (item.media_type, item.id) not in made],
         )
 
     async def search(self, query: str, page: int) -> Page[SearchResult]:

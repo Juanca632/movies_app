@@ -7,17 +7,21 @@ import Row from "./Row";
 
 interface MediaRowProps {
   title: string;
+  description?: string;
   items: MediaSummary[] | undefined;
+  /** Highlights this title, e.g. the movie whose page lists its saga. */
+  currentId?: number;
   query?: Pick<UseQueryResult, "isPending" | "isError" | "refetch">;
 }
 
-export function MediaRow({ title, items, query }: MediaRowProps) {
+export function MediaRow({ title, description, items, currentId, query }: MediaRowProps) {
   return (
     <Row
       title={title}
+      description={description}
       items={items}
       getKey={(item) => `${item.media_type}-${item.id}`}
-      renderItem={(item) => <MediaCard item={item} />}
+      renderItem={(item) => <MediaCard item={item} current={item.id === currentId} />}
       isPending={query?.isPending}
       isError={query?.isError}
       onRetry={() => query?.refetch()}

@@ -4,14 +4,20 @@ from app.clients.tmdb import TMDBClient
 from app.core.config import Settings
 from app.schemas.media import (
     CastMember,
+    Collection,
+    CollectionRef,
+    Episode,
     Image,
     Images,
     MediaDetail,
     MediaSummary,
     MediaType,
     Page,
+    PersonRef,
     Provider,
     Providers,
+    Season,
+    SeasonSummary,
     Video,
 )
 
@@ -64,6 +70,45 @@ def _cast(raw: dict[str, Any]) -> list[CastMember]:
             )
         )
     return members
+
+
+def _creators(raw: dict[str, Any], credits: dict[str, Any]) -> list[PersonRef]:
+    """Who made it: a movie's directors, or a TV show's creators."""
+    people = raw.get("created_by") or [
+        member for member in credits.get("crew", []) if member.get("job") == "Director"
+    ]
+    return [PersonRef(id=person["id"], name=person["name"]) for person in people]
+
+
+def _episode(raw: dict[str, Any]) -> Episode:
+    return Episode(
+        id=raw["id"],
+        season_number=raw.get("season_number") or 0,
+        episode_number=raw.get("episode_number") or 0,
+        name=raw.get("name") or "",
+        overview=raw.get("overview") or "",
+        air_date=raw.get("air_date") or None,
+        runtime=raw.get("runtime"),
+        still_path=raw.get("still_path"),
+        vote_average=raw.get("vote_average") or 0,
+    )
+
+
+def _seasons(raw: list[dict[str, Any]]) -> list[SeasonSummary]:
+    """Seasons with episodes, specials (season 0) after the regular ones."""
+    seasons = [
+        SeasonSummary(
+            season_number=season.get("season_number") or 0,
+            name=season.get("name") or "",
+            air_date=season.get("air_date") or None,
+            episode_count=season.get("episode_count") or 0,
+            poster_path=season.get("poster_path"),
+        )
+        for season in raw
+        # Announced seasons come with no episodes yet.
+        if season.get("episode_count")
+    ]
+    return sorted(seasons, key=lambda season: (season.season_number == 0, season.season_number))
 
 
 def _images(raw: dict[str, Any]) -> Images:
@@ -171,6 +216,11 @@ class MediaService:
             runtime=runtime,
             number_of_seasons=raw.get("number_of_seasons"),
             number_of_episodes=raw.get("number_of_episodes"),
+            seasons=_seasons(raw.get("seasons", [])),
+            next_episode=(
+                _episode(raw["next_episode_to_air"]) if raw.get("next_episode_to_air") else None
+            ),
+            creators=_creators(raw, credits),
             cast=_cast(credits),
             images=_images(raw.get("images", {})),
             providers=_providers(raw.get("watch/providers", {}), region),
@@ -179,4 +229,40 @@ class MediaService:
                 to_summary(item, media_type)
                 for item in raw.get("recommendations", {}).get("results", [])
             ],
+            collection=(
+                CollectionRef.model_validate(raw["belongs_to_collection"])
+                if raw.get("belongs_to_collection")
+                else None
+            ),
+        )
+
+    async def season(self, tv_id: int, season_number: int) -> Season:
+        raw = await self._tmdb.get(
+            f"/tv/{tv_id}/season/{season_number}", ttl=self._settings.cache_ttl_details
+        )
+        episodes = [_episode(item) for item in raw.get("episodes", [])]
+        return Season(
+            season_number=raw.get("season_number") or season_number,
+            name=raw.get("name") or "",
+            overview=raw.get("overview") or "",
+            air_date=raw.get("air_date") or None,
+            episode_count=len(episodes),
+            poster_path=raw.get("poster_path"),
+            episodes=episodes,
+        )
+
+    async def collection(self, collection_id: int) -> Collection:
+        raw = await self._tmdb.get(
+            f"/collection/{collection_id}", ttl=self._settings.cache_ttl_details
+        )
+        parts = [to_summary(part, "movie") for part in raw.get("parts", [])]
+        # TMDB lists parts in no particular order; undated (unannounced) ones go last.
+        parts.sort(key=lambda part: (part.release_date is None, part.release_date or ""))
+        return Collection(
+            id=raw["id"],
+            name=raw.get("name") or "",
+            overview=raw.get("overview") or "",
+            poster_path=raw.get("poster_path"),
+            backdrop_path=raw.get("backdrop_path"),
+            parts=parts,
         )

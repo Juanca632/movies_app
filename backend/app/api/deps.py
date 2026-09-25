@@ -9,6 +9,7 @@ from app.services.acclaim import AcclaimService
 from app.services.discover import DiscoverService
 from app.services.media import MediaService
 from app.services.people import PeopleService
+from app.services.releases import ReleasesService
 
 
 def get_tmdb(request: Request) -> TMDBClient:
@@ -47,6 +48,16 @@ def get_discover_service(
 
 
 DiscoverServiceDep = Annotated[DiscoverService, Depends(get_discover_service)]
+
+
+def get_releases_service(
+    tmdb: Annotated[TMDBClient, Depends(get_tmdb)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> ReleasesService:
+    return ReleasesService(tmdb, settings)
+
+
+ReleasesServiceDep = Annotated[ReleasesService, Depends(get_releases_service)]
 
 
 def get_acclaim_service(omdb: Annotated[OMDbClient, Depends(get_omdb)]) -> AcclaimService:

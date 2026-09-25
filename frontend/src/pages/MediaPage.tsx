@@ -1,15 +1,18 @@
-import { useParams } from "react-router-dom";
+import { Fragment } from "react";
+import { Link, useParams } from "react-router-dom";
 import { isNotFound } from "../api/client";
-import { useMediaDetail } from "../api/queries";
+import { useCollection, useMediaDetail } from "../api/queries";
 import type { MediaDetail, MediaType } from "../api/types";
 import Acclaim from "../components/Acclaim";
 import { DetailHero, DetailSkeleton } from "../components/DetailLayout";
 import Rating from "../components/Rating";
+import CollectionRow from "../components/CollectionRow";
 import { CastRow, MediaRow } from "../components/rows";
 import TmdbImage from "../components/TmdbImage";
 import TrailerButton from "../components/TrailerButton";
 import WatchProviders from "../components/WatchProviders";
-import { formatRuntime, year } from "../lib/tmdb";
+import Seasons from "../components/Seasons";
+import { formatDate, formatRuntime, personHref, year } from "../lib/tmdb";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 import { LoadErrorPage, NotFoundPage } from "./StatusPages";
 
@@ -24,9 +27,45 @@ function facts(media: MediaDetail) {
   ];
 }
 
+/** "Directed by A and B" for movies, "Created by A, B and C" for TV shows. */
+function Creators({ media }: { media: MediaDetail }) {
+  const people = media.creators;
+  if (people.length === 0) return null;
+  return (
+    <p className="mt-3 text-sm text-muted">
+      {media.media_type === "movie" ? "Directed by " : "Created by "}
+      {people.map((person, index) => (
+        <Fragment key={person.id}>
+          {index > 0 && (index === people.length - 1 ? " and " : ", ")}
+          <Link to={personHref(person.id, person.name)} className="font-medium text-fg hover:text-accent">
+            {person.name}
+          </Link>
+        </Fragment>
+      ))}
+    </p>
+  );
+}
+
+function NextEpisode({ media }: { media: MediaDetail }) {
+  const next = media.next_episode;
+  if (!next) return null;
+  const date = formatDate(next.air_date);
+  return (
+    <p className="mt-2 text-sm text-muted">
+      <span className="font-semibold text-accent">Next episode</span> · S{next.season_number} E{next.episode_number}
+      {next.name && ` “${next.name}”`}
+      {date && ` · ${date}`}
+    </p>
+  );
+}
+
 export function MediaDetailView({ media }: { media: MediaDetail }) {
   useDocumentTitle(media.title);
   const backdrop = media.backdrop_path ?? media.images.backdrops[0]?.file_path;
+  // The saga has its own row, so its parts would only repeat under "More like this".
+  const { data: collection } = useCollection(media.collection?.id ?? null);
+  const sagaIds = new Set(collection?.parts.map((part) => part.id));
+  const recommendations = media.recommendations.filter((item) => !sagaIds.has(item.id));
 
   return (
     <article>
@@ -52,6 +91,9 @@ export function MediaDetailView({ media }: { media: MediaDetail }) {
             ))}
         </div>
 
+        <Creators media={media} />
+        <NextEpisode media={media} />
+
         {media.genres.length > 0 && (
           <ul className="mt-4 flex flex-wrap gap-2">
             {media.genres.map((genre) => (
@@ -72,8 +114,10 @@ export function MediaDetailView({ media }: { media: MediaDetail }) {
 
       <div className="mt-6 flex flex-col gap-10 sm:gap-12">
         <WatchProviders providers={media.providers} title={media.title} />
+        {media.seasons.length > 0 && <Seasons tvId={media.id} seasons={media.seasons} />}
         <CastRow cast={media.cast} />
-        <MediaRow title="More like this" items={media.recommendations} />
+        {media.collection && <CollectionRow collectionId={media.collection.id} currentId={media.id} />}
+        <MediaRow title="More like this" items={recommendations} />
       </div>
     </article>
   );

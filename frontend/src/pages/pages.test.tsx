@@ -65,6 +65,8 @@ describe("MediaPage", () => {
     expect(within(acclaim).getByText("Won 4 Oscars. 160 wins & 220 nominations total")).toBeInTheDocument();
     expect(within(acclaim).getByText("Rotten Tomatoes").nextSibling).toHaveTextContent("86%");
     expect(screen.getByText("2h 28m")).toBeInTheDocument();
+    expect(screen.getByText(/Directed by/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Christopher Nolan" })).toHaveAttribute("href", "/person/525/christopher-nolan");
     expect(screen.getByText("Science Fiction")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Leonardo DiCaprio/ })).toHaveAttribute("href", "/person/6193/leonardo-dicaprio");
     expect(screen.getByRole("img", { name: "Netflix" })).toBeInTheDocument();
@@ -78,14 +80,196 @@ describe("MediaPage", () => {
 
   it("asks the tv endpoint for TV shows and shows seasons", async () => {
     const fetchMock = mockApi({
-      "tv/1396?region=US": mediaDetail({ id: 1396, media_type: "tv", title: "Breaking Bad", runtime: null, number_of_seasons: 5, number_of_episodes: 62 }),
+      "tv/1396?region=US": mediaDetail({
+        id: 1396,
+        media_type: "tv",
+        title: "Breaking Bad",
+        runtime: null,
+        number_of_seasons: 5,
+        number_of_episodes: 62,
+        creators: [
+          { id: 66633, name: "Vince Gilligan" },
+          { id: 1, name: "Peter Gould" },
+        ],
+      }),
     });
     renderRoute("/tv-show/1396/breaking-bad");
 
     expect(await screen.findByRole("heading", { level: 1, name: "Breaking Bad" })).toBeInTheDocument();
     expect(screen.getByText("5 seasons")).toBeInTheDocument();
     expect(screen.getByText("62 episodes")).toBeInTheDocument();
+    expect(screen.getByText(/Created by/)).toHaveTextContent("Created by Vince Gilligan and Peter Gould");
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/api/v1/tv/1396?region=US"))).toBe(true);
+  });
+
+  it("lists the movie's saga in order and marks the current part", async () => {
+    mockApi({
+      "movie/673?region=US": mediaDetail({
+        id: 673,
+        title: "Harry Potter and the Prisoner of Azkaban",
+        collection: { id: 1241, name: "Harry Potter Collection", poster_path: null, backdrop_path: "/hp.jpg" },
+        recommendations: [media({ id: 671, title: "Philosopher's Stone" }), media({ id: 2, title: "Interstellar" })],
+      }),
+      "collection/1241": {
+        id: 1241,
+        name: "Harry Potter Collection",
+        overview: "",
+        poster_path: null,
+        backdrop_path: "/hp.jpg",
+        parts: [
+          media({ id: 671, title: "Philosopher's Stone", release_date: "2001-11-16" }),
+          media({ id: 673, title: "Prisoner of Azkaban", release_date: "2004-05-31" }),
+          media({ id: 12445, title: "Deathly Hallows: Part 2", release_date: "2011-07-12" }),
+        ],
+      },
+    });
+    renderRoute("/movie/673");
+
+    const saga = await screen.findByRole("region", { name: "Harry Potter Collection" });
+    expect(within(saga).getByText("3 movies · 2001–2011")).toBeInTheDocument();
+    const links = within(saga).getAllByRole("link");
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/movie/671/philosopher-s-stone",
+      "/movie/673/prisoner-of-azkaban",
+      "/movie/12445/deathly-hallows-part-2",
+    ]);
+    expect(links[1]).toHaveAttribute("aria-current", "page");
+    expect(within(links[1]).getByText("You're here")).toBeInTheDocument();
+    const more = screen.getByRole("region", { name: "More like this" });
+    expect(within(more).getAllByRole("link").map((link) => link.textContent)).toEqual([expect.stringContaining("Interstellar")]);
+  });
+
+  it("lists a show's episodes by season, starting from the latest one on air", async () => {
+    const episode = (season: number, n: number, name: string, airDate: string | null) => ({
+      id: season * 100 + n,
+      season_number: season,
+      episode_number: n,
+      name,
+      overview: "",
+      air_date: airDate,
+      runtime: 47,
+      still_path: null,
+      vote_average: 8.2,
+    });
+    const season = (n: number, episodes: ReturnType<typeof episode>[]) => ({
+      season_number: n,
+      name: n === 0 ? "Specials" : `Season ${n}`,
+      air_date: episodes[0].air_date,
+      episode_count: episodes.length,
+      poster_path: null,
+      overview: "",
+      episodes,
+    });
+    const s1 = season(1, [episode(1, 1, "Pilot", "2008-01-20")]);
+    const s2 = season(2, [episode(2, 1, "Seven Thirty-Seven", "2009-03-08")]);
+    const s3 = season(3, [episode(3, 1, "Future Episode", "2999-01-01")]);
+    const specials = season(0, [episode(0, 1, "Minisode", null)]);
+    const summary = ({ season_number, name, air_date, episode_count, poster_path }: ReturnType<typeof season>) => ({
+      season_number,
+      name,
+      air_date,
+      episode_count,
+      poster_path,
+    });
+    mockApi({
+      "tv/1396?region=US": mediaDetail({
+        id: 1396,
+        media_type: "tv",
+        title: "Breaking Bad",
+        seasons: [summary(s1), summary(s2), summary(s3), summary(specials)],
+        next_episode: episode(3, 1, "Future Episode", "2999-01-01"),
+      }),
+      "tv/1396/season/1": s1,
+      "tv/1396/season/2": s2,
+      "tv/1396/season/3": s3,
+      "tv/1396/season/0": specials,
+    });
+    const { router } = renderRoute("/tv-show/1396/breaking-bad");
+
+    expect((await screen.findByText("Next episode")).parentElement).toHaveTextContent("Next episode · S3 E1 “Future Episode” · January 1, 2999");
+    const episodes = screen.getByRole("region", { name: "Episodes" });
+    // Neither the specials nor season 3, which has not started yet: the latest season on air.
+    expect(await within(episodes).findByRole("heading", { name: /Seven Thirty-Seven/ })).toBeInTheDocument();
+    expect(within(episodes).getByText("March 8, 2009 · 47m · ★ 8.2")).toBeInTheDocument();
+
+    await userEvent.click(within(episodes).getByRole("combobox", { name: "Season" }));
+    await userEvent.click(within(episodes).getByRole("option", { name: /Season 3/ }));
+    expect(await within(episodes).findByRole("heading", { name: /Future Episode/ })).toBeInTheDocument();
+    expect(within(episodes).getByText("Airs January 1, 2999")).toBeInTheDocument();
+    expect(router.state.location.search).toBe("?season=3");
+  });
+
+  it("shows the first three episodes, then ten more at a time, and collapses back", async () => {
+    const episodes = Array.from({ length: 25 }, (_, i) => ({
+      id: i + 1,
+      season_number: 1,
+      episode_number: i + 1,
+      name: `Chapter ${i + 1}`,
+      overview: "",
+      air_date: "2020-01-01",
+      runtime: null,
+      still_path: null,
+      vote_average: 0,
+    }));
+    mockApi({
+      "tv/7?region=US": mediaDetail({
+        id: 7,
+        media_type: "tv",
+        title: "Endless Soap",
+        seasons: [{ season_number: 1, name: "Season 1", air_date: "2020-01-01", episode_count: 25, poster_path: null }],
+      }),
+      "tv/7/season/1": { season_number: 1, name: "Season 1", air_date: "2020-01-01", episode_count: 25, poster_path: null, overview: "", episodes },
+    });
+    renderRoute("/tv-show/7/endless-soap");
+
+    const section = await screen.findByRole("region", { name: "Episodes" });
+    const shown = () => within(section).getAllByRole("heading", { level: 3 });
+    await within(section).findByRole("heading", { name: /Chapter 1$/ });
+    expect(shown()).toHaveLength(3);
+    expect(within(section).queryByRole("button", { name: "Show less" })).not.toBeInTheDocument();
+
+    await userEvent.click(within(section).getByRole("button", { name: "Show more episodes · 22 left" }));
+    expect(shown()).toHaveLength(13);
+    await userEvent.click(within(section).getByRole("button", { name: "Show more episodes · 12 left" }));
+    expect(shown()).toHaveLength(23);
+    await userEvent.click(within(section).getByRole("button", { name: "Show more episodes · 2 left" }));
+    expect(shown()).toHaveLength(25);
+    expect(within(section).queryByRole("button", { name: /Show more episodes/ })).not.toBeInTheDocument();
+
+    await userEvent.click(within(section).getByRole("button", { name: "Show less" }));
+    expect(shown()).toHaveLength(3);
+    expect(within(section).getByRole("button", { name: "Show more episodes · 22 left" })).toBeInTheDocument();
+  });
+
+  it("opens the season given in the URL", async () => {
+    const pilot = {
+      id: 1,
+      season_number: 1,
+      episode_number: 1,
+      name: "Pilot",
+      overview: "",
+      air_date: "2008-01-20",
+      runtime: null,
+      still_path: null,
+      vote_average: 0,
+    };
+    mockApi({
+      "tv/1396?region=US": mediaDetail({
+        id: 1396,
+        media_type: "tv",
+        title: "Breaking Bad",
+        seasons: [
+          { season_number: 1, name: "Season 1", air_date: "2008-01-20", episode_count: 1, poster_path: null },
+          { season_number: 2, name: "Season 2", air_date: "2009-03-08", episode_count: 13, poster_path: null },
+        ],
+      }),
+      "tv/1396/season/1": { season_number: 1, name: "Season 1", air_date: null, episode_count: 1, poster_path: null, overview: "", episodes: [pilot] },
+    });
+    renderRoute("/tv-show/1396/breaking-bad?season=1");
+
+    const episodes = await screen.findByRole("region", { name: "Episodes" });
+    expect(await within(episodes).findByRole("heading", { name: /Pilot/ })).toBeInTheDocument();
+    expect(within(episodes).getByRole("combobox", { name: "Season" })).toHaveTextContent("Season 1 · 1 episode");
   });
 
   it("shows a 404 for an unknown movie", async () => {
@@ -115,6 +299,27 @@ describe("PersonPage", () => {
     expect(screen.getByRole("button", { name: "Show less" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Forrest Gump/ })).toHaveAttribute("href", "/movie/13/forrest-gump");
     expect(screen.queryByRole("region", { name: "TV Shows" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Directed" })).not.toBeInTheDocument();
+  });
+
+  it("leads with the work behind the camera for directors", async () => {
+    mockApi({
+      "person/525": personDetail({
+        id: 525,
+        name: "Christopher Nolan",
+        known_for_department: "Directing",
+        movies: [media({ id: 7, title: "Cameo" })],
+        directed: [media({ id: 27205, title: "Inception" })],
+        written: [media({ id: 27205, title: "Inception" })],
+      }),
+    });
+    renderRoute("/person/525/christopher-nolan");
+
+    await screen.findByRole("heading", { level: 1, name: "Christopher Nolan" });
+    const rows = screen.getAllByRole("region").map((region) => region.getAttribute("aria-label"));
+    expect(rows).toEqual(["Directed", "Written", "Movies"]);
+    const directed = screen.getByRole("region", { name: "Directed" });
+    expect(within(directed).getByRole("link", { name: /Inception/ })).toHaveAttribute("href", "/movie/27205/inception");
   });
 });
 

@@ -4,6 +4,7 @@ import { ApiError, getJson } from "./client";
 import type {
   Acclaim,
   Category,
+  Collection,
   DiscoverFilters,
   Genre,
   MediaDetail,
@@ -14,7 +15,9 @@ import type {
   PersonSummary,
   Provider,
   Region,
+  ReleaseKind,
   SearchResult,
+  Season,
 } from "./types";
 
 export function createQueryClient() {
@@ -58,6 +61,20 @@ export const useMediaDetail = (mediaType: MediaType, id: string, enabled = true)
     placeholderData: (previous, query) => (query?.queryKey[3] === id ? previous : undefined),
   });
 };
+
+export const useSeason = (tvId: number, seasonNumber: number | null) =>
+  useQuery({
+    queryKey: ["media", "tv", tvId, "season", seasonNumber],
+    queryFn: ({ signal }) => getJson<Season>(`tv/${tvId}/season/${seasonNumber}`, signal),
+    enabled: seasonNumber !== null,
+  });
+
+export const useCollection = (id: number | null) =>
+  useQuery({
+    queryKey: ["collection", id],
+    queryFn: ({ signal }) => getJson<Collection>(`collection/${id}`, signal),
+    enabled: id !== null,
+  });
 
 export const useAcclaim = (imdbId: string | null) =>
   useQuery({
@@ -110,6 +127,17 @@ export const useDiscover = (mediaType: MediaType, filters: DiscoverFilters, regi
     getNextPageParam: (last) => (last.page < last.total_pages ? last.page + 1 : undefined),
     enabled,
   });
+
+/** A month's releases ("2026-10"); movies are dated in the user's country, TV worldwide. */
+export const useReleases = (kind: ReleaseKind, month: string) => {
+  const userRegion = useRegion();
+  const region = kind === "tv" ? null : userRegion;
+  return useQuery({
+    queryKey: ["releases", kind, month, region],
+    queryFn: ({ signal }) =>
+      getJson<MediaSummary[]>(`releases/${kind}?month=${month}${region ? `&region=${region}` : ""}`, signal),
+  });
+};
 
 export const usePopularPeople = () =>
   useQuery({

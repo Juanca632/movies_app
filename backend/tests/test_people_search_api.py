@@ -69,6 +69,74 @@ async def test_person_detail_dedupes_and_sorts_credits(api):
 
 
 @respx.mock
+async def test_person_detail_groups_crew_credits_across_movies_and_tv(api):
+    respx.get(f"{BASE}/person/66633").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "id": 66633,
+                "name": "Vince Gilligan",
+                "movie_credits": {
+                    "cast": [],
+                    "crew": [
+                        {"id": 1, "title": "Film", "job": "Screenplay", "department": "Writing"},
+                        {
+                            "id": 2,
+                            "title": "Produced",
+                            "job": "Producer",
+                            "department": "Production",
+                        },
+                    ],
+                },
+                "tv_credits": {
+                    "cast": [],
+                    "crew": [
+                        {
+                            "id": 1396,
+                            "name": "Breaking Bad",
+                            "popularity": 90,
+                            "job": "Creator",
+                            "department": "Creator",
+                        },
+                        {
+                            "id": 1396,
+                            "name": "Breaking Bad",
+                            "popularity": 90,
+                            "job": "Director",
+                            "department": "Directing",
+                        },
+                        {
+                            "id": 1396,
+                            "name": "Breaking Bad",
+                            "popularity": 90,
+                            "job": "Writer",
+                            "department": "Writing",
+                        },
+                        {
+                            "id": 1,
+                            "name": "Show with the film's id",
+                            "job": "Writer",
+                            "department": "Writing",
+                        },
+                    ],
+                },
+            },
+        )
+    )
+
+    body = (await api.get("/api/v1/person/66633")).json()
+
+    assert [m["title"] for m in body["created"]] == ["Breaking Bad"]
+    assert [m["title"] for m in body["directed"]] == ["Breaking Bad"]
+    # Breaking Bad is already under Created/Directed. Same id on a movie and a TV show are
+    # different titles.
+    assert [(m["media_type"], m["title"]) for m in body["written"]] == [
+        ("movie", "Film"),
+        ("tv", "Show with the film's id"),
+    ]
+
+
+@respx.mock
 async def test_person_not_found(api):
     respx.get(f"{BASE}/person/404").mock(return_value=httpx.Response(404))
 
