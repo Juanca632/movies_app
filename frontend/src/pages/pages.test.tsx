@@ -199,6 +199,48 @@ describe("MediaPage", () => {
     expect(router.state.location.search).toBe("?season=3");
   });
 
+  it("shows the first three episodes, then ten more at a time, and collapses back", async () => {
+    const episodes = Array.from({ length: 25 }, (_, i) => ({
+      id: i + 1,
+      season_number: 1,
+      episode_number: i + 1,
+      name: `Chapter ${i + 1}`,
+      overview: "",
+      air_date: "2020-01-01",
+      runtime: null,
+      still_path: null,
+      vote_average: 0,
+    }));
+    mockApi({
+      "tv/7?region=US": mediaDetail({
+        id: 7,
+        media_type: "tv",
+        title: "Endless Soap",
+        seasons: [{ season_number: 1, name: "Season 1", air_date: "2020-01-01", episode_count: 25, poster_path: null }],
+      }),
+      "tv/7/season/1": { season_number: 1, name: "Season 1", air_date: "2020-01-01", episode_count: 25, poster_path: null, overview: "", episodes },
+    });
+    renderRoute("/tv-show/7/endless-soap");
+
+    const section = await screen.findByRole("region", { name: "Episodes" });
+    const shown = () => within(section).getAllByRole("heading", { level: 3 });
+    await within(section).findByRole("heading", { name: /Chapter 1$/ });
+    expect(shown()).toHaveLength(3);
+    expect(within(section).queryByRole("button", { name: "Show less" })).not.toBeInTheDocument();
+
+    await userEvent.click(within(section).getByRole("button", { name: "Show more episodes · 22 left" }));
+    expect(shown()).toHaveLength(13);
+    await userEvent.click(within(section).getByRole("button", { name: "Show more episodes · 12 left" }));
+    expect(shown()).toHaveLength(23);
+    await userEvent.click(within(section).getByRole("button", { name: "Show more episodes · 2 left" }));
+    expect(shown()).toHaveLength(25);
+    expect(within(section).queryByRole("button", { name: /Show more episodes/ })).not.toBeInTheDocument();
+
+    await userEvent.click(within(section).getByRole("button", { name: "Show less" }));
+    expect(shown()).toHaveLength(3);
+    expect(within(section).getByRole("button", { name: "Show more episodes · 22 left" })).toBeInTheDocument();
+  });
+
   it("opens the season given in the URL", async () => {
     const pilot = {
       id: 1,

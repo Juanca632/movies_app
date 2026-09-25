@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useSeason } from "../api/queries";
 import type { Episode, SeasonSummary } from "../api/types";
@@ -8,6 +8,9 @@ import ErrorState from "./ErrorState";
 import TmdbImage from "./TmdbImage";
 
 const LONG_OVERVIEW = 180;
+// Seasons can run to hundreds of episodes (soaps, daily shows): start with a few, then batches.
+const FIRST_EPISODES = 3;
+const EPISODES_PER_BATCH = 10;
 
 const today = () => new Date().toISOString().slice(0, 10);
 const hasAired = (date: string | null) => date !== null && date <= today();
@@ -55,6 +58,45 @@ function EpisodeItem({ episode }: { episode: Episode }) {
         {episode.overview && <Overview text={episode.overview} />}
       </div>
     </li>
+  );
+}
+
+const LIST_BUTTON =
+  "rounded-full border border-line px-5 py-2 text-sm font-medium text-muted transition hover:border-accent hover:text-accent";
+
+function EpisodeList({ episodes }: { episodes: Episode[] }) {
+  const [visible, setVisible] = useState(FIRST_EPISODES);
+  const list = useRef<HTMLUListElement>(null);
+  const remaining = episodes.length - visible;
+
+  const showLess = () => {
+    setVisible(FIRST_EPISODES);
+    // After expanding, the button sits far down the page; go back to the top of the list.
+    list.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+  };
+
+  return (
+    <>
+      <ul ref={list} className="scroll-mt-24 space-y-6">
+        {episodes.slice(0, visible).map((episode) => (
+          <EpisodeItem key={episode.id} episode={episode} />
+        ))}
+      </ul>
+      {(remaining > 0 || visible > FIRST_EPISODES) && (
+        <div className="mt-8 flex flex-wrap gap-3">
+          {remaining > 0 && (
+            <button type="button" onClick={() => setVisible(visible + EPISODES_PER_BATCH)} className={LIST_BUTTON}>
+              Show more episodes · {remaining} left
+            </button>
+          )}
+          {visible > FIRST_EPISODES && (
+            <button type="button" onClick={showLess} className={LIST_BUTTON}>
+              Show less
+            </button>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -117,11 +159,8 @@ function Seasons({ tvId, seasons }: { tvId: number; seasons: SeasonSummary[] }) 
       ) : (
         <>
           {season.overview && <p className="-mt-2 mb-6 max-w-3xl text-sm leading-relaxed text-muted">{season.overview}</p>}
-          <ul className="space-y-6">
-            {season.episodes.map((episode) => (
-              <EpisodeItem key={episode.id} episode={episode} />
-            ))}
-          </ul>
+          {/* Keyed by season so switching seasons starts from the first batch again. */}
+          <EpisodeList key={season.season_number} episodes={season.episodes} />
         </>
       )}
     </section>
