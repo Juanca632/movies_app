@@ -1,4 +1,4 @@
-import type { SVGProps } from "react";
+import { useId, type SVGProps } from "react";
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -112,5 +112,39 @@ export const InfoIcon = (props: IconProps) => (
 export const TrophyIcon = (props: IconProps) => (
   <svg {...stroke(props)}>
     <path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4v3h-4z" />
+  </svg>
+);
+
+/** The AI mark: two four-point stars filled with the AI gradient. */
+export function AiSparkIcon(props: IconProps) {
+  const id = useId();
+  return (
+    <svg {...base(props)}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" style={{ stopColor: "var(--color-ai-teal)" }} />
+          <stop offset="0.4" style={{ stopColor: "var(--color-ai-violet)" }} />
+          <stop offset="0.7" style={{ stopColor: "var(--color-ai-pink)" }} />
+          <stop offset="1" style={{ stopColor: "var(--color-ai-amber)" }} />
+        </linearGradient>
+      </defs>
+      <path
+        fill={props.fill ?? `url(#${id})`}
+        d="M10 5c.6 4.8 3.2 7.4 8 8-4.8.6-7.4 3.2-8 8-.6-4.8-3.2-7.4-8-8 4.8-.6 7.4-3.2 8-8zM18.5 2c.3 2.1 1.4 3.2 3.5 3.5-2.1.3-3.2 1.4-3.5 3.5-.3-2.1-1.4-3.2-3.5-3.5 2.1-.3 3.2-1.4 3.5-3.5z"
+      />
+    </svg>
+  );
+}
+
+export const HomeIcon = (props: IconProps) => (
+  <svg {...stroke(props)}>
+    <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />
+  </svg>
+);
+
+export const TvIcon = (props: IconProps) => (
+  <svg {...stroke(props)}>
+    <rect x="3" y="6" width="18" height="13" rx="2" />
+    <path d="M8 2l4 4 4-4" />
   </svg>
 );

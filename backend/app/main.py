@@ -1,18 +1,22 @@
 import logging
 from contextlib import asynccontextmanager
 
+from anthropic import AsyncAnthropic
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api import share
-from app.api.v1 import acclaim, collections, discover, media, people, releases, search
+from app.api.v1 import acclaim, assistant, collections, discover, media, people, releases, search
 from app.clients.omdb import OMDbClient
 from app.clients.tmdb import TMDBClient, TMDBNotFoundError, TMDBUnavailableError
 from app.core.config import get_settings
+from app.services.assistant import AssistantService
 
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
 # httpx logs every request URL at INFO, and TMDB/OMDb keys travel in the query string.
-logging.getLogger("httpx").setLevel(logging.WARNING)
+for noisy in ("httpx", "httpx2"):
+    logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
 @asynccontextmanager
@@ -20,9 +24,16 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     app.state.tmdb = TMDBClient(settings)
     app.state.omdb = OMDbClient(settings)
+    # The AI assistant only runs with an Anthropic key; without one /ask answers 503.
+    # Short timeout, one retry: the browser gives up after 60s, so waiting longer only costs money.
+    key = settings.anthropic_api_key
+    claude = AsyncAnthropic(api_key=key, timeout=30.0, max_retries=1) if key else None
+    app.state.assistant = claude and AssistantService(claude, app.state.tmdb, settings)
     yield
     await app.state.tmdb.aclose()
     await app.state.omdb.aclose()
+    if claude:
+        await claude.close()
 
 
 def create_app() -> FastAPI:
@@ -33,7 +44,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["GET"],
+        allow_methods=["GET", "POST"],
         allow_headers=["*"],
     )
 
@@ -57,6 +68,7 @@ def create_app() -> FastAPI:
     app.include_router(acclaim.router, prefix="/api/v1")
     app.include_router(collections.router, prefix="/api/v1")
     app.include_router(releases.router, prefix="/api/v1")
+    app.include_router(assistant.router, prefix="/api/v1")
     app.include_router(media.router, prefix="/api/v1")
     # Link previews for crawlers, on the SPA's own URLs (/movie/..., /person/...).
     app.include_router(share.router)

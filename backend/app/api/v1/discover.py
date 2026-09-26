@@ -39,5 +39,10 @@ async def discover(
     page: Annotated[int, Query(ge=1, le=500)] = 1,
 ) -> Page[MediaSummary]:
     return await service.discover(
-        media_type, sort=sort, page=page, genre=genre, provider=provider, region=region
+        media_type,
+        sort=sort,
+        page=page,
+        genres=[genre] if genre else [],
+        providers=[provider] if provider else [],
+        region=region,
     )

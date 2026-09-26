@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
+import { forgetChat } from "../lib/chat";
 import { setRegion } from "../lib/region";
 
 afterEach(() => {
@@ -9,6 +10,8 @@ afterEach(() => {
   // jsdom's browser language is en-US; every test starts from that country.
   setRegion("US");
   localStorage.clear();
+  // The assistant's chat lives outside React: start every test with none.
+  forgetChat();
 });
 
 // jsdom does not implement scrolling.

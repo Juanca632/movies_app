@@ -7,6 +7,20 @@ export const API_URL: string =
 
 const TIMEOUT_MS = 10_000;
 
+/** AbortSignal.any, with a fallback for browsers that lack it (Safari before 17.4). */
+export function anySignal(signals: AbortSignal[]): AbortSignal {
+  if ("any" in AbortSignal) return AbortSignal.any(signals);
+  const controller = new AbortController();
+  for (const signal of signals) {
+    if (signal.aborted) {
+      controller.abort(signal.reason);
+      break;
+    }
+    signal.addEventListener("abort", () => controller.abort(signal.reason), { once: true });
+  }
+  return controller.signal;
+}
+
 export class ApiError extends Error {
   readonly status: number;
 
@@ -21,7 +35,7 @@ export class ApiError extends Error {
 export async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   const timeout = AbortSignal.timeout(TIMEOUT_MS);
   const response = await fetch(`${API_URL}/${path}`, {
-    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+    signal: signal ? anySignal([signal, timeout]) : timeout,
   });
   if (!response.ok) {
     throw new ApiError(response.status, `GET ${path} failed with ${response.status}`);

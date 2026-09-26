@@ -181,3 +181,18 @@ export interface DiscoverFilters {
   provider: number | null;
   sort: DiscoverSort;
 }
+
+/** A title the AI assistant recommends, with why and where to stream it. */
+export interface Pick {
+  item: MediaSummary;
+  reason: string;
+  providers: Provider[];
+}
+
+/** Server-Sent Events from /ask: progress updates, then an answer or an error. */
+export type AssistantEvent =
+  | { type: "status"; text: string }
+  | { type: "answer"; intro: string; picks: Pick[] }
+  | { type: "error"; message: string };
+
+export type AssistantAnswer = Extract<AssistantEvent, { type: "answer" }>;
