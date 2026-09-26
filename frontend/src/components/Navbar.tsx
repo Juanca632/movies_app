@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { CalendarIcon, CloseIcon, PlayIcon, SearchIcon } from "./icons";
+import { useAskPanel } from "../lib/askPanel";
+import { AiSparkIcon, CloseIcon, PlayIcon, SearchIcon } from "./icons";
 import RegionPicker from "./RegionPicker";
 import SearchBox from "./SearchBox";
 
-// On phones the calendar shrinks to an icon, or the links would run into the search button.
+// Phones get these in the bottom tab bar instead (see BottomNav).
 const LINKS = [
   { to: "/browse/movie", label: "Movies" },
   { to: "/browse/tv", label: "TV Shows" },
-  { to: "/calendar", label: "Calendar", Icon: CalendarIcon },
+  { to: "/calendar", label: "Calendar" },
 ];
 
 function Navbar() {
@@ -16,6 +17,7 @@ function Navbar() {
   // Phones only: the search field replaces the whole bar while it is open.
   const [searchOpen, setSearchOpen] = useState(false);
   const { key } = useLocation();
+  const assistant = useAskPanel();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -57,24 +59,34 @@ function Navbar() {
           <span className="grid size-8 place-items-center rounded-lg bg-accent text-bg">
             <PlayIcon className="size-4" />
           </span>
-          <span className="hidden font-display text-lg font-bold tracking-tight lg:inline">
+          <span className="font-display text-lg font-bold tracking-tight sm:hidden lg:inline">
             MyMovies<span className="text-accent">App</span>
           </span>
         </Link>
 
-        <ul className="flex shrink-0 items-center gap-4 text-sm font-medium sm:gap-5">
-          {LINKS.map(({ to, label, Icon }) => (
+        <ul className="hidden shrink-0 items-center gap-5 text-sm font-medium sm:flex">
+          {LINKS.map(({ to, label }) => (
             <li key={to}>
               <NavLink
                 to={to}
-                aria-label={Icon ? label : undefined}
                 className={({ isActive }) => `block whitespace-nowrap transition-colors hover:text-fg ${isActive ? "text-fg" : "text-muted"}`}
               >
-                {Icon && <Icon className="size-5 sm:hidden" />}
-                <span className={Icon ? "hidden sm:inline" : undefined}>{label}</span>
+                {label}
               </NavLink>
             </li>
           ))}
+          <li>
+            {/* Opens the assistant over the current page (see AssistantPanel). */}
+            <button
+              type="button"
+              aria-expanded={assistant.open}
+              onClick={() => (assistant.open ? assistant.close() : assistant.openPanel())}
+              className={`flex items-center gap-1.5 whitespace-nowrap transition-colors hover:text-fg ${assistant.open ? "text-fg" : "text-muted"}`}
+            >
+              <AiSparkIcon className="size-4" />
+              Ask AI
+            </button>
+          </li>
         </ul>
 
         <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">

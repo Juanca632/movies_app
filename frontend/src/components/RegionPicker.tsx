@@ -100,7 +100,7 @@ function RegionPicker() {
         }`}
       >
         <Flag code={region} className="w-5" />
-        <span>{region}</span>
+        <span className="hidden sm:inline">{region}</span>
         <ChevronDownIcon className={`size-3.5 text-subtle transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 

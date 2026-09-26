@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import date
 from typing import Any, Literal
 
@@ -72,22 +73,41 @@ class DiscoverService:
         *,
         sort: Sort,
         page: int,
-        genre: int | None = None,
-        provider: int | None = None,
+        genres: Sequence[int] = (),
+        providers: Sequence[int] = (),
         region: str | None = None,
+        year_from: int | None = None,
+        year_to: int | None = None,
+        max_runtime: int | None = None,
+        min_rating: float | None = None,
+        language: str | None = None,
     ) -> Page[MediaSummary]:
+        """All filters are combined: every genre must match, any of the services is enough."""
         params: dict[str, Any] = {
             "page": page,
             "include_adult": "false",
             **_sort_params(media_type, sort),
         }
-        if genre:
-            params["with_genres"] = genre
-        if provider and region:
+        if genres:
+            params["with_genres"] = ",".join(map(str, genres))
+        if providers and region:
             # "Streaming on": only subscription availability counts, not rent/buy.
-            params["with_watch_providers"] = provider
+            params["with_watch_providers"] = "|".join(map(str, providers))
             params["watch_region"] = region
             params["with_watch_monetization_types"] = "flatrate"
+        date_field = _DATE_FIELD[media_type]
+        if year_from:
+            params[f"{date_field}.gte"] = f"{year_from}-01-01"
+        if year_to:
+            # Keeps the "newest" sort's cap on future dates if that one is earlier.
+            cap = f"{year_to}-12-31"
+            params[f"{date_field}.lte"] = min(cap, params.get(f"{date_field}.lte", cap))
+        if max_runtime:
+            params["with_runtime.lte"] = max_runtime
+        if min_rating:
+            params["vote_average.gte"] = min_rating
+        if language:
+            params["with_original_language"] = language
 
         raw = await self._tmdb.get(
             f"/discover/{media_type}", params, ttl=self._settings.cache_ttl_lists

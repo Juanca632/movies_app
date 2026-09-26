@@ -2,12 +2,15 @@ import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent 
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useSearch } from "../api/queries";
 import type { SearchResult } from "../api/types";
+import { useAskPanel } from "../lib/askPanel";
 import { resultHref, year } from "../lib/tmdb";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
-import { SearchIcon, UserIcon } from "./icons";
+import { AiSparkIcon, SearchIcon, UserIcon } from "./icons";
 import TmdbImage from "./TmdbImage";
 
 const MAX_SUGGESTIONS = 6;
+// A query this long reads like a request ("something funny for tonight"), not a title: offer the AI.
+const AI_MIN_WORDS = 3;
 const MIN_CHARS = 2;
 const DEBOUNCE_MS = 250;
 
@@ -30,18 +33,22 @@ function SearchBox({ autoFocus = false, className = "max-w-sm" }: { autoFocus?: 
   const [active, setActive] = useState(-1);
   const container = useRef<HTMLDivElement>(null);
   const listId = useId();
+  const assistant = useAskPanel();
 
   const term = useDebouncedValue(query.trim(), DEBOUNCE_MS);
   const { data, isFetching } = useSearch(term.length >= MIN_CHARS ? term : "", 1);
   const suggestions = term.length >= MIN_CHARS ? (data?.results.slice(0, MAX_SUGGESTIONS) ?? []) : [];
-  // The last option is always "See all results".
-  const optionCount = suggestions.length + 1;
+  // After the suggestions always comes "See all results", then "Ask AI" for request-like queries.
+  const allIndex = suggestions.length;
+  const aiIndex = query.trim().split(/\s+/).length >= AI_MIN_WORDS ? allIndex + 1 : -1;
+  const optionCount = aiIndex >= 0 ? aiIndex + 1 : allIndex + 1;
   const showList = open && query.trim().length >= MIN_CHARS;
 
   // Keep the input in sync with the URL (back/forward, new search, leaving search) and close on navigation.
   useEffect(() => setQuery(urlQuery), [urlQuery]);
   useEffect(() => setOpen(false), [location.key]);
-  useEffect(() => setActive(-1), [term]);
+  // New results shift every option: a highlight kept across them would point at another one.
+  useEffect(() => setActive(-1), [term, suggestions.length]);
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
@@ -56,15 +63,22 @@ function SearchBox({ autoFocus = false, className = "max-w-sm" }: { autoFocus?: 
     navigate(href);
   };
 
+  const askAi = () => {
+    setOpen(false);
+    assistant.openPanel(query);
+  };
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     const trimmed = query.trim();
     if (active >= 0 && active < suggestions.length) go(resultHref(suggestions[active]));
+    else if (active >= 0 && active === aiIndex) askAi();
     else if (trimmed) go(searchHref(trimmed));
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Escape") {
+      event.preventDefault(); // handled: the AI panel mustn't close too
       setOpen(false);
       return;
     }
@@ -135,17 +149,35 @@ function SearchBox({ autoFocus = false, className = "max-w-sm" }: { autoFocus?: 
               </li>
             )}
 
-            <li id={optionId(suggestions.length)} role="option" aria-selected={active === suggestions.length} className="border-t border-white/5">
+            <li id={optionId(allIndex)} role="option" aria-selected={active === allIndex} className="border-t border-white/5">
               <Link
                 to={searchHref(query.trim())}
                 onClick={() => setOpen(false)}
-                onMouseEnter={() => setActive(suggestions.length)}
-                className={`${optionClass(suggestions.length)} text-sm font-medium text-accent`}
+                onMouseEnter={() => setActive(allIndex)}
+                className={`${optionClass(allIndex)} text-sm font-medium text-accent`}
               >
                 <SearchIcon className="size-4" />
                 See all results for “{query.trim()}”
               </Link>
             </li>
+
+            {/* Set apart from the results, and says what it does: it opens the assistant, not a search. */}
+            {aiIndex >= 0 && (
+              <li id={optionId(aiIndex)} role="option" aria-selected={active === aiIndex} className="border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={askAi}
+                  onMouseEnter={() => setActive(aiIndex)}
+                  className={`${optionClass(aiIndex)} w-full text-left text-sm`}
+                >
+                  <AiSparkIcon className="size-4 shrink-0" />
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">Ask AI: “{query.trim()}”</span>
+                    <span className="block text-xs text-subtle">Get picks you can stream, explained</span>
+                  </span>
+                </button>
+              </li>
+            )}
           </ul>
         </div>
       )}

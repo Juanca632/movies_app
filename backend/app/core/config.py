@@ -17,6 +17,14 @@ class Settings(BaseSettings):
     # Optional: awards and critic scores. Without a key those sections are simply hidden.
     omdb_api_key: str | None = None
     omdb_api_url: str = "https://www.omdbapi.com/"
+    # Optional: the AI assistant. Without a key it is disabled.
+    anthropic_api_key: str | None = None
+    assistant_model: str = "claude-haiku-4-5"
+    assistant_max_turns: int = 6
+    # Every question costs money: limits per visitor and for the whole site.
+    assistant_hourly_limit: int = 10  # per IP
+    assistant_daily_limit: int = 300  # all visitors together
+    cache_ttl_answers: int = 3600  # seconds: the same question in the same country
 
     tmdb_language: str = "en-US"
     tmdb_timeout: float = 5.0
