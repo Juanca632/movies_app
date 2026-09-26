@@ -13,12 +13,22 @@
   --color-subtle: #71717a;
   --color-accent: #f5b83d;
   --color-accent-strong: #ffcb5c;
+  /* AI colour language, only for AI features: teal → violet → pink → our amber. */
+  --color-ai-teal: #2dd4bf;
+  --color-ai-violet: #8b5cf6;
+  --color-ai-pink: #ec4899;
+  --color-ai-amber: #f5b83d;
 
   --animate-shimmer: shimmer 1.6s ease-in-out infinite;
   --animate-fade-in: fade-in 0.6s ease-out both;
   --animate-pop-in: pop-in 0.2s ease-out both;
   --animate-pop-out: pop-out 0.15s ease-in both;
   --animate-ken-burns: ken-burns 14s ease-out both;
+  --animate-slide-up: slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
+  --animate-slide-in-right: slide-in-right 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
+  --animate-slide-down: slide-down 0.2s ease-in both;
+  --animate-slide-out-right: slide-out-right 0.2s ease-in both;
+  --animate-fade-out: fade-out 0.2s ease-in both;
 
   @keyframes shimmer {
     0%,
@@ -58,6 +68,37 @@
     }
     to {
       transform: scale(1.12);
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes slide-in-right {
+    from {
+      /* The floating panel sits 0.75rem from the edge: go that much further to leave the screen. */
+      transform: translateX(calc(100% + 0.75rem));
+    }
+  }
+
+  @keyframes slide-down {
+    to {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes slide-out-right {
+    to {
+      transform: translateX(calc(100% + 0.75rem));
+    }
+  }
+
+  @keyframes fade-out {
+    to {
+      opacity: 0;
     }
   }
 
@@ -103,4 +144,86 @@
 
 @utility page-x {
   @apply px-4 sm:px-8 xl:px-12;
+}
+
+/* ---- AI look, kept discreet: a thin gradient ring that circles while working, and a shimmer ---- */
+
+@property --ai-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: true;
+}
+
+@keyframes ai-spin {
+  to {
+    --ai-angle: 360deg;
+  }
+}
+
+@keyframes ai-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* A thin gradient ring. The inside is --ai-inner; an optional halo's strength is --ai-glow (0-1). */
+@utility ai-ring {
+  position: relative;
+  isolation: isolate;
+  /* Muted colours: on a dark UI the full-strength gradient shone too much. Declared here, not on
+     :root, so it follows this element's animated --ai-angle. */
+  --ai-ring-colors: conic-gradient(
+    from var(--ai-angle),
+    color-mix(in oklab, var(--color-ai-teal) 45%, transparent),
+    color-mix(in oklab, var(--color-ai-violet) 55%, transparent),
+    color-mix(in oklab, var(--color-ai-pink) 45%, transparent),
+    color-mix(in oklab, var(--color-ai-amber) 35%, transparent),
+    color-mix(in oklab, var(--color-ai-teal) 45%, transparent)
+  );
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--ai-inner, var(--color-bg)), var(--ai-inner, var(--color-bg))) padding-box,
+    var(--ai-ring-colors) border-box;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--ai-ring-colors);
+    filter: blur(10px);
+    opacity: var(--ai-glow, 0);
+    transition: opacity 0.4s;
+  }
+}
+
+/* The ring's colours travel around it: the "AI is working" signal. */
+@utility ai-spin {
+  animation: ai-spin 3s linear infinite;
+}
+
+/* Text with a coloured sheen running through it, for "Thinking…". */
+@utility ai-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-muted) 35%,
+    var(--color-ai-violet) 45%,
+    var(--color-ai-pink) 52%,
+    var(--color-muted) 62%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: ai-shimmer 2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-spin,
+  .ai-shimmer {
+    animation: none;
+  }
 }

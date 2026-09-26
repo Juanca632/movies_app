@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { Outlet, ScrollRestoration, useNavigation } from "react-router-dom";
+import AssistantPanel from "./AssistantPanel";
+import BottomNav from "./BottomNav";
 import Navbar from "./Navbar";
 import TrailerModal from "./TrailerModal";
 
@@ -7,7 +9,8 @@ function Layout({ children }: { children?: ReactNode }) {
   const navigation = useNavigation();
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    // On phones the bottom tab bar covers the last 4rem: keep the footer clear of it.
+    <div className="flex min-h-dvh flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] sm:pb-0">
       {navigation.state === "loading" && (
         <div aria-hidden className="fixed inset-x-0 top-0 z-[60] h-0.5 animate-shimmer bg-accent" />
       )}
@@ -27,6 +30,8 @@ function Layout({ children }: { children?: ReactNode }) {
           </a>
         </div>
       </footer>
+      <BottomNav />
+      <AssistantPanel />
       <TrailerModal />
       <ScrollRestoration />
     </div>

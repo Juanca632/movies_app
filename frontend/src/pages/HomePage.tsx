@@ -1,3 +1,4 @@
+import AskBar from "../components/AskBar";
 import Hero from "../components/Hero";
 import { CategoryRow, PopularPeopleRow } from "../components/rows";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
@@ -9,6 +10,7 @@ function HomePage() {
     <>
       <Hero />
       <div className="relative z-10 -mt-4 flex flex-col gap-10 sm:gap-12 lg:-mt-24">
+        <AskBar />
         <CategoryRow title="Now Playing in Theaters" mediaType="movie" category="now_playing" />
         <CategoryRow title="Trending Movies" mediaType="movie" category="popular" />
         <PopularPeopleRow title="Popular Stars" />
