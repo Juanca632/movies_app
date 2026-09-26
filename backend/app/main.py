@@ -25,7 +25,9 @@ async def lifespan(app: FastAPI):
     app.state.tmdb = TMDBClient(settings)
     app.state.omdb = OMDbClient(settings)
     # The AI assistant only runs with an Anthropic key; without one /ask answers 503.
-    claude = AsyncAnthropic(api_key=key) if (key := settings.anthropic_api_key) else None
+    # Short timeout, one retry: the browser gives up after 60s, so waiting longer only costs money.
+    key = settings.anthropic_api_key
+    claude = AsyncAnthropic(api_key=key, timeout=30.0, max_retries=1) if key else None
     app.state.assistant = claude and AssistantService(claude, app.state.tmdb, settings)
     yield
     await app.state.tmdb.aclose()

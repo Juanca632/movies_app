@@ -47,7 +47,8 @@ function SearchBox({ autoFocus = false, className = "max-w-sm" }: { autoFocus?: 
   // Keep the input in sync with the URL (back/forward, new search, leaving search) and close on navigation.
   useEffect(() => setQuery(urlQuery), [urlQuery]);
   useEffect(() => setOpen(false), [location.key]);
-  useEffect(() => setActive(-1), [term]);
+  // New results shift every option: a highlight kept across them would point at another one.
+  useEffect(() => setActive(-1), [term, suggestions.length]);
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
@@ -77,6 +78,7 @@ function SearchBox({ autoFocus = false, className = "max-w-sm" }: { autoFocus?: 
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Escape") {
+      event.preventDefault(); // handled: the AI panel mustn't close too
       setOpen(false);
       return;
     }

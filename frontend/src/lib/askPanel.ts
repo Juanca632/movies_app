@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ask } from "./chat";
 import { useRegion } from "./region";
 
@@ -8,12 +8,19 @@ import { useRegion } from "./region";
  */
 export const ASK_PARAM = "ask";
 
+/** Marks the history entry the panel pushed when it opened, so closing it can go back instead. */
+interface PanelState {
+  askPushed?: boolean;
+}
+
 export function useAskPanel() {
   const [params, setParams] = useSearchParams();
+  const { state } = useLocation() as { state: PanelState | null };
+  const navigate = useNavigate();
   const region = useRegion();
   const open = params.has(ASK_PARAM);
 
-  const setParam = (value: string | null, replace = false) =>
+  const setParam = (value: string | null, options: { replace: boolean; state?: PanelState | null }) =>
     setParams(
       (current) => {
         const next = new URLSearchParams(current);
@@ -21,7 +28,7 @@ export function useAskPanel() {
         else next.set(ASK_PARAM, value);
         return next;
       },
-      { preventScrollReset: true, replace },
+      { preventScrollReset: true, ...options },
     );
 
   return {
@@ -30,11 +37,16 @@ export function useAskPanel() {
     linkedQuestion: params.get(ASK_PARAM)?.trim() ?? "",
     /** Open the panel, asking `question` straight away if given. */
     openPanel: (question = "") => {
-      if (question.trim()) ask(question.trim(), region);
-      setParam("", open);
+      if (question.trim()) ask(question, region);
+      if (!open) setParam("", { replace: false, state: { askPushed: true } });
     },
-    close: () => setParam(null),
+    /** Close the panel: back to the entry before it opened, or (shared link, reload) drop `?ask`. */
+    close: () => {
+      if (!open) return;
+      if (state?.askPushed) navigate(-1);
+      else setParam(null, { replace: true });
+    },
     /** Drop an asked question from the URL, so going back or reloading doesn't ask it again. */
-    clearLinkedQuestion: () => setParam("", true),
+    clearLinkedQuestion: () => setParam("", { replace: true, state }),
   };
 }

@@ -161,6 +161,7 @@ async def main(question: str) -> None:
             print("\nStopped: too many turns.")
     finally:
         await tmdb.aclose()
+        await claude.close()
 
     cost = tokens_in / 1e6 * PRICE_IN + tokens_out / 1e6 * PRICE_OUT
     print(f"\ntokens: {tokens_in} in / {tokens_out} out · cost ≈ ${cost:.4f}")

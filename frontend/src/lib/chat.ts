@@ -18,6 +18,9 @@ const STORAGE_KEY = "assistant-chat-v1";
 const HISTORY_TURNS = 5;
 /** After this many questions a new chat has to be started, to keep every request small. */
 export const MAX_TURNS = 20;
+/** What the backend accepts as a question. */
+export const MIN_QUESTION = 3;
+export const MAX_QUESTION = 300;
 
 /*
  * The conversation lives here, outside React, so it survives closing the panel (a request on its
@@ -26,18 +29,44 @@ export const MAX_TURNS = 20;
  */
 let turns: ChatTurn[] | null = null;
 const listeners = new Set<() => void>();
+/** The request running for each turn. A retry replaces it; the old one's late events are ignored. */
 const requests = new Map<string, AbortController>();
+
+const isObject = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
+
+/** A stored turn, if it still has the shape the panel needs (old or hand-edited data may not). */
+function restore(value: unknown): ChatTurn | null {
+  if (!isObject(value) || typeof value.id !== "string" || typeof value.question !== "string") return null;
+  const answer = value.answer;
+  const validAnswer =
+    isObject(answer) &&
+    typeof answer.intro === "string" &&
+    Array.isArray(answer.picks) &&
+    answer.picks.every((pick) => isObject(pick) && isObject(pick.item) && Array.isArray(pick.providers));
+  if (answer != null && !validAnswer) return null;
+  return {
+    id: value.id,
+    question: value.question,
+    steps: [],
+    answer: validAnswer ? (answer as unknown as AssistantAnswer) : null,
+    // Nothing is running after a reload: a turn saved mid-answer shows as failed, with a retry.
+    error: typeof value.error === "string" ? value.error : validAnswer ? null : "This question didn't finish.",
+    pending: false,
+  };
+}
 
 function load(): ChatTurn[] {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
-    return Array.isArray(saved) ? (saved as ChatTurn[]) : [];
+    if (!Array.isArray(saved)) return [];
+    return saved.map(restore).filter((turn): turn is ChatTurn => turn !== null);
   } catch {
     return []; // private mode, blocked storage or a corrupted value: start empty
   }
 }
 
 const current = () => (turns ??= load());
+const notify = () => listeners.forEach((listener) => listener());
 
 function save(next: ChatTurn[]) {
   turns = next;
@@ -47,7 +76,7 @@ function save(next: ChatTurn[]) {
   } catch {
     // Storage full or blocked: the chat still works, it just won't survive a reload.
   }
-  listeners.forEach((listener) => listener());
+  notify();
 }
 
 const update = (id: string, change: (turn: ChatTurn) => ChatTurn) => save(current().map((turn) => (turn.id === id ? change(turn) : turn)));
@@ -62,42 +91,62 @@ const recap = (earlier: ChatTurn[]): HistoryTurn[] =>
       picks: turn.answer!.picks.map(({ item }) => ({ media_type: item.media_type, id: item.id, title: item.title })),
     }));
 
+function failureMessage(error: unknown) {
+  if (error instanceof ApiError) return error.message;
+  if (error instanceof DOMException && error.name === "TimeoutError") return "The assistant took too long. Try again.";
+  return "Couldn't reach the assistant.";
+}
+
 function run(id: string, question: string, region: string, history: HistoryTurn[]) {
   const controller = new AbortController();
   requests.set(id, controller);
+  // Only the latest request for a turn may touch it.
+  const latest = () => requests.get(id) === controller;
 
-  const onEvent = (event: AssistantEvent) =>
+  const onEvent = (event: AssistantEvent) => {
+    if (!latest()) return;
     update(id, (turn) => {
       if (event.type === "status") return { ...turn, steps: [...turn.steps, event.text] };
       if (event.type === "answer") return { ...turn, answer: event, pending: false };
       return { ...turn, error: event.message, pending: false };
     });
+  };
 
   askAssistant({ question, region, history }, onEvent, controller.signal)
-    .then(() => update(id, (turn) => (turn.pending ? { ...turn, pending: false, error: "The assistant stopped before answering." } : turn)))
-    .catch((error: unknown) => {
-      if (controller.signal.aborted) return; // the chat was cleared
-      const message = error instanceof ApiError ? error.message : "Couldn't reach the assistant.";
-      update(id, (turn) => ({ ...turn, pending: false, error: message }));
+    .then(() => {
+      if (latest()) update(id, (turn) => (turn.pending ? { ...turn, pending: false, error: "The assistant stopped before answering." } : turn));
     })
-    .finally(() => requests.delete(id));
+    .catch((error: unknown) => {
+      if (!latest() || controller.signal.aborted) return; // replaced, or the chat was cleared
+      update(id, (turn) => ({ ...turn, pending: false, error: failureMessage(error) }));
+    })
+    .finally(() => {
+      if (latest()) requests.delete(id);
+    });
 }
 
-/** Ask a new question in the current chat. One at a time. */
-export function ask(question: string, region: string) {
+/** Whether a question can be asked now: one at a time, and only while the chat has room. */
+export const canAsk = (chat: ChatTurn[]) => !chat.some((turn) => turn.pending) && chat.length < MAX_TURNS;
+
+const newId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+/** Ask a new question in the current chat. False if it wasn't asked (see canAsk, question length). */
+export function ask(question: string, region: string): boolean {
+  const text = question.trim();
   const earlier = current();
-  if (earlier.some((turn) => turn.pending) || earlier.length >= MAX_TURNS) return;
-  const id = crypto.randomUUID();
-  save([...earlier, { id, question, steps: [], answer: null, error: null, pending: true }]);
-  run(id, question, region, recap(earlier));
+  if (text.length < MIN_QUESTION || text.length > MAX_QUESTION || !canAsk(earlier)) return false;
+  const id = newId();
+  save([...earlier, { id, question: text, steps: [], answer: null, error: null, pending: true }]);
+  run(id, text, region, recap(earlier));
+  return true;
 }
 
 /** Ask a failed question again, with the conversation as it was at that point. */
 export function retry(id: string, region: string) {
   const all = current();
   const index = all.findIndex((turn) => turn.id === id);
-  if (index < 0 || all[index].pending) return;
-  update(id, (turn) => ({ ...turn, steps: [], error: null, pending: true }));
+  if (index < 0 || all.some((turn) => turn.pending)) return;
+  update(id, (turn) => ({ ...turn, steps: [], answer: null, error: null, pending: true }));
   run(id, all[index].question, region, recap(all.slice(0, index)));
 }
 
@@ -112,6 +161,15 @@ export function forgetChat() {
   requests.forEach((controller) => controller.abort());
   requests.clear();
   turns = null;
+}
+
+// Another tab changed the chat: follow it, unless this tab is waiting for an answer.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key !== STORAGE_KEY || current().some((turn) => turn.pending)) return;
+    turns = load();
+    notify();
+  });
 }
 
 const subscribe = (listener: () => void) => {

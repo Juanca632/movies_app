@@ -226,4 +226,73 @@ describe("AI assistant", () => {
     await userEvent.click(within(tabBar).getByRole("button", { name: "Ask AI" }));
     expect(await panel()).toBeInTheDocument();
   });
+
+  it("goes back on close instead of stacking history entries", async () => {
+    mockApi({});
+    const { router } = renderRoute("/calendar");
+
+    const [navbarButton] = await screen.findAllByRole("button", { name: "Ask AI", expanded: false });
+    await userEvent.click(navbarButton);
+    const dialog = await panel();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+
+    await waitForElementToBeRemoved(dialog);
+    // Back to the entry it came from: pressing Back now won't reopen the panel.
+    expect(router.state.historyAction).toBe("POP");
+    expect(router.state.location.search).toBe("");
+  });
+
+  it("survives a saved chat that is corrupted or from an older version", async () => {
+    localStorage.setItem(
+      "assistant-chat-v1",
+      JSON.stringify([
+        null,
+        { id: "1", question: "broken", answer: { intro: "No picks list" } },
+        { id: "2", question: "fine", answer: { intro: "Kept.", picks: [] }, pending: true },
+      ]),
+    );
+    renderRoute("/calendar?ask=");
+
+    const dialog = await panel();
+    expect(within(dialog).getByText("Kept.")).toBeInTheDocument();
+    expect(within(dialog).queryByText("broken")).not.toBeInTheDocument();
+    // Nothing is left "running": new questions can be asked.
+    await userEvent.type(within(dialog).getByRole("textbox", { name: "Your request" }), "a comedy");
+    expect(within(dialog).getByRole("button", { name: "Ask" })).toBeEnabled();
+  });
+
+  it("reads streams with CRLF line endings and no final blank line", async () => {
+    const body = 'data: {"type":"status","text":"Looking"}\r\n\r\ndata: {"type":"answer","intro":"Read it all.","picks":[]}';
+    mockApi({ ask: () => new Response(body, { headers: { "content-type": "text/event-stream" } }) });
+    renderRoute("/calendar?ask=");
+
+    await askInPanel(await panel(), "a comedy");
+
+    expect(await screen.findByText("Read it all.")).toBeInTheDocument();
+  });
+
+  it("doesn't offer a retry while another question is running", async () => {
+    const neverEnds = () => new Response(new ReadableStream(), { headers: { "content-type": "text/event-stream" } });
+    const failed = stream([{ type: "error", message: "That one was hard to answer." }]);
+    mockApi({ ask: answers(failed, neverEnds) });
+    renderRoute("/calendar?ask=");
+    const dialog = await panel();
+
+    await askInPanel(dialog, "hard one");
+    expect(await within(dialog).findByRole("button", { name: "Try again" })).toBeInTheDocument();
+    await askInPanel(dialog, "an easy one");
+
+    expect(await within(dialog).findByText("Thinking…")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+  });
+
+  it("ignores a shared link whose question is too short", async () => {
+    const fetchMock = mockApi({});
+    const { router } = renderRoute("/calendar?ask=hi");
+
+    await panel();
+
+    expect(questionsSent(fetchMock)).toHaveLength(0);
+    expect(router.state.location.search).toBe("?ask=");
+  });
 });

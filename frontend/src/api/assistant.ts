@@ -1,4 +1,4 @@
-import { API_URL, ApiError } from "./client";
+import { anySignal, API_URL, ApiError } from "./client";
 import type { AssistantEvent, MediaType } from "./types";
 
 // Several searches plus the model's own thinking: far slower than a plain API call.
@@ -27,7 +27,7 @@ export async function askAssistant(request: AskRequest, onEvent: (event: Assista
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
-    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+    signal: signal ? anySignal([signal, timeout]) : timeout,
   });
   if (!response.ok || !response.body) {
     // 429 and 503 explain themselves in `detail`.
@@ -38,19 +38,26 @@ export async function askAssistant(request: AskRequest, onEvent: (event: Assista
 
   const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
   let buffer = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += value;
-    const blocks = buffer.split("\n\n");
-    buffer = blocks.pop() ?? ""; // an incomplete block waits for the next chunk
-    for (const block of blocks) {
-      const data = block
-        .split("\n")
-        .filter((line) => line.startsWith("data: "))
-        .map((line) => line.slice(6))
-        .join("\n");
-      if (data) onEvent(JSON.parse(data) as AssistantEvent);
+  const dispatch = (block: string) => {
+    const data = block
+      .split("\n")
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice(line.startsWith("data: ") ? 6 : 5))
+      .join("\n");
+    if (data) onEvent(JSON.parse(data) as AssistantEvent);
+  };
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      // SSE allows \r\n and \r line endings too.
+      buffer += value.replace(/\r\n?/g, "\n");
+      const blocks = buffer.split("\n\n");
+      buffer = blocks.pop() ?? ""; // an incomplete block waits for the next chunk
+      blocks.forEach(dispatch);
     }
+    dispatch(buffer); // a last event without the closing blank line
+  } finally {
+    reader.cancel().catch(() => {}); // stop downloading if we bailed out early
   }
 }

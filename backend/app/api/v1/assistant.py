@@ -55,6 +55,10 @@ async def ask(request: Request, body: AskRequest, assistant: AssistantDep) -> St
         except (anthropic.APIError, TMDBError):
             log.exception("assistant failed")
             yield _sse(Failure(message=UNAVAILABLE))
+        except Exception:
+            # The 200 and the headers are already sent: the only way to report it is an event.
+            log.exception("assistant failed unexpectedly")
+            yield _sse(Failure(message=UNAVAILABLE))
 
     # No caching anywhere, and no proxy buffering, so each update reaches the browser at once.
     headers = {"Cache-Control": "no-store", "X-Accel-Buffering": "no"}

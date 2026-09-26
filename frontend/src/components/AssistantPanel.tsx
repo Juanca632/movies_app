@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useRegionName } from "../api/queries";
 import type { Pick } from "../api/types";
 import { ASK_PARAM, useAskPanel } from "../lib/askPanel";
-import { ask, MAX_TURNS, newChat, retry, useChat, type ChatTurn } from "../lib/chat";
+import { ask, canAsk, MAX_QUESTION, MAX_TURNS, MIN_QUESTION, newChat, retry, useChat, type ChatTurn } from "../lib/chat";
 import { useRegion } from "../lib/region";
 import { imageUrl, isAdTier, mediaHref, year } from "../lib/tmdb";
 import { useMediaQuery } from "../lib/useMediaQuery";
@@ -19,8 +19,6 @@ const EXAMPLES = [
   "A cozy series to binge this weekend",
 ];
 
-const MIN_LENGTH = 3;
-const MAX_LENGTH = 300;
 /** Dragging the phone sheet down this far closes it. */
 const DISMISS_PX = 90;
 /** Matches --animate-slide-down / --animate-slide-out-right. */
@@ -76,7 +74,16 @@ interface PanelProps {
   close: () => void;
 }
 
-function TurnView({ turn, pickHref, region, regionName }: { turn: ChatTurn; pickHref: (pick: Pick) => string; region: string; regionName: string }) {
+interface TurnViewProps {
+  turn: ChatTurn;
+  pickHref: (pick: Pick) => string;
+  region: string;
+  regionName: string;
+  /** Another question is running: retrying now would run two at once. */
+  busy: boolean;
+}
+
+function TurnView({ turn, pickHref, region, regionName, busy }: TurnViewProps) {
   return (
     <article aria-label={turn.question} aria-busy={turn.pending} className="space-y-4">
       <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-white/10 px-4 py-2 text-sm">{turn.question}</p>
@@ -96,7 +103,7 @@ function TurnView({ turn, pickHref, region, regionName }: { turn: ChatTurn; pick
         </ol>
       )}
 
-      {turn.error && <ErrorState message={turn.error} onRetry={() => retry(turn.id, region)} />}
+      {turn.error && <ErrorState message={turn.error} onRetry={busy ? undefined : () => retry(turn.id, region)} />}
 
       {turn.answer && (
         <>
@@ -122,6 +129,7 @@ function Panel({ leaving, close }: PanelProps) {
   const chat = useChat();
   const busy = chat.some((turn) => turn.pending);
   const full = chat.length >= MAX_TURNS;
+  const panel = useRef<HTMLElement>(null);
   const [draft, setDraft] = useState("");
   const [dragY, setDragY] = useState(0);
   const dragStart = useRef<number | null>(null);
@@ -134,20 +142,52 @@ function Panel({ leaving, close }: PanelProps) {
     closeRef.current = close;
   });
 
+  // Focus goes back where it was (e.g. the "Ask AI" button) when the panel goes away.
   useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    return () => opener?.focus?.({ preventScroll: true });
+  }, []);
+
+  // (Re)opening, including right after a swipe-dismiss: in place and ready to type.
+  useEffect(() => {
+    if (leaving) return;
+    setDragY(0);
     input.current?.focus({ preventScroll: true });
-    const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && closeRef.current();
+  }, [leaving]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const inside = panel.current?.contains(document.activeElement) ?? false;
+      if (event.key === "Escape") {
+        // On wide screens the page stays usable: Escape there (search, menus…) isn't for us.
+        if (event.defaultPrevented || (wide && !inside && document.activeElement !== document.body)) return;
+        closeRef.current();
+      } else if (event.key === "Tab" && !wide && panel.current) {
+        // The phone sheet is modal: Tab cycles inside it.
+        const focusable = [...panel.current.querySelectorAll<HTMLElement>("a[href], button:not(:disabled), input:not(:disabled)")];
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (!inside || (event.shiftKey && document.activeElement === first)) {
+          event.preventDefault();
+          (event.shiftKey ? last : first)?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [wide]);
 
   // The sheet covers the page on phones: don't let the page scroll underneath it.
   useEffect(() => {
     if (wide) return;
     const root = document.documentElement;
+    const previous = root.style.overflow;
     root.style.overflow = "hidden";
     return () => {
-      root.style.overflow = "";
+      root.style.overflow = previous;
     };
   }, [wide]);
 
@@ -160,10 +200,7 @@ function Panel({ leaving, close }: PanelProps) {
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    const text = draft.trim();
-    if (text.length < MIN_LENGTH || busy) return;
-    setDraft("");
-    ask(text, region);
+    if (ask(draft, region)) setDraft("");
   };
 
   // Swipe the sheet down by its top bar to dismiss it.
@@ -181,6 +218,11 @@ function Panel({ leaving, close }: PanelProps) {
       dragStart.current = null;
       if (dragY > DISMISS_PX) close();
       else setDragY(0);
+    },
+    // The system took the touch over (e.g. a scroll): put the sheet back.
+    onPointerCancel: () => {
+      dragStart.current = null;
+      setDragY(0);
     },
   };
 
@@ -207,13 +249,15 @@ function Panel({ leaving, close }: PanelProps) {
           className={`fixed inset-0 z-[60] bg-black/60 ${leaving ? "animate-fade-out" : "animate-fade-in [animation-duration:200ms]"}`}
         />
       )}
-      {/* Phones: a sheet from the bottom edge. Wide screens: a card floating over the page's right side. */}
+      {/* Phones: a sheet from the bottom edge. Wide screens: a card floating over the page's right side,
+          below the navbar, whose search and country picker stay usable. */}
       <aside
+        ref={panel}
         role="dialog"
         aria-modal={!wide}
         aria-labelledby="assistant-title"
         style={dragStyle}
-        className={`fixed inset-x-0 bottom-0 z-[60] flex h-[88dvh] flex-col rounded-t-2xl border-t border-white/10 bg-surface shadow-2xl shadow-black/60 sm:inset-x-auto sm:bottom-3 sm:right-3 sm:top-3 sm:h-auto sm:w-[460px] sm:rounded-2xl lg:w-[520px] sm:border sm:bg-surface/95 sm:backdrop-blur-xl ${motion} ${
+        className={`fixed inset-x-0 bottom-0 z-[60] flex h-[88dvh] flex-col rounded-t-2xl border-t border-white/10 bg-surface shadow-2xl shadow-black/60 sm:inset-x-auto sm:bottom-3 sm:right-3 sm:top-[4.5rem] sm:h-auto sm:w-[460px] sm:rounded-2xl lg:w-[520px] sm:border sm:bg-surface/95 sm:backdrop-blur-xl ${motion} ${
           leaving ? "pointer-events-none" : ""
         }`}
       >
@@ -274,7 +318,7 @@ function Panel({ leaving, close }: PanelProps) {
           ) : (
             <div ref={scroller} aria-live="polite" className="space-y-8">
               {chat.map((turn) => (
-                <TurnView key={turn.id} turn={turn} pickHref={pickHref} region={region} regionName={regionName} />
+                <TurnView key={turn.id} turn={turn} pickHref={pickHref} region={region} regionName={regionName} busy={busy} />
               ))}
               <p className="text-xs text-subtle">Suggestions are AI-generated from TMDB data and can be wrong.</p>
             </div>
@@ -294,13 +338,13 @@ function Panel({ leaving, close }: PanelProps) {
               value={draft}
               disabled={full}
               onChange={(event) => setDraft(event.target.value)}
-              maxLength={MAX_LENGTH}
+              maxLength={MAX_QUESTION}
               placeholder={chat.length ? "Refine it or ask something else…" : "A short comedy on Netflix for tonight…"}
               className="min-w-0 flex-1 bg-transparent py-2 text-sm text-fg placeholder:text-subtle focus-visible:outline-none disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={draft.trim().length < MIN_LENGTH || busy || full}
+              disabled={draft.trim().length < MIN_QUESTION || !canAsk(chat)}
               className="shrink-0 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-fg transition hover:bg-white/15 disabled:opacity-40"
             >
               Ask
@@ -328,6 +372,7 @@ function AssistantPanel() {
   }, [open]);
 
   // A shared link (?ask=something funny): ask it, then drop it from the URL so it's asked once.
+  // (If a question is already running, the link just opens the panel.)
   useEffect(() => {
     if (!linkedQuestion) return;
     ask(linkedQuestion, region);

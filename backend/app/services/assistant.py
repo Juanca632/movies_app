@@ -12,6 +12,7 @@ from datetime import date
 from typing import Any
 
 from anthropic import AsyncAnthropic
+from pydantic import BaseModel, Field, ValidationError
 
 from app.clients.tmdb import TMDBClient, TMDBError
 from app.core.cache import TTLStore
@@ -19,12 +20,13 @@ from app.core.config import Settings
 from app.core.ratelimit import RateLimiter
 from app.schemas.assistant import Answer, AssistantEvent, Pick, Status, Turn
 from app.schemas.media import MediaSummary, MediaType, Provider
-from app.services.discover import DiscoverService
+from app.services.discover import DiscoverService, Sort
 from app.services.media import to_summary
 
 log = logging.getLogger(__name__)
 
 MAX_TOKENS = 1500
+NO_ANSWER = "I couldn't find a good answer to that. Try rephrasing it."
 MAX_PICKS = 8
 TOOL_RESULTS = 10  # titles per tool call: enough to choose from, cheap to read
 PROMPT_SERVICES = 25
@@ -154,6 +156,43 @@ TOOLS: list[dict[str, Any]] = [
 ]
 
 
+# What each tool accepts. The model's input is validated against these before anything runs: it
+# can be malformed, and a prompt injection could steer it (e.g. a media_type of "../account").
+class _TitleArgs(BaseModel):
+    media_type: MediaType
+    id: int
+
+
+class _DiscoverArgs(BaseModel):
+    media_type: MediaType
+    genre_ids: list[int] = Field(default=[], max_length=5)
+    service_ids: list[int] = Field(default=[], max_length=10)
+    year_from: int | None = Field(default=None, ge=1870, le=2100)
+    year_to: int | None = Field(default=None, ge=1870, le=2100)
+    max_runtime: int | None = Field(default=None, ge=1, le=600)
+    min_rating: float | None = Field(default=None, ge=0, le=10)
+    original_language: str | None = Field(default=None, pattern="^[a-z]{2}$")
+    sort: Sort = "popular"
+
+
+class _SearchArgs(BaseModel):
+    query: str = Field(min_length=1, max_length=200)
+
+
+class _PickArgs(_TitleArgs):
+    reason: str = Field(max_length=500)
+
+
+class _PresentArgs(BaseModel):
+    intro: str = Field(max_length=1000)
+    picks: list[_PickArgs] = Field(min_length=1)
+
+
+def _one_line(text: str) -> str:
+    """User-supplied text for the prompt, on one line: a newline can't fake extra recap lines."""
+    return " ".join(text.split())
+
+
 def _with_history(question: str, history: list[Turn]) -> str:
     """The new request, preceded by a compact recap of the conversation so far.
 
@@ -164,8 +203,11 @@ def _with_history(question: str, history: list[Turn]) -> str:
         return question
     recap = []
     for number, turn in enumerate(history, 1):
-        picks = ", ".join(f"{p.title} ({p.media_type} {p.id})" for p in turn.picks) or "nothing"
-        recap.append(f"{number}. The user asked: {turn.question}\n   You recommended: {picks}")
+        picks = ", ".join(f"{_one_line(p.title)} ({p.media_type} {p.id})" for p in turn.picks)
+        recap.append(
+            f"{number}. The user asked: {_one_line(turn.question)}\n"
+            f"   You recommended: {picks or 'nothing'}"
+        )
     return "Earlier in this conversation:\n" + "\n".join(recap) + f"\n\nNew request: {question}"
 
 
@@ -193,11 +235,11 @@ class _Run:
         self._genres = genres
         self._services = services
         self.seen: dict[tuple[str, int], MediaSummary] = {}
-        self._tools: dict[str, Callable[[dict[str, Any]], Awaitable[Any]]] = {
-            "discover": self._discover,
-            "search_titles": self._search_titles,
-            "similar_to": self._similar_to,
-            "where_to_watch": self._where_to_watch,
+        self._tools: dict[str, tuple[type[BaseModel], Callable[[Any], Awaitable[Any]]]] = {
+            "discover": (_DiscoverArgs, self._discover),
+            "search_titles": (_SearchArgs, self._search_titles),
+            "similar_to": (_TitleArgs, self._similar_to),
+            "where_to_watch": (_TitleArgs, self._where_to_watch),
         }
 
     def describe(self, name: str, args: dict[str, Any]) -> str:
@@ -220,42 +262,61 @@ class _Run:
                 return f"Finding titles like {title}"
             if name == "where_to_watch":
                 return f"Checking where to stream {title}"
-        except (KeyError, TypeError):
+        except Exception:  # only a label: never let it break the answer
             pass
         return "Searching"
 
     async def result(self, block: Any) -> dict[str, Any]:
-        """Run a tool Claude asked for and wrap the output as a `tool_result` block."""
-        try:
-            tool = self._tools[block.name]
-            output = await tool(block.input)
-        except (KeyError, TypeError, ValueError, TMDBError) as error:
-            # Errors go back to Claude too: it can fix its call instead of giving up.
-            return {
-                "type": "tool_result",
-                "tool_use_id": block.id,
-                "content": f"Error: {error!r}",
-                "is_error": True,
-            }
-        return {"type": "tool_result", "tool_use_id": block.id, "content": json.dumps(output)}
+        """Run a tool Claude asked for and wrap the output as a `tool_result` block.
 
-    async def answer(self, args: dict[str, Any]) -> Answer:
-        """Turn `present_picks` into the final answer. Rejects titles no tool returned."""
+        Errors go back to Claude too, as `is_error` results: it can fix its call instead of the
+        whole answer failing.
+        """
+        try:
+            if block.name not in self._tools:
+                raise ValueError(f"Unknown tool {block.name!r}.")
+            schema, tool = self._tools[block.name]
+            output = await tool(schema.model_validate(block.input))
+        except ValidationError as error:
+            message = f"Invalid input: {error.errors(include_url=False, include_input=False)}"
+        except (ValueError, TMDBError) as error:
+            message = str(error) or type(error).__name__
+        except Exception:
+            log.exception("assistant tool %s failed", block.name)
+            message = "The tool failed. Try another approach."
+        else:
+            return {"type": "tool_result", "tool_use_id": block.id, "content": json.dumps(output)}
+        return {
+            "type": "tool_result",
+            "tool_use_id": block.id,
+            "content": f"Error: {message}",
+            "is_error": True,
+        }
+
+    async def answer(self, raw: Any) -> Answer:
+        """Turn `present_picks` into the final answer. Rejects titles no tool returned.
+
+        Raises ValidationError or ValueError, to be sent back to Claude.
+        """
+        args = _PresentArgs.model_validate(raw)
         items: list[tuple[MediaSummary, str]] = []
-        for pick in args["picks"][:MAX_PICKS]:
-            item = self.seen.get((pick["media_type"], int(pick["id"])))
+        for pick in args.picks[:MAX_PICKS]:
+            item = self.seen.get((pick.media_type, pick.id))
             if item is None:
                 raise ValueError(
-                    f"{pick['media_type']} {pick['id']} was not returned by any tool. "
+                    f"{pick.media_type} {pick.id} was not returned by any tool. "
                     "Only recommend titles from tool results."
                 )
             if all(item is not other for other, _ in items):
-                items.append((item, pick["reason"]))
-        providers = await asyncio.gather(
-            *(self._service.streaming(item.media_type, item.id, self._region) for item, _ in items)
+                items.append((item, pick.reason))
+        # The answer is already paid for: a failed availability lookup just shows no services.
+        found = await asyncio.gather(
+            *(self._service.streaming(item.media_type, item.id, self._region) for item, _ in items),
+            return_exceptions=True,
         )
+        providers = [[] if isinstance(on, BaseException) else on for on in found]
         return Answer(
-            intro=args["intro"],
+            intro=args.intro,
             picks=[
                 Pick(item=item, reason=reason, providers=on)
                 for (item, reason), on in zip(items, providers, strict=True)
@@ -284,26 +345,26 @@ class _Run:
             )
         return out
 
-    async def _discover(self, args: dict[str, Any]) -> Any:
+    async def _discover(self, args: _DiscoverArgs) -> Any:
         page = await self._service.discover.discover(
-            args["media_type"],
-            sort=args.get("sort", "popular"),
+            args.media_type,
+            sort=args.sort,
             page=1,
-            genres=args.get("genre_ids", []),
-            providers=args.get("service_ids", []),
+            genres=args.genre_ids,
+            providers=args.service_ids,
             region=self._region,
-            year_from=args.get("year_from"),
-            year_to=args.get("year_to"),
-            max_runtime=args.get("max_runtime"),
-            min_rating=args.get("min_rating"),
-            language=args.get("original_language"),
+            year_from=args.year_from,
+            year_to=args.year_to,
+            max_runtime=args.max_runtime,
+            min_rating=args.min_rating,
+            language=args.original_language,
         )
         return self._compact(page.results)
 
-    async def _search_titles(self, args: dict[str, Any]) -> Any:
+    async def _search_titles(self, args: _SearchArgs) -> Any:
         raw = await self._service.tmdb.get(
             "/search/multi",
-            {"query": args["query"], "include_adult": "false"},
+            {"query": args.query, "include_adult": "false"},
             ttl=self._service.settings.cache_ttl_lists,
         )
         items = [
@@ -313,16 +374,16 @@ class _Run:
         ]
         return self._compact(items)
 
-    async def _similar_to(self, args: dict[str, Any]) -> Any:
-        media_type: MediaType = args["media_type"]
+    async def _similar_to(self, args: _TitleArgs) -> Any:
         raw = await self._service.tmdb.get(
-            f"/{media_type}/{int(args['id'])}/recommendations",
+            f"/{args.media_type}/{args.id}/recommendations",
             ttl=self._service.settings.cache_ttl_lists,
         )
-        return self._compact([to_summary(item, media_type) for item in raw.get("results", [])])
+        items = [to_summary(item, args.media_type) for item in raw.get("results", [])]
+        return self._compact(items)
 
-    async def _where_to_watch(self, args: dict[str, Any]) -> Any:
-        providers = await self._service.streaming(args["media_type"], int(args["id"]), self._region)
+    async def _where_to_watch(self, args: _TitleArgs) -> Any:
+        providers = await self._service.streaming(args.media_type, args.id, self._region)
         return [provider.provider_name for provider in providers]
 
 
@@ -337,8 +398,15 @@ class AssistantService:
         self._site = RateLimiter(settings.assistant_daily_limit, 86400)
 
     def allow(self, client: str) -> bool:
-        """Count a new question against the per-visitor and site-wide limits."""
-        return self._per_client.hit(client) and self._site.hit("site")
+        """Count a new question against the per-visitor and site-wide limits.
+
+        Nothing is counted when either limit refuses it.
+        """
+        if not (self._per_client.allows(client) and self._site.allows("site")):
+            return False
+        self._per_client.hit(client)
+        self._site.hit("site")
+        return True
 
     def cached(self, question: str, region: str) -> Answer | None:
         return self._answers.get((question.casefold(), region))
@@ -362,6 +430,9 @@ class AssistantService:
 
         while turns < self.settings.assistant_max_turns:
             turns += 1
+            # The last turn can't be spent on more searches: if it has titles, it has to answer.
+            if turns == self.settings.assistant_max_turns and run.seen:
+                must_present = True
             response = await self.claude.messages.create(
                 model=self.settings.assistant_model,
                 max_tokens=MAX_TOKENS,
@@ -378,17 +449,23 @@ class AssistantService:
 
             if response.stop_reason == "max_tokens":
                 raise AssistantError("The answer got too long. Try a more specific question.")
+            if response.stop_reason == "refusal":
+                raise AssistantError("I can't help with that one. Ask me for something to watch.")
             calls = [block for block in response.content if block.type == "tool_use"]
             if not calls and run.seen and not must_present:
                 # It found titles but wrote them as text, which the page can't show as cards.
-                messages.append({"role": "assistant", "content": response.content})
-                messages.append({"role": "user", "content": "Show those picks with present_picks."})
+                # (An empty turn can't be sent back, so then it's just asked again.)
+                if response.content:
+                    messages.append({"role": "assistant", "content": response.content})
+                    messages.append(
+                        {"role": "user", "content": "Show those picks with present_picks."}
+                    )
                 must_present = True
                 continue
             if not calls:
                 # Plain text, no tools: an off-topic question, or nothing to recommend.
                 text = "".join(block.text for block in response.content if block.type == "text")
-                answer = Answer(intro=text.strip())
+                answer = Answer(intro=text.strip() or NO_ANSWER)
                 break
 
             messages.append({"role": "assistant", "content": response.content})
@@ -403,7 +480,7 @@ class AssistantService:
                     continue
                 try:
                     answer = await run.answer(call.input)
-                except (KeyError, TypeError, ValueError) as error:
+                except (ValidationError, ValueError) as error:
                     results.append(
                         {
                             "type": "tool_result",
