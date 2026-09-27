@@ -108,6 +108,18 @@ npm run lint && npm test && npm run build
 
 Every pull request runs all of the above plus a dependency audit and a Docker build.
 
+### Evals for the AI assistant
+
+Unit tests use a fake Claude, so they check the code, not the quality of the recommendations. For that there are evals: about 20 real requests (by genre, by streaming service, "something like X", in Spanish, off-topic, prompt injection, a follow-up...) sent to the real Claude and TMDB, each scored against rules that describe a good answer, never exact titles, since catalogs change: *every pick is a horror movie, streams on Netflix, isn't the title it was compared to*. An optional LLM judge (`--judge`) scores what rules can't, like whether the reasons fit the request.
+
+```bash
+# backend/, with ANTHROPIC_API_KEY in .env (~$0.20 per run, more with --judge)
+python -m evals.run                          # all cases, prints a table and the pass rate
+python -m evals.run --only horror-netflix --repeat 3
+```
+
+They run on demand after changing the prompt, the tools or the model (locally, or from the "Assistant evals" workflow in GitHub Actions), not on every pull request. Cases live in `backend/evals/cases.yaml`.
+
 ## 📦 Deployment
 
 Vercel deploys `main` to production and every other branch to a private preview. The project needs `THE_MOVIE_DB_API_KEY` (and optionally `OMDB_API_KEY` and `ANTHROPIC_API_KEY`) as environment variables, plus one Firewall rate-limit rule for `/api/`. Merging into `main` also tags a semantic version and publishes a GitHub release.
@@ -115,7 +127,6 @@ Vercel deploys `main` to production and every other branch to a private preview.
 ## 🗺️ Roadmap
 
 - **Accounts (optional):** sign in with Google to keep favourites and "My list" across devices.
-- **Evals for the AI assistant:** a set of requests with expected results, scored automatically in CI.
 - **Personal recommendations:** a taste profile from favourites and 👍/👎 on the assistant's picks, and similar titles by embeddings.
 
 ## 🙏 Credits

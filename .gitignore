@@ -31,3 +31,6 @@ test/
 .env
 .env.bak
 
+
+# assistant eval reports
+backend/evals/results/
