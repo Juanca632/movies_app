@@ -81,8 +81,13 @@ class DiscoverService:
         max_runtime: int | None = None,
         min_rating: float | None = None,
         language: str | None = None,
+        streaming_only: bool = False,
     ) -> Page[MediaSummary]:
-        """All filters are combined: every genre must match, any of the services is enough."""
+        """All filters are combined: every genre must match, any of the services is enough.
+
+        `streaming_only` keeps titles on some subscription service in `region`, like naming
+        every service would: no films still in theaters or not released yet.
+        """
         params: dict[str, Any] = {
             "page": page,
             "include_adult": "false",
@@ -90,9 +95,10 @@ class DiscoverService:
         }
         if genres:
             params["with_genres"] = ",".join(map(str, genres))
-        if providers and region:
+        if region and (providers or streaming_only):
             # "Streaming on": only subscription availability counts, not rent/buy.
-            params["with_watch_providers"] = "|".join(map(str, providers))
+            if providers:
+                params["with_watch_providers"] = "|".join(map(str, providers))
             params["watch_region"] = region
             params["with_watch_monetization_types"] = "flatrate"
         date_field = _DATE_FIELD[media_type]

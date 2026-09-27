@@ -28,6 +28,7 @@ class Expect(BaseModel):
     exclude_genres: list[str] = []  # no pick has them
     service: str | None = None  # every pick streams there, e.g. "Netflix"
     streaming: bool = False  # every pick streams somewhere ("for tonight")
+    not_streaming_search: bool = False  # some search included titles not streaming yet
     recent_years: int | None = None  # released in the last N years
     min_rating: float | None = None  # TMDB rating of every pick
     language: str | None = None  # original language, e.g. "ko": some search asked for it
@@ -169,6 +170,8 @@ def check(
 
     if expect.language and expect.language not in trace.filters("original_language"):
         failures.append(f"never searched for original language {expect.language!r}")
+    if expect.not_streaming_search and True not in trace.filters("include_not_streaming"):
+        failures.append("never searched beyond what is streaming")
     if expect.max_runtime is not None:
         runtimes = trace.filters("max_runtime")
         if not any(runtime <= expect.max_runtime for runtime in runtimes):

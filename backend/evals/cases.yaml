@@ -28,6 +28,10 @@
   question: a series to watch on Disney+
   expect: {media_type: tv, service: Disney}
 
+- id: in-theaters
+  question: what horror movies are in theaters right now?
+  expect: {media_type: movie, genre: Horror, not_streaming_search: true}
+
 # --- Vague wishes turned into filters ---
 - id: short-comedy
   question: a short comedy movie, I'm tired

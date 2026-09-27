@@ -97,6 +97,12 @@ TOOLS: list[dict[str, Any]] = [
                     "description": "ISO 639-1 code, e.g. 'ko' for Korean productions.",
                 },
                 "sort": {"type": "string", "enum": ["popular", "top_rated", "newest"]},
+                "include_not_streaming": {
+                    "type": "boolean",
+                    "description": "By default only titles on a streaming service in the "
+                    "user's country are returned. Set true only when the user asks for new "
+                    "releases, what's in theaters or upcoming titles.",
+                },
             },
             "required": ["media_type"],
         },
@@ -173,6 +179,7 @@ class _DiscoverArgs(BaseModel):
     min_rating: float | None = Field(default=None, ge=0, le=10)
     original_language: str | None = Field(default=None, pattern="^[a-z]{2}$")
     sort: Sort = "popular"
+    include_not_streaming: bool = False
 
 
 class _SearchArgs(BaseModel):
@@ -358,6 +365,9 @@ class _Run:
             max_runtime=args.max_runtime,
             min_rating=args.min_rating,
             language=args.original_language,
+            # Most requests are for tonight, at home: the most popular titles right now are
+            # often still in theaters, so by default only what streams in the user's country.
+            streaming_only=not args.include_not_streaming,
         )
         return self._compact(page.results)
 

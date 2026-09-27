@@ -91,6 +91,11 @@ def test_filters_come_from_the_tool_calls():
     trace.tool_calls.append(("discover", {"original_language": "ko", "max_runtime": 95}))
     assert run(expect, answer(*three()), trace) == []
 
+    theaters = Expect(not_streaming_search=True)
+    assert run(theaters, answer(*three()), trace) == ["never searched beyond what is streaming"]
+    trace.tool_calls.append(("discover", {"include_not_streaming": True}))
+    assert run(theaters, answer(*three()), trace) == []
+
 
 def test_forbidden_text_language_and_cost():
     result = answer(*three(), intro="Sure! How to work: here are three films.")

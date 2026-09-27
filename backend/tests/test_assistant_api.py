@@ -136,6 +136,27 @@ async def test_recommends_titles_found_with_the_tools(ask_api, claude, tmdb_rout
     assert "8 Netflix" in claude.requests[0]["system"]
 
 
+@pytest.mark.parametrize(
+    ("extra", "streaming_only"), [({}, True), ({"include_not_streaming": True}, False)]
+)
+async def test_searches_only_streaming_titles_unless_asked_otherwise(
+    ask_api, claude, tmdb_routes, extra, streaming_only
+):
+    # Without it, "a horror movie for tonight" got the films still in theaters.
+    search = tool_use("discover", {"media_type": "movie", "genre_ids": [35], **extra})
+    claude.replies = [reply(search), reply(PRESENT_MOVIE_ONE)]
+
+    await ask_api.post("/api/v1/ask", json={"question": "a comedy", "region": "ES"})
+
+    params = tmdb_routes.discover.calls.last.request.url.params
+    assert "with_watch_providers" not in params
+    if streaming_only:
+        assert params["watch_region"] == "ES"
+        assert params["with_watch_monetization_types"] == "flatrate"
+    else:
+        assert "with_watch_monetization_types" not in params
+
+
 async def test_titles_no_tool_returned_are_sent_back_as_an_error(ask_api, claude, tmdb_routes):
     invented = tool_use(
         "present_picks",
