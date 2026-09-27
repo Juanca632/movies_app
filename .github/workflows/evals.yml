@@ -1,0 +1,55 @@
+name: Assistant evals
+
+# Only on demand (Actions tab → "Assistant evals" → Run workflow): every run calls the real
+# Claude and costs money. Needs the ANTHROPIC_API_KEY and TMDB_API_KEY repository secrets.
+on:
+  workflow_dispatch:
+    inputs:
+      judge:
+        description: Also score each answer with an LLM judge (costs more)
+        type: boolean
+        default: false
+      only:
+        description: Comma-separated case ids (empty = all)
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run evals
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          JUDGE: ${{ inputs.judge }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          args=()
+          if [ "$JUDGE" = "true" ]; then args+=(--judge); fi
+          if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
+          python -m evals.run "${args[@]}"
+
+      - name: Keep the detailed report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: backend/evals/results/
