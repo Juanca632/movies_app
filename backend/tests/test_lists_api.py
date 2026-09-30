@@ -1,6 +1,8 @@
 import pytest
 import respx
+from sqlalchemy import func, select
 
+from app.db.models import SavedTitle, User, UserSession
 from app.services import lists
 from tests.accounts import ORIGIN, sign_in
 
@@ -117,3 +119,22 @@ async def test_a_full_list_refuses_more(signed_in, tmdb_titles, monkeypatch):
     response = await signed_in.put("/api/v1/me/favorite/tv/2", headers=SAME_SITE)
 
     assert response.status_code == 409
+
+
+async def test_deleting_the_account_removes_everything(signed_in, tmdb_titles, db_sessionmaker):
+    await signed_in.put("/api/v1/me/favorite/movie/1", headers=SAME_SITE)
+
+    response = await signed_in.delete("/api/v1/me", headers=SAME_SITE)
+
+    assert response.status_code == 204
+    assert (await signed_in.get("/api/v1/me")).status_code == 401
+    async with db_sessionmaker() as session:
+        for model in (User, UserSession, SavedTitle):
+            assert await session.scalar(select(func.count()).select_from(model)) == 0
+
+
+async def test_deleting_the_account_from_another_site_is_refused(signed_in):
+    response = await signed_in.delete("/api/v1/me", headers={"Origin": "https://evil.test"})
+
+    assert response.status_code == 403
+    assert (await signed_in.get("/api/v1/me")).status_code == 200

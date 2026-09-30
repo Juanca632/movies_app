@@ -22,6 +22,7 @@ export const routes: RouteObject[] = [
       { path: "browse/:mediaType", lazy: () => import("./pages/BrowsePage").then((m) => ({ Component: m.default })) },
       { path: "calendar", lazy: () => import("./pages/CalendarPage").then((m) => ({ Component: m.default })) },
       { path: "my-list", lazy: () => import("./pages/MyListPage").then((m) => ({ Component: m.default })) },
+      { path: "privacy", lazy: () => import("./pages/PrivacyPage").then((m) => ({ Component: m.default })) },
       { path: "search", lazy: () => import("./pages/SearchPage").then((m) => ({ Component: m.default })) },
       { path: "*", element: <NotFoundPage /> },
     ],

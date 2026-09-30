@@ -52,7 +52,7 @@ Rules:
   - Google sign-in is the OAuth code flow with PKCE, run by the backend: `/auth/google/login?next=/path` → Google → `/auth/google/callback`. State and verifier travel in a signed 10-minute cookie. The ID token comes straight from Google's token endpoint, so its claims are checked (iss, aud, exp, verified email) but not its signature.
   - The session is a random token in an `httpOnly; Secure; SameSite=Lax` cookie; only its SHA-256 lives in `sessions`. 30 days, extended at most once a day.
   - Private routes use `CurrentUserDep` (401 signed out); writes also add `SameOrigin` (403 if `Origin` is another site). `/me` answers 503 when accounts aren't set up (all of `DATABASE_URL` and the three Google/session keys), so the UI hides sign-in.
-  - Lists (`services/lists.py`): `GET /me/{favorite|watchlist}`, `PUT` and `DELETE /me/{kind}/{movie|tv}/{id}` (idempotent). Saving stores a snapshot (title, poster, date) from the cached detail, so a list renders without TMDB; at most 1000 titles per list. The frontend loads whole lists to know what is saved.
+  - Lists (`services/lists.py`): `GET /me/{favorite|watchlist}`, `PUT` and `DELETE /me/{kind}/{movie|tv}/{id}` (idempotent); `DELETE /me` deletes the account, cascading to sessions and lists. Saving stores a snapshot (title, poster, date) from the cached detail, so a list renders without TMDB; at most 1000 titles per list. The frontend loads whole lists to know what is saved.
   - The redirect URI is built from `PUBLIC_URL`, else from the request's forwarded host.
 - Migrations: Alembic in `backend/alembic/`. Run `alembic upgrade head` by hand from `backend/` (never when a Vercel function starts); it prefers `DATABASE_URL_UNPOOLED` when set. After changing a model, add a migration (`alembic revision --autogenerate -m "..."`, then review it). Tests use in-memory SQLite (`db_sessionmaker` fixture); the CI `migrations` job checks them on real Postgres with `alembic check`.
 
@@ -63,7 +63,7 @@ Rules:
 - Accounts: `useAccount` (signed-in / signed-out / unavailable, from `GET /me`), `useSavedList`, `useToggleSaved` (optimistic) and `useSignOut` in `queries.ts`. `AccountMenu` in the navbar, `SaveButtons` on the detail page and hover preview, `pages/MyListPage.tsx`. Sign-in is a plain link to `/api/v1/auth/google/login?next=`. Without accounts on the server none of it renders.
 - Country: `src/lib/region.ts`, a `useSyncExternalStore` store detected from `navigator.languages` and saved in `localStorage`.
 - Design: dark streaming style, amber accent, Inter + Outfit fonts.
-- Public URLs: `/movie/:id/:slug`, `/tv-show/:id/:slug?season=` (kept for old links), `/person/:id/:slug`, `/search?q=`, `/browse/movie|tv?genre=&provider=&sort=`, `/calendar?kind=theaters|home|tv&month=YYYY-MM`, `/my-list?tab=watchlist|favorites`, and `?ask=` on any URL for the AI assistant.
+- Public URLs: `/movie/:id/:slug`, `/tv-show/:id/:slug?season=` (kept for old links), `/person/:id/:slug`, `/search?q=`, `/browse/movie|tv?genre=&provider=&sort=`, `/calendar?kind=theaters|home|tv&month=YYYY-MM`, `/my-list?tab=watchlist|favorites`, `/privacy`, and `?ask=` on any URL for the AI assistant.
 
 ## AI assistant
 
@@ -94,6 +94,7 @@ Rules:
 - Security headers (CSP...) are duplicated in `vercel.json` and `frontend/nginx.conf`. **Keep them identical.**
 - The link-preview user-agent rule is also duplicated in `vercel.json` and `frontend/nginx.conf`. **Keep them identical.**
 - Anything that spends money (Claude, OMDb) has limits and caching; keep it that way.
+- `pages/PrivacyPage.tsx` is the privacy policy registered with Google for sign-in. Update it (and its date) whenever the data the app stores or sends changes.
 
 ## Commits and pull requests
 
