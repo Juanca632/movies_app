@@ -109,3 +109,8 @@ class AuthService:
         if session is not None:
             await self._db.delete(session)
             await self._db.commit()
+
+    async def delete_account(self, user: User) -> None:
+        """Delete the user; the database cascades to their sessions and lists."""
+        await self._db.delete(user)
+        await self._db.commit()

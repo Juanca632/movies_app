@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { SavedTitle } from "../api/types";
 import { mediaDetail } from "../test-utils/fixtures";
 import { mockApi, renderRoute } from "../test-utils/render";
@@ -121,6 +121,56 @@ describe("accounts", () => {
 
     expect(await screen.findByRole("link", { name: "Sign in" })).toBeInTheDocument();
     expect(signedOutCalls).toBe(1);
+  });
+});
+
+describe("deleting the account", () => {
+  const setup = () => {
+    const methods: string[] = [];
+    mockApi({
+      ...signedIn().api,
+      me: (init?: RequestInit) => {
+        methods.push(init?.method ?? "GET");
+        return init?.method === "DELETE" ? new Response(null, { status: 204 }) : Response.json(ANA);
+      },
+      "movie/1?region=US": mediaDetail(),
+    });
+    renderRoute(INCEPTION_PAGE);
+    return methods;
+  };
+
+  it("deletes it after confirming", async () => {
+    vi.stubGlobal("confirm", () => true);
+    const methods = setup();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Account: Ana" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Delete account" }));
+
+    expect(await screen.findByRole("link", { name: "Sign in" })).toBeInTheDocument();
+    expect(methods).toContain("DELETE");
+  });
+
+  it("keeps it when the confirmation is cancelled", async () => {
+    vi.stubGlobal("confirm", () => false);
+    const methods = setup();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Account: Ana" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Delete account" }));
+
+    expect(screen.getByRole("button", { name: "Account: Ana" })).toBeInTheDocument();
+    expect(methods).not.toContain("DELETE");
+  });
+});
+
+describe("PrivacyPage", () => {
+  it("is linked from every page's footer", async () => {
+    mockApi({ "movie/1?region=US": mediaDetail() });
+    renderRoute(INCEPTION_PAGE);
+
+    await userEvent.click(await screen.findByRole("link", { name: "Privacy" }));
+
+    expect(await screen.findByRole("heading", { name: "Privacy", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Deleting your data" })).toBeInTheDocument();
   });
 });
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { signInUrl, useAccount, useSignOut } from "../api/queries";
+import { signInUrl, useAccount, useDeleteAccount, useSignOut } from "../api/queries";
 import type { Profile } from "../api/types";
 import { BookmarkIcon, HeartIcon, SignOutIcon } from "./icons";
 
@@ -29,6 +29,7 @@ function Avatar({ profile, className = "" }: { profile: Profile; className?: str
 function AccountMenu() {
   const { data: account } = useAccount();
   const signOut = useSignOut();
+  const deleteAccount = useDeleteAccount();
   const { pathname, search, key } = useLocation();
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
@@ -107,6 +108,19 @@ function AccountMenu() {
           >
             <SignOutIcon className="size-4 text-muted" />
             Sign out
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={deleteAccount.isPending}
+            onClick={() => {
+              if (window.confirm("Delete your account? Your list and favorites will be erased for good.")) {
+                deleteAccount.mutate(undefined, { onSuccess: () => setOpen(false) });
+              }
+            }}
+            className="w-full px-4 py-2 text-left text-xs text-subtle transition-colors hover:bg-white/5 hover:text-red-400"
+          >
+            Delete account
           </button>
         </div>
       )}

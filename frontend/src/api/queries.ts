@@ -211,13 +211,18 @@ export const useToggleSaved = (kind: ListKind) => {
   });
 };
 
-export const useSignOut = () => {
+const useEndSession = (request: () => Promise<unknown>) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => sendJson("POST", "auth/logout"),
+    mutationFn: request,
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ["me"], exact: false });
       queryClient.setQueryData<Account>(ACCOUNT_KEY, { status: "signed-out" });
     },
   });
 };
+
+export const useSignOut = () => useEndSession(() => sendJson("POST", "auth/logout"));
+
+/** Deletes the account with its lists, for good; the browser ends up signed out. */
+export const useDeleteAccount = () => useEndSession(() => sendJson("DELETE", "me"));

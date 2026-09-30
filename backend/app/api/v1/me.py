@@ -3,7 +3,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.api.deps import DbDep, MediaServiceDep
-from app.api.session import CurrentUserDep, SameOrigin
+from app.api.session import (
+    AuthServiceDep,
+    CurrentUserDep,
+    SameOrigin,
+    SettingsDep,
+    clear_session_cookie,
+)
 from app.schemas.me import ListKind, Profile, SavedTitle
 from app.schemas.media import MediaType
 from app.services.lists import MAX_PER_LIST, ListFullError, ListsService
@@ -26,6 +32,22 @@ ListsDep = Annotated[ListsService, Depends(get_lists)]
 )
 async def me(user: CurrentUserDep) -> Profile:
     return Profile(name=user.name, email=user.email, avatar_url=user.avatar_url)
+
+
+@router.delete(
+    "",
+    summary="Delete the signed-in user's account",
+    description="Removes the user, every session and both lists, at once and for good.",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[SameOrigin],
+)
+async def delete_account(
+    user: CurrentUserDep, auth: AuthServiceDep, settings: SettingsDep
+) -> Response:
+    await auth.delete_account(user)
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    clear_session_cookie(response, settings)
+    return response
 
 
 @router.get("/{kind}", summary="A list of the signed-in user, most recently saved first")
