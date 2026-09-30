@@ -6,10 +6,16 @@ import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 const ITEM_WIDTH = {
   media: "w-32 sm:w-40 xl:w-44",
   person: "w-28 sm:w-32 xl:w-36",
+  // Landscape cards (16:9), e.g. the AI's moods.
+  wide: "w-60 sm:w-72 xl:w-80",
 };
 
 interface RowProps<T> {
   title: string;
+  /** Shown before the title, e.g. the AI's ✦. */
+  icon?: ReactNode;
+  /** Shown at the end of the title line (below it on phones), e.g. a field. */
+  action?: ReactNode;
   description?: ReactNode;
   items: T[] | undefined;
   getKey: (item: T) => string | number;
@@ -21,7 +27,7 @@ interface RowProps<T> {
 }
 
 /** A titled, horizontally scrollable row of cards with desktop arrows. */
-function Row<T>({ title, description, items, getKey, renderItem, variant = "media", isPending, isError, onRetry }: RowProps<T>) {
+function Row<T>({ title, icon, action, description, items, getKey, renderItem, variant = "media", isPending, isError, onRetry }: RowProps<T>) {
   const scroller = useRef<HTMLUListElement>(null);
   const [edges, setEdges] = useState({ start: true, end: true });
 
@@ -52,7 +58,20 @@ function Row<T>({ title, description, items, getKey, renderItem, variant = "medi
 
   return (
     <section aria-label={title} className="group/row">
-      <h2 className="page-x mb-2 font-display text-xl font-semibold tracking-tight sm:text-2xl">{title}</h2>
+      {action ? (
+        <div className="page-x mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <h2 className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight sm:text-2xl">
+            {icon}
+            {title}
+          </h2>
+          {action}
+        </div>
+      ) : (
+        <h2 className="page-x mb-2 flex items-center gap-2 font-display text-xl font-semibold tracking-tight sm:text-2xl">
+          {icon}
+          {title}
+        </h2>
+      )}
       {description && <p className="page-x -mt-1 mb-3 text-sm text-muted">{description}</p>}
 
       {isError ? (
