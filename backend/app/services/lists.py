@@ -24,7 +24,8 @@ def _saved(row: models.SavedTitle) -> SavedTitle:
         title=row.title,
         poster_path=row.poster_path,
         release_date=row.release_date,
-        saved_at=row.created_at,
+        # SQLite hands back naive datetimes; Postgres keeps the zone. Both are UTC.
+        saved_at=row.created_at.replace(tzinfo=row.created_at.tzinfo or UTC),
     )
 
 

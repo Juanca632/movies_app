@@ -5,8 +5,8 @@ Portfolio project: a streaming-style explorer for movies, TV shows and people on
 ## Product
 
 - Public app: anyone can browse movies, shows and people and search, without an account.
-- Google sign-in (planned, optional) unlocks favourites, "My list", a profile and personal AI recommendations.
-- The UI is in English. Public API routes live under `/api/v1/...`; private ones will go under `/api/v1/me/...`.
+- Google sign-in (optional) unlocks favourites, "My list", a profile and personal AI recommendations.
+- The UI is in English. Public API routes live under `/api/v1/...`; private ones live under `/api/v1/me/...`.
 
 ## Setup and commands
 
@@ -58,11 +58,12 @@ Rules:
 
 ### Frontend: `frontend/` (React 19, TypeScript, Vite 6, React Query, react-router 7 data router with lazy pages)
 
-- `src/api/`: `client.ts` (`getJson`, `ApiError`; base URL `VITE_API_URL`, else `:8000/api/v1` locally and `/api/v1` in production), `queries.ts` (React Query hooks), `types.ts`.
+- `src/api/`: `client.ts` (`getJson`, `sendJson`, `ApiError`; base URL `VITE_API_URL`, else `/api/v1`: same origin everywhere, through Vite's dev proxy (which keeps the Host header, needed for sign-in) locally), `queries.ts` (React Query hooks), `types.ts`.
 - `src/components/`: presentational components; `src/pages/`: one per route (`MediaPage` serves both movies and TV).
+- Accounts: `useAccount` (signed-in / signed-out / unavailable, from `GET /me`), `useSavedList`, `useToggleSaved` (optimistic) and `useSignOut` in `queries.ts`. `AccountMenu` in the navbar, `SaveButtons` on the detail page and hover preview, `pages/MyListPage.tsx`. Sign-in is a plain link to `/api/v1/auth/google/login?next=`. Without accounts on the server none of it renders.
 - Country: `src/lib/region.ts`, a `useSyncExternalStore` store detected from `navigator.languages` and saved in `localStorage`.
 - Design: dark streaming style, amber accent, Inter + Outfit fonts.
-- Public URLs: `/movie/:id/:slug`, `/tv-show/:id/:slug?season=` (kept for old links), `/person/:id/:slug`, `/search?q=`, `/browse/movie|tv?genre=&provider=&sort=`, `/calendar?kind=theaters|home|tv&month=YYYY-MM`, and `?ask=` on any URL for the AI assistant.
+- Public URLs: `/movie/:id/:slug`, `/tv-show/:id/:slug?season=` (kept for old links), `/person/:id/:slug`, `/search?q=`, `/browse/movie|tv?genre=&provider=&sort=`, `/calendar?kind=theaters|home|tv&month=YYYY-MM`, `/my-list?tab=watchlist|favorites`, and `?ask=` on any URL for the AI assistant.
 
 ## AI assistant
 
@@ -118,7 +119,7 @@ Rules:
 
 - Phase 0 (done): backend rewritten with httpx, unified API, search, Docker, CI.
 - Phase 1 (done): frontend rewrite and redesign, search with suggestions, tests. App name still open (proposal: "Marquee"). Next.js postponed; components and hooks are portable.
-- Phase 2 (in progress): Postgres (done), Google sign-in (httpOnly cookie), favourites and "My list".
+- Phase 2 (done): Postgres, Google sign-in (httpOnly cookie), favourites and "My list". Still to do: setting up Neon and Google in production.
 - Phase 3 (in progress): natural-language "what to watch tonight" assistant and its evals (done). Next: group mode; with Phase 2, embeddings (pgvector) and recommendations from favourites.
 - Phase 4 (almost done): deployed on Vercel, README with screenshots in `docs/screenshots/`. Missing: custom domain and, if needed, the Firewall rate-limit rule.
 - Also done: directors/creators and crew credits, sagas, seasons and episodes, release calendar, link previews, browse by genre/service, country with flags, hover previews, trailers, awards and scores (OMDb), security review.

@@ -148,3 +148,23 @@ export const TvIcon = (props: IconProps) => (
     <path d="M8 2l4 4 4-4" />
   </svg>
 );
+
+/** Outlined; pass fill="currentColor" for the saved state. */
+export const HeartIcon = (props: IconProps) => (
+  <svg {...stroke(props)}>
+    <path d="M12 20.5s-7.5-4.6-9.2-9.3C1.6 7.8 3.9 4.5 7.3 4.5c2 0 3.6 1.1 4.7 2.8 1.1-1.7 2.7-2.8 4.7-2.8 3.4 0 5.7 3.3 4.5 6.7-1.7 4.7-9.2 9.3-9.2 9.3z" />
+  </svg>
+);
+
+/** Outlined; pass fill="currentColor" for the saved state. */
+export const BookmarkIcon = (props: IconProps) => (
+  <svg {...stroke(props)}>
+    <path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1z" />
+  </svg>
+);
+
+export const SignOutIcon = (props: IconProps) => (
+  <svg {...stroke(props)}>
+    <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4" />
+  </svg>
+);

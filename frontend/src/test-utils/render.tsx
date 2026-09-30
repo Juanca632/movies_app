@@ -5,19 +5,20 @@ import { vi } from "vitest";
 import { createQueryClient } from "../api/queries";
 import { routes } from "../router";
 
-type Handler = unknown | (() => Response);
+type Handler = unknown | ((init?: RequestInit) => Response);
 
 /**
- * Stub `fetch` with canned backend responses keyed by path + query (e.g. "movie/1").
- * A value is returned as JSON; a function can build any Response. Unknown paths 404.
+ * Stub `fetch` with canned backend responses keyed by path + query (e.g. "movie/1"), for any
+ * method. A value is returned as JSON; a function gets the request's init (method...) and can
+ * build any Response. Unknown paths 404.
  */
 export function mockApi(handlers: Record<string, Handler>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-    const url = new URL(String(input));
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(String(input), window.location.origin);
     const key = `${url.pathname.replace(/^\/api\/v1\//, "")}${url.search}`;
     if (!(key in handlers)) return new Response("Not found", { status: 404 });
     const handler = handlers[key];
-    return typeof handler === "function" ? (handler as () => Response)() : Response.json(handler);
+    return typeof handler === "function" ? (handler as (init?: RequestInit) => Response)(init) : Response.json(handler);
   });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;

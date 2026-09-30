@@ -7,6 +7,7 @@ import { formatRuntime, imageUrl, mediaHref, year } from "../lib/tmdb";
 import { openTrailer } from "../lib/trailer";
 import { InfoIcon, PlayIcon } from "./icons";
 import Rating from "./Rating";
+import SaveButtons from "./SaveButtons";
 
 const GUTTER = 16;
 const NAVBAR = 72;
@@ -111,6 +112,7 @@ function HoverPreview({ item, anchor, leaving, onClose }: HoverPreviewProps) {
             <InfoIcon className="size-4" />
             Details
           </Link>
+          <SaveButtons item={item} variant="icon" className="ml-auto" />
         </div>
 
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
