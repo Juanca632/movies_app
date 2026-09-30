@@ -13,7 +13,7 @@ Portfolio project: a streaming-style explorer for movies, TV shows and people on
 - Backend (from `backend/`): `source myvenv/bin/activate && pip install -r requirements-dev.txt && uvicorn app.main:app --reload`
 - Frontend (from `frontend/`): `npm ci`, then `npm run dev`
 - Both at once: `./start.sh`
-- Secrets go in `backend/.env` (git-ignored): `THE_MOVIE_DB_API_KEY` (required), `OMDB_API_KEY`, `ANTHROPIC_API_KEY`, `CORS_ORIGINS` (optional). Everything optional degrades gracefully when missing.
+- Secrets go in `backend/.env` (git-ignored): `THE_MOVIE_DB_API_KEY` (required), `OMDB_API_KEY`, `ANTHROPIC_API_KEY`, `DATABASE_URL`, `CORS_ORIGINS` (optional). Everything optional degrades gracefully when missing.
 
 ## Testing
 
@@ -47,6 +47,8 @@ Rules:
 - `services/releases.py` (calendar): TMDB's `discover` with `region` filters by local date but returns the primary date, so each movie's `/release_dates` is fetched (up to 60, cached 1 day; the first load of a month takes a few seconds). Re-releases are dropped; TV uses the worldwide `first_air_date`, fiction only.
 - `api/share.py` + `services/share.py`: Open Graph link previews on the public URLs (outside `/api`), served only to preview bots, matched by user agent.
 - `core/config.py`: pydantic-settings.
+- `db/`: SQLAlchemy 2 async models (`users`, `sessions`, `saved_titles`) and the engine. Postgres on Neon in production, via its pooled URL with `NullPool` (serverless). `DbDep` in `api/deps.py` answers 503 without `DATABASE_URL`.
+- Migrations: Alembic in `backend/alembic/`. Run `alembic upgrade head` by hand from `backend/` (never when a Vercel function starts); it prefers `DATABASE_URL_UNPOOLED` when set. After changing a model, add a migration (`alembic revision --autogenerate -m "..."`, then review it). Tests use in-memory SQLite (`db_sessionmaker` fixture); the CI `migrations` job checks them on real Postgres with `alembic check`.
 
 ### Frontend: `frontend/` (React 19, TypeScript, Vite 6, React Query, react-router 7 data router with lazy pages)
 
@@ -99,18 +101,18 @@ Rules:
 - `vercel.json` uses Services (beta): a `frontend` service (Vite, SPA fallback to `index.html`) and a `backend` service (FastAPI as a function, detected from `app/main.py`). `/api/*` goes to the backend.
 - Secrets live in the Vercel project's environment variables. The rate limit is a Vercel Firewall rule (one per project on Hobby), configured in the dashboard.
 - **There must be no `pyproject.toml` in `backend/`**: Vercel prefers it over `requirements.txt` and would deploy without FastAPI. That is why ruff and pytest are configured in `ruff.toml` and `pytest.ini`.
-- `docker-compose.yml`: backend + frontend (nginx on :3000, proxying `/api/` to the backend). Docker isn't available in the dev WSL, so the Dockerfiles are only validated by the CI `docker` job.
+- `docker-compose.yml`: Postgres + backend (runs the migrations on start) + frontend (nginx on :3000, proxying `/api/` to the backend). Docker isn't available in the dev WSL, so the Dockerfiles are only validated by the CI `docker` job.
 
 ## Known issues
 
-- No database yet: the only state is the in-memory cache. The assistant's limits are per Vercel instance, so they are not exact.
+- The assistant's limits live in memory, per Vercel instance, so they are not exact.
 - The domain `mymoviesapp.xyz` shows as parked on Afternic (probably expired): check the registrar or use another domain.
 
 ## Roadmap
 
 - Phase 0 (done): backend rewritten with httpx, unified API, search, Docker, CI.
 - Phase 1 (done): frontend rewrite and redesign, search with suggestions, tests. App name still open (proposal: "Marquee"). Next.js postponed; components and hooks are portable.
-- Phase 2: Postgres, Google sign-in (httpOnly cookie), favourites and "My list".
+- Phase 2 (in progress): Postgres (done), Google sign-in (httpOnly cookie), favourites and "My list".
 - Phase 3 (in progress): natural-language "what to watch tonight" assistant and its evals (done). Next: group mode; with Phase 2, embeddings (pgvector) and recommendations from favourites.
 - Phase 4 (almost done): deployed on Vercel, README with screenshots in `docs/screenshots/`. Missing: custom domain and, if needed, the Firewall rate-limit rule.
 - Also done: directors/creators and crew credits, sagas, seasons and episodes, release calendar, link previews, browse by genre/service, country with flags, hover previews, trailers, awards and scores (OMDb), security review.

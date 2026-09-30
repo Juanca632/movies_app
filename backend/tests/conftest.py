@@ -33,6 +33,28 @@ async def omdb(settings):
 
 
 @pytest.fixture
+async def db_sessionmaker():
+    """A fresh in-memory SQLite database with the schema, instead of Postgres."""
+    from sqlalchemy import event
+    from sqlalchemy.ext.asyncio import create_async_engine
+    from sqlalchemy.pool import StaticPool
+
+    from app.db.engine import create_sessionmaker
+    from app.db.models import Base
+
+    # One shared connection, or every session would get its own empty in-memory database.
+    engine = create_async_engine("sqlite+aiosqlite://", poolclass=StaticPool)
+    # SQLite ignores foreign keys (and so ON DELETE CASCADE) unless asked.
+    event.listen(
+        engine.sync_engine, "connect", lambda conn, _: conn.execute("PRAGMA foreign_keys=ON")
+    )
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield create_sessionmaker(engine)
+    await engine.dispose()
+
+
+@pytest.fixture
 async def api(settings, tmdb, omdb):
     import httpx
 

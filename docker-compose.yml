@@ -1,4 +1,22 @@
 services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      # Local-only credentials; the database is not published outside this network.
+      POSTGRES_USER: movies
+      POSTGRES_PASSWORD: movies
+      POSTGRES_DB: movies
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U movies -d movies"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - app
+
   backend:
     build: ./backend
     env_file:
@@ -6,6 +24,12 @@ services:
         required: false
     environment:
       CORS_ORIGINS: '["http://localhost:3000"]'
+      DATABASE_URL: postgresql://movies:movies@db:5432/movies
+    # Apply pending migrations, then serve.
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - app
@@ -22,3 +46,6 @@ services:
 
 networks:
   app:
+
+volumes:
+  db-data:

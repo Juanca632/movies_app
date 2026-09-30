@@ -11,6 +11,7 @@ from app.api.v1 import acclaim, assistant, collections, discover, media, people,
 from app.clients.omdb import OMDbClient
 from app.clients.tmdb import TMDBClient, TMDBNotFoundError, TMDBUnavailableError
 from app.core.config import get_settings
+from app.db.engine import create_engine, create_sessionmaker
 from app.services.assistant import AssistantService
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
@@ -29,7 +30,12 @@ async def lifespan(app: FastAPI):
     key = settings.anthropic_api_key
     claude = AsyncAnthropic(api_key=key, timeout=30.0, max_retries=1) if key else None
     app.state.assistant = claude and AssistantService(claude, app.state.tmdb, settings)
+    # Accounts need a database; without one the /me routes answer 503.
+    engine = create_engine(settings.database_url) if settings.database_url else None
+    app.state.db = engine and create_sessionmaker(engine)
     yield
+    if engine:
+        await engine.dispose()
     await app.state.tmdb.aclose()
     await app.state.omdb.aclose()
     if claude:

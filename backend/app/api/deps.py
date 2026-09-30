@@ -1,6 +1,8 @@
+from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.clients.omdb import OMDbClient
 from app.clients.tmdb import TMDBClient
@@ -74,3 +76,20 @@ def get_assistant(request: Request) -> AssistantService | None:
 
 
 AssistantDep = Annotated[AssistantService | None, Depends(get_assistant)]
+
+
+def get_sessionmaker(request: Request) -> async_sessionmaker[AsyncSession]:
+    sessionmaker = getattr(request.app.state, "db", None)
+    if sessionmaker is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Accounts are not available")
+    return sessionmaker
+
+
+async def get_db(
+    sessionmaker: Annotated[async_sessionmaker[AsyncSession], Depends(get_sessionmaker)],
+) -> AsyncIterator[AsyncSession]:
+    async with sessionmaker() as session:
+        yield session
+
+
+DbDep = Annotated[AsyncSession, Depends(get_db)]
