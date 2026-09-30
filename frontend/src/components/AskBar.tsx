@@ -18,25 +18,21 @@ function AskBar() {
 
   return (
     <section aria-labelledby="ask-ai-heading" className="page-x">
-      <div className="ai-ring rounded-2xl [--ai-glow:0.12] [--ai-inner:var(--color-surface)]">
-        {/* A faint wash of the AI colours from the corners, behind the content. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-[radial-gradient(ellipse_at_top_left,color-mix(in_oklab,var(--color-ai-violet)_14%,transparent),transparent_55%),radial-gradient(ellipse_at_bottom_right,color-mix(in_oklab,var(--color-ai-teal)_10%,transparent),transparent_55%)]"
-        />
-
-        <div className="grid gap-4 p-5 sm:p-6 lg:grid-cols-[1fr_minmax(0,30rem)] lg:items-center lg:gap-8">
+      {/* Filled with the page colour, not a surface grey: only the thin AI ring marks the section, so
+          it sits between the banner's fade and the rows instead of looking like a box on top. */}
+      <div className="ai-ring rounded-2xl [--ai-glow:0.08] [--ai-inner:var(--color-bg)]">
+        <div className="grid gap-3 px-4 py-4 sm:px-5 lg:grid-cols-[1fr_minmax(0,28rem)] lg:items-center lg:gap-x-8">
           <div>
-            <h2 id="ask-ai-heading" className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight sm:text-xl">
-              <AiSparkIcon className="size-5 shrink-0" />
+            <h2 id="ask-ai-heading" className="flex items-center gap-2 font-display text-base font-semibold tracking-tight sm:text-lg">
+              <AiSparkIcon className="size-4 shrink-0" />
               Not sure what to watch?
             </h2>
-            <p className="mt-1 text-sm text-muted">Describe a mood, a plot or a movie you loved, and AI finds something streaming for you.</p>
+            <p className="mt-0.5 text-sm text-muted">Describe a mood, a plot or a movie you loved, and AI finds something streaming for you.</p>
           </div>
 
           <form
             onSubmit={onSubmit}
-            className="flex items-center gap-2 rounded-full bg-bg/70 p-1 pl-4 ring-1 ring-white/10 transition focus-within:ring-ai-violet/60"
+            className="flex items-center gap-2 rounded-full bg-surface/70 p-1 pl-4 ring-1 ring-white/10 transition focus-within:ring-ai-violet/60"
           >
             <label htmlFor="ask-bar" className="sr-only">
               Ask AI what to watch
@@ -61,7 +57,7 @@ function AskBar() {
                 <button
                   type="button"
                   onClick={() => openPanel(example)}
-                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-muted transition hover:border-white/25 hover:text-fg"
+                  className="rounded-full border border-white/10 px-3 py-1 text-xs text-subtle transition hover:border-white/25 hover:text-fg"
                 >
                   {example}
                 </button>
