@@ -34,3 +34,6 @@ test/
 
 # assistant eval reports
 backend/evals/results/
+
+# local SQLite databases (accounts in dev)
+backend/*.db
