@@ -54,6 +54,9 @@ def safe_next(path: str | None) -> str:
     """Where to send the user after signing in: only a path on this site, never another host."""
     if not path or not path.startswith("/") or path.startswith("//") or "\\" in path:
         return "/"
+    # Browsers drop tabs and newlines from URLs, so "/\t/evil.test" could become "//evil.test".
+    if any(ord(char) < 0x20 or ord(char) == 0x7F for char in path):
+        return "/"
     return path
 
 

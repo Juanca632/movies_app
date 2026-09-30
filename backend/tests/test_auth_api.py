@@ -165,6 +165,8 @@ async def test_active_sessions_are_extended(site, db_sessionmaker, settings):
         ("https://evil.test/", "/"),
         ("//evil.test/", "/"),
         ("/\\evil.test", "/"),
+        ("/\t/evil.test", "/"),
+        ("/\n/evil.test", "/"),
         (None, "/"),
     ],
 )
