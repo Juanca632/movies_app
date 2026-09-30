@@ -1,10 +1,6 @@
-import base64
-import json
 import time
 from datetime import UTC, datetime, timedelta
-from urllib.parse import parse_qs, urlsplit
 
-import httpx
 import pytest
 import respx
 from sqlalchemy import func, select
@@ -12,72 +8,7 @@ from sqlalchemy import func, select
 from app.clients.google import TOKEN_URL
 from app.db.models import User, UserSession
 from app.services.auth import safe_next, sign, unsign
-
-ORIGIN = "https://site.test"
-CLIENT_ID = "client-id.apps.googleusercontent.com"
-
-
-@pytest.fixture
-def settings(settings):
-    settings.database_url = "sqlite+aiosqlite://"
-    settings.google_client_id = CLIENT_ID
-    settings.google_client_secret = "client-secret"
-    settings.session_secret = "session-secret"
-    return settings
-
-
-@pytest.fixture
-async def site(settings, db_sessionmaker):
-    """The API as the browser sees it, over HTTPS (Secure cookies) and with a cookie jar."""
-    from app.api.deps import get_sessionmaker
-    from app.api.session import get_google
-    from app.clients.google import GoogleOAuthClient
-    from app.core.config import get_settings
-    from app.main import create_app
-
-    google = GoogleOAuthClient(settings)
-    app = create_app()
-    app.dependency_overrides[get_settings] = lambda: settings
-    app.dependency_overrides[get_sessionmaker] = lambda: db_sessionmaker
-    app.dependency_overrides[get_google] = lambda: google
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url=ORIGIN) as client:
-        yield client
-    await google.aclose()
-
-
-def id_token(**overrides) -> str:
-    claims = {
-        "iss": "https://accounts.google.com",
-        "aud": CLIENT_ID,
-        "exp": int(time.time()) + 300,
-        "sub": "google-123",
-        "email": "ana@example.com",
-        "email_verified": True,
-        "name": "Ana",
-        "picture": "https://lh3.googleusercontent.com/a/ana",
-        **overrides,
-    }
-
-    def part(data: dict) -> str:
-        return base64.urlsafe_b64encode(json.dumps(data).encode()).rstrip(b"=").decode()
-
-    return f"{part({'alg': 'RS256'})}.{part(claims)}.signature"
-
-
-async def start_login(site, next_path: str = "/movie/1/alien") -> dict[str, list[str]]:
-    response = await site.get("/api/v1/auth/google/login", params={"next": next_path})
-    assert response.status_code == 302
-    return parse_qs(urlsplit(response.headers["location"]).query)
-
-
-async def sign_in(site, **claims) -> httpx.Response:
-    params = await start_login(site)
-    with respx.mock:
-        respx.post(TOKEN_URL).respond(json={"id_token": id_token(**claims)})
-        return await site.get(
-            "/api/v1/auth/google/callback", params={"code": "c0de", "state": params["state"][0]}
-        )
+from tests.accounts import CLIENT_ID, ORIGIN, id_token, sign_in, start_login
 
 
 async def count(db_sessionmaker, model) -> int:
