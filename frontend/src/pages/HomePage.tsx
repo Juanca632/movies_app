@@ -9,8 +9,7 @@ function HomePage() {
   return (
     <>
       <Hero />
-      {/* The banner fills the screen; the rows, the AI's moods first, start below it. */}
-      <div className="mt-8 flex flex-col gap-10 sm:mt-10 sm:gap-12">
+      <div className="relative z-10 -mt-4 flex flex-col gap-10 sm:gap-12 lg:-mt-24">
         <MoodRow />
         <CategoryRow title="Now Playing in Theaters" mediaType="movie" category="now_playing" />
         <CategoryRow title="Trending Movies" mediaType="movie" category="popular" />
