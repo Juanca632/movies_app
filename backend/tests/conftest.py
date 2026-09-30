@@ -33,6 +33,28 @@ async def omdb(settings):
 
 
 @pytest.fixture
+async def db_sessionmaker():
+    """A fresh in-memory SQLite database with the schema, instead of Postgres."""
+    from sqlalchemy import event
+    from sqlalchemy.ext.asyncio import create_async_engine
+    from sqlalchemy.pool import StaticPool
+
+    from app.db.engine import create_sessionmaker
+    from app.db.models import Base
+
+    # One shared connection, or every session would get its own empty in-memory database.
+    engine = create_async_engine("sqlite+aiosqlite://", poolclass=StaticPool)
+    # SQLite ignores foreign keys (and so ON DELETE CASCADE) unless asked.
+    event.listen(
+        engine.sync_engine, "connect", lambda conn, _: conn.execute("PRAGMA foreign_keys=ON")
+    )
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield create_sessionmaker(engine)
+    await engine.dispose()
+
+
+@pytest.fixture
 async def api(settings, tmdb, omdb):
     import httpx
 
@@ -47,3 +69,32 @@ async def api(settings, tmdb, omdb):
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://api.test") as client:
         yield client
+
+
+@pytest.fixture
+async def site(settings, tmdb, db_sessionmaker):
+    """The API with accounts set up, as the browser sees it: over HTTPS (so Secure cookies
+    are sent back) and with a cookie jar. Google is reached through respx, see accounts.py."""
+    import httpx
+
+    from app.api.deps import get_sessionmaker, get_tmdb
+    from app.api.session import get_google
+    from app.clients.google import GoogleOAuthClient
+    from app.core.config import get_settings
+    from app.main import create_app
+    from tests.accounts import CLIENT_ID, ORIGIN
+
+    settings.database_url = "sqlite+aiosqlite://"
+    settings.google_client_id = CLIENT_ID
+    settings.google_client_secret = "client-secret"
+    settings.session_secret = "session-secret"
+    google = GoogleOAuthClient(settings)
+    app = create_app()
+    app.dependency_overrides[get_settings] = lambda: settings
+    app.dependency_overrides[get_tmdb] = lambda: tmdb
+    app.dependency_overrides[get_sessionmaker] = lambda: db_sessionmaker
+    app.dependency_overrides[get_google] = lambda: google
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url=ORIGIN) as client:
+        yield client
+    await google.aclose()

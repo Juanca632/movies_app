@@ -7,10 +7,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api import share
-from app.api.v1 import acclaim, assistant, collections, discover, media, people, releases, search
+from app.api.v1 import (
+    acclaim,
+    assistant,
+    auth,
+    collections,
+    discover,
+    me,
+    media,
+    people,
+    releases,
+    search,
+)
+from app.clients.google import GoogleOAuthClient
 from app.clients.omdb import OMDbClient
 from app.clients.tmdb import TMDBClient, TMDBNotFoundError, TMDBUnavailableError
 from app.core.config import get_settings
+from app.db.engine import create_engine, create_sessionmaker
 from app.services.assistant import AssistantService
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
@@ -29,7 +42,15 @@ async def lifespan(app: FastAPI):
     key = settings.anthropic_api_key
     claude = AsyncAnthropic(api_key=key, timeout=30.0, max_retries=1) if key else None
     app.state.assistant = claude and AssistantService(claude, app.state.tmdb, settings)
+    # Accounts need a database; without one the /me routes answer 503.
+    engine = create_engine(settings.database_url) if settings.database_url else None
+    app.state.db = engine and create_sessionmaker(engine)
+    app.state.google = GoogleOAuthClient(settings) if settings.accounts_enabled else None
     yield
+    if app.state.google:
+        await app.state.google.aclose()
+    if engine:
+        await engine.dispose()
     await app.state.tmdb.aclose()
     await app.state.omdb.aclose()
     if claude:
@@ -44,7 +65,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["*"],
     )
 
@@ -69,6 +90,8 @@ def create_app() -> FastAPI:
     app.include_router(collections.router, prefix="/api/v1")
     app.include_router(releases.router, prefix="/api/v1")
     app.include_router(assistant.router, prefix="/api/v1")
+    app.include_router(auth.router, prefix="/api/v1")
+    app.include_router(me.router, prefix="/api/v1")
     app.include_router(media.router, prefix="/api/v1")
     # Link previews for crawlers, on the SPA's own URLs (/movie/..., /person/...).
     app.include_router(share.router)

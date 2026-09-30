@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Outlet, ScrollRestoration, useNavigation } from "react-router-dom";
+import { Link, Outlet, ScrollRestoration, useNavigation } from "react-router-dom";
 import AssistantPanel from "./AssistantPanel";
 import BottomNav from "./BottomNav";
 import Navbar from "./Navbar";
@@ -25,9 +25,14 @@ function Layout({ children }: { children?: ReactNode }) {
             </a>
             . This product uses the TMDB API but is not endorsed or certified by TMDB.
           </p>
-          <a href="https://github.com/Juanca632/movies_app" target="_blank" rel="noreferrer" className="text-muted hover:text-accent">
-            Source on GitHub
-          </a>
+          <div className="flex gap-4">
+            <Link to="/privacy" className="text-muted hover:text-accent">
+              Privacy
+            </Link>
+            <a href="https://github.com/Juanca632/movies_app" target="_blank" rel="noreferrer" className="text-muted hover:text-accent">
+              Source on GitHub
+            </a>
+          </div>
         </div>
       </footer>
       <BottomNav />

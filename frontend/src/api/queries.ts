@@ -1,21 +1,25 @@
-import { keepPreviousData, QueryClient, useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, QueryClient, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRegion } from "../lib/region";
-import { ApiError, getJson } from "./client";
+import { API_URL, ApiError, getJson, sendJson } from "./client";
 import type {
+  Account,
   Acclaim,
   Category,
   Collection,
   DiscoverFilters,
   Genre,
+  ListKind,
   MediaDetail,
   MediaSummary,
   MediaType,
   Page,
   PersonDetail,
   PersonSummary,
+  Profile,
   Provider,
   Region,
   ReleaseKind,
+  SavedTitle,
   SearchResult,
   Season,
 } from "./types";
@@ -159,3 +163,66 @@ export const useSearch = (query: string, page: number) =>
     enabled: query.length > 0,
     placeholderData: keepPreviousData,
   });
+
+// Accounts. /me answers 401 when signed out and 503 when the server has no accounts set up;
+// anything else going wrong also just hides sign-in, the rest of the app does not need it.
+const ACCOUNT_KEY = ["me"] as const;
+const listKey = (kind: ListKind) => ["me", kind] as const;
+
+async function fetchAccount(signal: AbortSignal): Promise<Account> {
+  try {
+    return { status: "signed-in", profile: await getJson<Profile>("me", signal) };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return { status: "signed-out" };
+    return { status: "unavailable" };
+  }
+}
+
+export const useAccount = () =>
+  useQuery({ queryKey: ACCOUNT_KEY, queryFn: ({ signal }) => fetchAccount(signal), staleTime: 30 * 60_000 });
+
+/** Google sign-in is a full-page trip through the backend; it comes back to `next`. */
+export const signInUrl = (next: string) => `${API_URL}/auth/google/login?next=${encodeURIComponent(next)}`;
+
+export const useSavedList = (kind: ListKind) => {
+  const { data: account } = useAccount();
+  return useQuery({
+    queryKey: listKey(kind),
+    queryFn: ({ signal }) => getJson<SavedTitle[]>(`me/${kind}`, signal),
+    enabled: account?.status === "signed-in",
+  });
+};
+
+/** Add or remove a title from a list. The list updates at once and rolls back if the save fails. */
+export const useToggleSaved = (kind: ListKind) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ item, save }: { item: SavedTitle; save: boolean }) =>
+      sendJson<SavedTitle>(save ? "PUT" : "DELETE", `me/${kind}/${item.media_type}/${item.id}`),
+    onMutate: async ({ item, save }) => {
+      await queryClient.cancelQueries({ queryKey: listKey(kind) });
+      const previous = queryClient.getQueryData<SavedTitle[]>(listKey(kind));
+      const others = (previous ?? []).filter((t) => !(t.id === item.id && t.media_type === item.media_type));
+      queryClient.setQueryData(listKey(kind), save ? [item, ...others] : others);
+      return { previous };
+    },
+    onError: (_error, _vars, context) => queryClient.setQueryData(listKey(kind), context?.previous),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: listKey(kind) }),
+  });
+};
+
+const useEndSession = (request: () => Promise<unknown>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: request,
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ["me"], exact: false });
+      queryClient.setQueryData<Account>(ACCOUNT_KEY, { status: "signed-out" });
+    },
+  });
+};
+
+export const useSignOut = () => useEndSession(() => sendJson("POST", "auth/logout"));
+
+/** Deletes the account with its lists, for good; the browser ends up signed out. */
+export const useDeleteAccount = () => useEndSession(() => sendJson("DELETE", "me"));

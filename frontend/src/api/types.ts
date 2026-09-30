@@ -196,3 +196,25 @@ export type AssistantEvent =
   | { type: "error"; message: string };
 
 export type AssistantAnswer = Extract<AssistantEvent, { type: "answer" }>;
+
+export interface Profile {
+  name: string;
+  email: string;
+  avatar_url: string | null;
+}
+
+export const LIST_KINDS = ["watchlist", "favorite"] as const;
+export type ListKind = (typeof LIST_KINDS)[number];
+
+/** A title in one of the user's lists, as it was when saved. */
+export interface SavedTitle {
+  id: number;
+  media_type: MediaType;
+  title: string;
+  poster_path: string | null;
+  release_date: string | null;
+  saved_at: string;
+}
+
+/** Whether sign-in exists at all on this server, and who is signed in. */
+export type Account = { status: "unavailable" } | { status: "signed-out" } | { status: "signed-in"; profile: Profile };
