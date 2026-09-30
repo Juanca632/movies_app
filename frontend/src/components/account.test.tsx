@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { SavedTitle } from "../api/types";
 import { mediaDetail } from "../test-utils/fixtures";
 import { mockApi, renderRoute } from "../test-utils/render";
@@ -118,6 +118,9 @@ describe("accounts", () => {
     expect(within(menu).getByRole("menuitem", { name: "My list" })).toHaveAttribute("href", "/my-list");
 
     await userEvent.click(within(menu).getByRole("menuitem", { name: "Sign out" }));
+    const dialog = screen.getByRole("alertdialog", { name: "Sign out?" });
+    expect(signedOutCalls).toBe(0);
+    await userEvent.click(within(dialog).getByRole("button", { name: "Sign out" }));
 
     expect(await screen.findByRole("link", { name: "Sign in" })).toBeInTheDocument();
     expect(signedOutCalls).toBe(1);
@@ -139,26 +142,53 @@ describe("deleting the account", () => {
     return methods;
   };
 
-  it("deletes it after confirming", async () => {
-    vi.stubGlobal("confirm", () => true);
-    const methods = setup();
-
+  const openDialog = async () => {
     await userEvent.click(await screen.findByRole("button", { name: "Account: Ana" }));
     await userEvent.click(screen.getByRole("menuitem", { name: "Delete account" }));
+    return screen.getByRole("alertdialog", { name: "Delete your account?" });
+  };
+
+  it("deletes it after confirming", async () => {
+    const methods = setup();
+
+    const dialog = await openDialog();
+    // Cancel has the focus, so Enter right away is harmless.
+    expect(within(dialog).getByRole("button", { name: "Cancel" })).toHaveFocus();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Delete account" }));
 
     expect(await screen.findByRole("link", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(methods).toContain("DELETE");
   });
 
-  it("keeps it when the confirmation is cancelled", async () => {
-    vi.stubGlobal("confirm", () => false);
+  it("keeps it when cancelled, with the button or Escape", async () => {
     const methods = setup();
 
-    await userEvent.click(await screen.findByRole("button", { name: "Account: Ana" }));
-    await userEvent.click(screen.getByRole("menuitem", { name: "Delete account" }));
+    await userEvent.click(within(await openDialog()).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
 
-    expect(screen.getByRole("button", { name: "Account: Ana" })).toBeInTheDocument();
+    await openDialog();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+
+    expect(screen.getByRole("button", { name: "Account: Ana" })).toHaveFocus();
     expect(methods).not.toContain("DELETE");
+  });
+
+  it("stays open with a message when deleting fails", async () => {
+    mockApi({
+      ...signedIn().api,
+      me: (init?: RequestInit) =>
+        init?.method === "DELETE" ? new Response("boom", { status: 500 }) : Response.json(ANA),
+      "movie/1?region=US": mediaDetail(),
+    });
+    renderRoute(INCEPTION_PAGE);
+
+    const dialog = await openDialog();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Delete account" }));
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Couldn't delete your account");
+    expect(screen.getByRole("button", { name: "Account: Ana" })).toBeInTheDocument();
   });
 });
 

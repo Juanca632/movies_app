@@ -132,7 +132,7 @@ describe("AI assistant", () => {
     expect(within(dialog).getByRole("button", { name: "Like Interstellar, on Netflix" })).toBeInTheDocument();
   });
 
-  it("starts from the slim bar under the home banner", async () => {
+  it("starts from the field in the home's mood row", async () => {
     mockApi({ ask: COMEDY_ANSWER });
     const { router } = renderRoute("/");
 
@@ -140,6 +140,18 @@ describe("AI assistant", () => {
 
     expect(await within(await panel()).findByText("Two quick laughs for tonight.")).toBeInTheDocument();
     expect(router.state.location.search).toBe("?ask=");
+  });
+
+  it("asks a mood picked on the home page", async () => {
+    const fetchMock = mockApi({ ask: COMEDY_ANSWER });
+    renderRoute("/");
+
+    const row = await screen.findByRole("region", { name: "What are you in the mood for?" });
+    await userEvent.click(within(row).getByRole("button", { name: /^Funny & short/ }));
+
+    expect(await within(await panel()).findByText("Two quick laughs for tonight.")).toBeInTheDocument();
+    const asked = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/ask"));
+    expect(JSON.parse((asked?.[1] as RequestInit).body as string).question).toBe("Something funny and short for tonight");
   });
 
   it("is offered in the search box when the query reads like a request", async () => {

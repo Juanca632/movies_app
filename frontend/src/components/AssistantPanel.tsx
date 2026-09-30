@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type PointerEvent } from "
 import { Link } from "react-router-dom";
 import { useRegionName } from "../api/queries";
 import type { Pick } from "../api/types";
-import { ASK_PARAM, useAskPanel } from "../lib/askPanel";
+import { ASK_EXAMPLES, ASK_PARAM, useAskPanel } from "../lib/askPanel";
 import { ask, canAsk, MAX_QUESTION, MAX_TURNS, MIN_QUESTION, newChat, retry, useChat, type ChatTurn } from "../lib/chat";
 import { useRegion } from "../lib/region";
 import { imageUrl, isAdTier, mediaHref, year } from "../lib/tmdb";
@@ -11,13 +11,6 @@ import ErrorState from "./ErrorState";
 import { AiSparkIcon, CheckIcon, CloseIcon } from "./icons";
 import Rating from "./Rating";
 import TmdbImage from "./TmdbImage";
-
-const EXAMPLES = [
-  "Something funny and short for tonight",
-  "A Korean thriller with great reviews",
-  "Like Interstellar, on Netflix",
-  "A cozy series to binge this weekend",
-];
 
 /** Dragging the phone sheet down this far closes it. */
 const DISMISS_PX = 90;
@@ -302,7 +295,7 @@ function Panel({ leaving, close }: PanelProps) {
                 </p>
               </div>
               <ul aria-label="Examples" className="space-y-2">
-                {EXAMPLES.map((example) => (
+                {ASK_EXAMPLES.map((example) => (
                   <li key={example}>
                     <button
                       type="button"

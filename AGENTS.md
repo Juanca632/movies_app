@@ -78,7 +78,7 @@ Rules:
   - `lib/askPanel.ts`: a `?ask=question` link asks it on arrival.
   - `lib/chat.ts`: the conversation store, outside React, saved in `localStorage` with at most 20 turns.
   - `src/api/assistant.ts`: reads the SSE stream.
-  - Entry points: navbar, `BottomNav`, `AskBar` on the home page, and the search box for queries of 3+ words.
+  - Entry points: navbar, `BottomNav`, `MoodRow` on the home page (a row of moods with backdrops, plus a field; it reuses `Row`), and the search box for queries of 3+ words.
   - AI styling: ✦ gradient icon and the thin `ai-ring` border (`ai-*` utilities).
 - Evals (`backend/evals/`):
   - `cases.yaml`: about 24 requests with rules. The rules describe the kind of title, never exact titles, because TMDB changes daily.
