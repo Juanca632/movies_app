@@ -13,7 +13,7 @@ Portfolio project: a streaming-style explorer for movies, TV shows and people on
 - Backend (from `backend/`): `source myvenv/bin/activate && pip install -r requirements-dev.txt && uvicorn app.main:app --reload`
 - Frontend (from `frontend/`): `npm ci`, then `npm run dev`
 - Both at once: `./start.sh`
-- Secrets go in `backend/.env` (git-ignored): `THE_MOVIE_DB_API_KEY` (required), `OMDB_API_KEY`, `ANTHROPIC_API_KEY`, `DATABASE_URL`, `CORS_ORIGINS` (optional). Everything optional degrades gracefully when missing.
+- Secrets go in `backend/.env` (git-ignored): `THE_MOVIE_DB_API_KEY` (required), `OMDB_API_KEY`, `ANTHROPIC_API_KEY`, `DATABASE_URL`, `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` + `SESSION_SECRET` (sign-in), `PUBLIC_URL`, `CORS_ORIGINS` (optional). Everything optional degrades gracefully when missing.
 
 ## Testing
 
@@ -43,11 +43,16 @@ Rules:
 - `clients/tmdb.py` is the only place that talks to TMDB (async httpx, retries, TTL cache).
 - `clients/omdb.py`: IMDb data from OMDb (awards, IMDb / Rotten Tomatoes / Metacritic scores). Free plan: 1000 requests/day, cached 1 day, so never call it on hover. Without a key, or on failure, `/acclaim/{imdb_id}` returns empty and the frontend hides the section.
 - `services/`: logic and normalization (movie and TV share `title` and `release_date`). `schemas/`: response models, mirrored in `frontend/src/api/types.ts`.
-- `api/v1/` routers: `media`, `people`, `search`, `acclaim`, `collections` (sagas in release order), `releases` (calendar), `discover` (genres, regions, providers, filtered discover) and `assistant` (`POST /ask`). Routers with a fixed prefix are registered **before** `media` in `main.py`, because `media` matches `/{media_type}`.
+- `api/v1/` routers: `media`, `people`, `search`, `acclaim`, `collections` (sagas in release order), `releases` (calendar), `discover` (genres, regions, providers, filtered discover) `assistant` (`POST /ask`), `auth` (Google sign-in) and `me` (the signed-in user). Routers with a fixed prefix are registered **before** `media` in `main.py`, because `media` matches `/{media_type}`.
 - `services/releases.py` (calendar): TMDB's `discover` with `region` filters by local date but returns the primary date, so each movie's `/release_dates` is fetched (up to 60, cached 1 day; the first load of a month takes a few seconds). Re-releases are dropped; TV uses the worldwide `first_air_date`, fiction only.
 - `api/share.py` + `services/share.py`: Open Graph link previews on the public URLs (outside `/api`), served only to preview bots, matched by user agent.
 - `core/config.py`: pydantic-settings.
 - `db/`: SQLAlchemy 2 async models (`users`, `sessions`, `saved_titles`) and the engine. Postgres on Neon in production, via its pooled URL with `NullPool` (serverless). `DbDep` in `api/deps.py` answers 503 without `DATABASE_URL`.
+- Accounts (`clients/google.py`, `services/auth.py`, `api/session.py`):
+  - Google sign-in is the OAuth code flow with PKCE, run by the backend: `/auth/google/login?next=/path` → Google → `/auth/google/callback`. State and verifier travel in a signed 10-minute cookie. The ID token comes straight from Google's token endpoint, so its claims are checked (iss, aud, exp, verified email) but not its signature.
+  - The session is a random token in an `httpOnly; Secure; SameSite=Lax` cookie; only its SHA-256 lives in `sessions`. 30 days, extended at most once a day.
+  - Private routes use `CurrentUserDep` (401 signed out); writes also add `SameOrigin` (403 if `Origin` is another site). `/me` answers 503 when accounts aren't set up (all of `DATABASE_URL` and the three Google/session keys), so the UI hides sign-in.
+  - The redirect URI is built from `PUBLIC_URL`, else from the request's forwarded host.
 - Migrations: Alembic in `backend/alembic/`. Run `alembic upgrade head` by hand from `backend/` (never when a Vercel function starts); it prefers `DATABASE_URL_UNPOOLED` when set. After changing a model, add a migration (`alembic revision --autogenerate -m "..."`, then review it). Tests use in-memory SQLite (`db_sessionmaker` fixture); the CI `migrations` job checks them on real Postgres with `alembic check`.
 
 ### Frontend: `frontend/` (React 19, TypeScript, Vite 6, React Query, react-router 7 data router with lazy pages)
