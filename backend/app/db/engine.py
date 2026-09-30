@@ -22,11 +22,15 @@ def async_url(url: str) -> str:
 
 
 def create_engine(url: str) -> AsyncEngine:
+    url = async_url(url)
+    if not url.startswith("postgresql+asyncpg"):
+        # e.g. sqlite+aiosqlite:///dev.db, handy for trying accounts locally without Postgres.
+        return create_async_engine(url, poolclass=NullPool)
     # Serverless functions come and go, so no pool of our own: the provider's pooler
     # (PgBouncer on Neon) keeps the connections. PgBouncer in transaction mode also
     # breaks asyncpg's named prepared statements, hence no statement cache and unique names.
     return create_async_engine(
-        async_url(url),
+        url,
         poolclass=NullPool,
         connect_args={
             "statement_cache_size": 0,
