@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { signInUrl, useAccount, useDeleteAccount, useSignOut } from "../api/queries";
 import type { Profile } from "../api/types";
+import ConfirmDialog from "./ConfirmDialog";
 import { BookmarkIcon, HeartIcon, SignOutIcon } from "./icons";
 
 function Avatar({ profile, className = "" }: { profile: Profile; className?: string }) {
@@ -32,7 +33,10 @@ function AccountMenu() {
   const deleteAccount = useDeleteAccount();
   const { pathname, search, key } = useLocation();
   const [open, setOpen] = useState(false);
+  // Signing out and deleting ask first, in a dialog.
+  const [confirming, setConfirming] = useState<"sign-out" | "delete" | null>(null);
   const container = useRef<HTMLDivElement>(null);
+  const avatarButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => setOpen(false), [key]);
 
@@ -63,11 +67,22 @@ function AccountMenu() {
   if (account?.status !== "signed-in") return null;
 
   const { profile } = account;
+
+  const ask = (action: "sign-out" | "delete") => {
+    setOpen(false);
+    // The menu item is about to disappear; focus returns to the avatar when the dialog closes.
+    avatarButton.current?.focus();
+    signOut.reset();
+    deleteAccount.reset();
+    setConfirming(action);
+  };
+  const dismiss = () => setConfirming(null);
   const item = "flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-fg transition-colors hover:bg-white/5";
 
   return (
     <div ref={container} className="relative shrink-0">
       <button
+        ref={avatarButton}
         type="button"
         aria-label={`Account: ${profile.name}`}
         aria-haspopup="menu"
@@ -99,30 +114,48 @@ function AccountMenu() {
             <HeartIcon className="size-4 text-muted" />
             Favorites
           </Link>
-          <button
-            type="button"
-            role="menuitem"
-            disabled={signOut.isPending}
-            onClick={() => signOut.mutate(undefined, { onSuccess: () => setOpen(false) })}
-            className={`${item} border-t border-white/5`}
-          >
+          <button type="button" role="menuitem" onClick={() => ask("sign-out")} className={`${item} border-t border-white/5`}>
             <SignOutIcon className="size-4 text-muted" />
             Sign out
           </button>
           <button
             type="button"
             role="menuitem"
-            disabled={deleteAccount.isPending}
-            onClick={() => {
-              if (window.confirm("Delete your account? Your list and favorites will be erased for good.")) {
-                deleteAccount.mutate(undefined, { onSuccess: () => setOpen(false) });
-              }
-            }}
+            onClick={() => ask("delete")}
             className="w-full px-4 py-2 text-left text-xs text-subtle transition-colors hover:bg-white/5 hover:text-red-400"
           >
             Delete account
           </button>
         </div>
+      )}
+
+      {confirming === "sign-out" && (
+        <ConfirmDialog
+          title="Sign out?"
+          confirmLabel="Sign out"
+          pendingLabel="Signing out…"
+          pending={signOut.isPending}
+          error={signOut.isError ? "Couldn't sign out. Try again." : null}
+          onConfirm={() => signOut.mutate()}
+          onCancel={dismiss}
+        >
+          Your list and favorites stay saved; sign in again to see them.
+        </ConfirmDialog>
+      )}
+      {confirming === "delete" && (
+        <ConfirmDialog
+          title="Delete your account?"
+          confirmLabel="Delete account"
+          pendingLabel="Deleting…"
+          danger
+          pending={deleteAccount.isPending}
+          error={deleteAccount.isError ? "Couldn't delete your account. Try again." : null}
+          onConfirm={() => deleteAccount.mutate()}
+          onCancel={dismiss}
+        >
+          This erases your account, your list and your favorites for good. You can sign in again later, but they won't
+          come back.
+        </ConfirmDialog>
       )}
     </div>
   );
