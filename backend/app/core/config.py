@@ -28,6 +28,16 @@ class Settings(BaseSettings):
 
     # Optional: Postgres for accounts and lists. Without it the app stays public-only.
     database_url: str | None = None
+    # Optional: Google sign-in. All three plus the database are needed, or sign-in is off.
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+    session_secret: str | None = None  # signs the short-lived OAuth state cookie
+    session_days: int = 30  # sliding: every visit pushes the expiry back
+    # The site's public origin (https://example.com). Unset, it comes from the request's Host,
+    # which is right behind Vercel and the Vite dev proxy.
+    public_url: str | None = None
+    # Browsers accept Secure cookies on http://localhost too; turn off only for other HTTP hosts.
+    cookie_secure: bool = True
 
     tmdb_language: str = "en-US"
     tmdb_timeout: float = 5.0
@@ -39,6 +49,11 @@ class Settings(BaseSettings):
     cache_max_items: int = 1024
 
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+
+    @property
+    def accounts_enabled(self) -> bool:
+        needed = (self.google_client_id, self.google_client_secret, self.session_secret)
+        return bool(self.database_url) and all(needed)
 
 
 @lru_cache
