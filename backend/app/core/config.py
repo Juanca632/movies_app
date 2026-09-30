@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     assistant_daily_limit: int = 300  # all visitors together
     cache_ttl_answers: int = 3600  # seconds: the same question in the same country
 
+    # Optional: Postgres for accounts and lists. Without it the app stays public-only.
+    database_url: str | None = None
+
     tmdb_language: str = "en-US"
     tmdb_timeout: float = 5.0
     tmdb_retries: int = 2
