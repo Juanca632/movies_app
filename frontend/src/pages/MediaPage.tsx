@@ -6,6 +6,7 @@ import type { MediaDetail, MediaType } from "../api/types";
 import Acclaim from "../components/Acclaim";
 import { DetailHero, DetailSkeleton } from "../components/DetailLayout";
 import Rating from "../components/Rating";
+import SaveButtons from "../components/SaveButtons";
 import CollectionRow from "../components/CollectionRow";
 import { CastRow, MediaRow } from "../components/rows";
 import TmdbImage from "../components/TmdbImage";
@@ -107,9 +108,10 @@ export function MediaDetailView({ media }: { media: MediaDetail }) {
         <Acclaim imdbId={media.imdb_id} />
 
         {media.overview && <p className="mt-5 max-w-2xl leading-relaxed text-fg/85">{media.overview}</p>}
-        {media.trailer && (
-          <TrailerButton mediaType={media.media_type} id={media.id} title={media.title} className="mt-6 px-5 py-2.5 text-sm" />
-        )}
+        <div className="mt-6 flex flex-wrap gap-2">
+          {media.trailer && <TrailerButton mediaType={media.media_type} id={media.id} title={media.title} className="px-5 py-2.5 text-sm" />}
+          <SaveButtons item={media} />
+        </div>
       </DetailHero>
 
       <div className="mt-6 flex flex-col gap-10 sm:gap-12">

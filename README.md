@@ -9,6 +9,7 @@ A streaming-style explorer for movies, TV shows and people, built on the TMDB AP
 ## ✨ Features
 
 - **Ask AI what to watch.** Describe a mood, a plot or a title you loved ("a short comedy on Netflix", "like Interstellar") and refine it in a chat ("more recent ones"). A Claude agent searches the catalog with the app's own API as tools, shows each step as it works, and only recommends real titles, each with why it fits and where to stream it in your country. It opens over any page from the navbar, the search box or the home page.
+- **My list and favorites (optional sign-in).** Sign in with Google to save titles to watch later and mark favorites, from any detail page or hover preview. Everything else works without an account.
 - **Browse like a streaming service.** Home rows for what's in theaters, coming soon, popular and top rated; plus Movies and TV Shows pages filtered by genre, sorted by popularity, rating or release date, and shareable through the URL.
 - **Where to watch, in your country.** The country is detected from the browser language (and can be changed with a flag picker). It drives the streaming, rent and buy options on each title, the "Streaming in…" filter (e.g. *comedies on Netflix in Colombia*) and local release dates. The logos of the main services (Netflix, Prime Video, Apple TV, Google Play, YouTube…) open a search for the title on that service.
 - **Hover previews.** Resting the mouse on a poster grows it into a card with the backdrop, rating, runtime, genres, synopsis and a trailer button (pointer devices only).
@@ -75,6 +76,9 @@ Security basics are in place on both: a Content Security Policy and related head
    | `THE_MOVIE_DB_API_KEY` | yes | TMDB API key |
    | `OMDB_API_KEY` | no | Awards and critic scores; hidden without it |
    | `ANTHROPIC_API_KEY` | no | The "Ask AI" assistant; without it `/api/v1/ask` answers 503. Each question costs about 1–2 cents |
+   | `DATABASE_URL` | no | Postgres for accounts (e.g. a free [Neon](https://neon.tech) database); `sqlite+aiosqlite:///dev.db` works for local tries. Run `alembic upgrade head` in `backend/` after setting it |
+   | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | no | Google sign-in (an OAuth "Web application" client with `http://localhost:5173/api/v1/auth/google/callback` as redirect URI) |
+   | `SESSION_SECRET` | no | Any long random string (`python -c "import secrets; print(secrets.token_urlsafe(32))"`). Sign-in appears only with the database and these three |
    | `CORS_ORIGINS` | no | Frontend origins allowed to call the API; the default covers `npm run dev` (:5173) and Docker (:3000) |
 
 2. Start the backend (http://localhost:8000, docs at `/docs`):
@@ -122,11 +126,10 @@ They run on demand after changing the prompt, the tools or the model (locally, o
 
 ## 📦 Deployment
 
-Vercel deploys `main` to production and every other branch to a private preview. The project needs `THE_MOVIE_DB_API_KEY` (and optionally `OMDB_API_KEY` and `ANTHROPIC_API_KEY`) as environment variables, plus one Firewall rate-limit rule for `/api/`. Merging into `main` also tags a semantic version and publishes a GitHub release.
+Vercel deploys `main` to production and every other branch to a private preview. The project needs `THE_MOVIE_DB_API_KEY` (and optionally `OMDB_API_KEY`, `ANTHROPIC_API_KEY` and, for accounts, `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SESSION_SECRET` and `PUBLIC_URL`) as environment variables. Database migrations are run by hand (`alembic upgrade head` against the production database) before deploying a change that needs them. It also needs one Firewall rate-limit rule for `/api/`. Merging into `main` also tags a semantic version and publishes a GitHub release.
 
 ## 🗺️ Roadmap
 
-- **Accounts (optional):** sign in with Google to keep favourites and "My list" across devices.
 - **Personal recommendations:** a taste profile from favourites and 👍/👎 on the assistant's picks, and similar titles by embeddings.
 
 ## 🙏 Credits

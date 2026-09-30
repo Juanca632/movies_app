@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAskPanel } from "../lib/askPanel";
+import AccountMenu from "./AccountMenu";
 import { AiSparkIcon, CloseIcon, PlayIcon, SearchIcon } from "./icons";
 import RegionPicker from "./RegionPicker";
 import SearchBox from "./SearchBox";
@@ -102,6 +103,7 @@ function Navbar() {
             <SearchIcon className="size-4" />
           </button>
           <RegionPicker />
+          <AccountMenu />
         </div>
       </nav>
     </header>
