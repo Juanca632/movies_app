@@ -80,6 +80,6 @@ async def save_title(
 )
 async def remove_title(
     kind: ListKind, media_type: MediaType, media_id: int, lists: ListsDep
-) -> Response:
+) -> None:
+    # Returning None, not a Response, keeps cookies set by dependencies (a session refresh).
     await lists.remove(kind, media_type, media_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
