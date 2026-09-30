@@ -8,7 +8,7 @@ import { useRegion } from "./region";
  */
 export const ASK_PARAM = "ask";
 
-/** Sample questions, shown in the empty panel and on the home page. */
+/** Sample questions, shown in the empty panel. */
 export const ASK_EXAMPLES = [
   "Something funny and short for tonight",
   "A Korean thriller with great reviews",

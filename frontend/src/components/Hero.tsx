@@ -28,10 +28,10 @@ function Hero() {
   const detail = useMediaDetail("movie", String(movie?.id ?? ""), Boolean(movie));
 
   return (
-    <section aria-label="Featured" className="relative isolate flex h-[85svh] max-h-[760px] min-h-[460px] items-end sm:h-[72vh] lg:h-[88vh] lg:max-h-[960px]">
+    <section aria-label="Featured" className="relative isolate flex h-svh min-h-[520px] items-end">
       <Backdrop path={movie?.backdrop_path} />
 
-      <div className="page-x w-full pb-12 sm:pb-16 lg:pb-36">
+      <div className="page-x w-full pb-24 sm:pb-16 lg:pb-20">
         {isPending && (
           <div aria-hidden className="max-w-xl animate-shimmer space-y-4">
             <div className="h-12 w-3/4 rounded-lg bg-surface-2" />
