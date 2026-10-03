@@ -1,6 +1,6 @@
 # 🎬 MoviesApp
 
-A streaming-style explorer for movies, TV shows and people, built on the TMDB API: see what's trending, filter by genre and by the services you can actually watch in your country, open trailers, check awards and critic scores, and ask an AI assistant what to watch tonight.
+A streaming-style explorer for movies, TV shows and people, built on the TMDB API: see what's trending, filter by genre and by the services you can actually watch in your country, open trailers, check awards and critic scores, ask an AI assistant what to watch tonight and, once signed in, get recommendations from your own favorites.
 
 **Live demo → [movies-app-swart-xi.vercel.app](https://movies-app-swart-xi.vercel.app)**
 
@@ -9,6 +9,12 @@ A streaming-style explorer for movies, TV shows and people, built on the TMDB AP
 ## ✨ Features
 
 - **Ask AI what to watch.** Describe a mood, a plot or a title you loved ("a short comedy on Netflix", "like Interstellar") and refine it in a chat ("more recent ones"). A Claude agent searches the catalog with the app's own API as tools, shows each step as it works, and only recommends real titles, each with why it fits and where to stream it in your country. It opens over any page from the navbar, the search box or the home page.
+- **Recommendations from your taste.** Signed in, the home page adds three rows built from your favorites and your list:
+  - **Picked for You by AI**: Claude reads your saved titles and picks eight it thinks you'd love, with a line on why. It runs on its own, without being asked, and is stored and reused: a new answer is only paid for when your lists change, at most once a day.
+  - **Top Picks for You**: TMDB's recommendations for your recent saves, ranked so that titles recommended by several of them come first. No AI, no cost.
+  - **Because You Liked…**: titles like one of your favorites, a different one on each visit.
+
+  The assistant knows your taste too: "something for tonight" leans towards what you like, and it never suggests what you already saved.
 - **My list and favorites (optional sign-in).** Sign in with Google to save titles to watch later and mark favorites, from any detail page or hover preview. Everything else works without an account.
 - **Browse like a streaming service.** Home rows for what's in theaters, coming soon, popular and top rated; plus Movies and TV Shows pages filtered by genre, sorted by popularity, rating or release date, and shareable through the URL.
 - **Where to watch, in your country.** The country is detected from the browser language (and can be changed with a flag picker). It drives the streaming, rent and buy options on each title, the "Streaming in…" filter (e.g. *comedies on Netflix in Colombia*) and local release dates. The logos of the main services (Netflix, Prime Video, Apple TV, Google Play, YouTube…) open a search for the title on that service.
@@ -24,14 +30,21 @@ A streaming-style explorer for movies, TV shows and people, built on the TMDB AP
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/hover-preview.jpg" alt="Hover preview card over a poster"><br><sub>Hover preview</sub></td>
+    <td width="50%"><img src="docs/screenshots/for-you.jpg" alt="AI picks and top picks from the user's favorites"><br><sub>Picked for you by AI, from your favorites</sub></td>
+    <td width="50%"><img src="docs/screenshots/assistant.jpg" alt="The AI assistant answering a request for a short comedy on Netflix"><br><sub>Ask AI: each pick with why and where to stream it</sub></td>
+  </tr>
+  <tr>
     <td width="50%"><img src="docs/screenshots/detail.jpg" alt="Inception detail page with scores, awards and where to watch"><br><sub>Detail page: scores, awards and where to watch</sub></td>
+    <td width="50%"><img src="docs/screenshots/hover-preview.jpg" alt="Hover preview card over a poster"><br><sub>Hover preview</sub></td>
   </tr>
   <tr>
     <td width="50%"><img src="docs/screenshots/browse.jpg" alt="Comedy movies on Netflix in the United States"><br><sub>Browse: comedies streaming on Netflix</sub></td>
-    <td width="50%">
-      <img src="docs/screenshots/mobile-home.jpg" alt="Home page on a phone" width="48%">
-      <img src="docs/screenshots/mobile-detail.jpg" alt="Breaking Bad on a phone" width="48%"><br><sub>Mobile</sub>
+    <td width="50%"><img src="docs/screenshots/my-list.jpg" alt="The user's favorites"><br><sub>My list and favorites</sub></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="docs/screenshots/mobile-home.jpg" alt="Home page on a phone" width="24%">
+      <img src="docs/screenshots/mobile-detail.jpg" alt="Breaking Bad on a phone" width="24%"><br><sub>Mobile</sub>
     </td>
   </tr>
 </table>
@@ -42,6 +55,7 @@ A streaming-style explorer for movies, TV shows and people, built on the TMDB AP
 |---|---|
 | **Frontend** | React 19, TypeScript, Vite 6, Tailwind CSS 4, TanStack Query, React Router 7 |
 | **Backend** | Python 3.12, FastAPI, httpx (async client with retries and a TTL cache), pydantic-settings |
+| **Accounts** | Google sign-in (OAuth code flow with PKCE, run by the backend), httpOnly session cookie, Postgres on [Neon](https://neon.tech) with SQLAlchemy 2 (async) and Alembic |
 | **Data** | [TMDB](https://www.themoviedb.org/) (titles, people, images, trailers; streaming data by JustWatch) and [OMDb](https://www.omdbapi.com/) (awards and critic scores) |
 | **AI** | Claude Haiku 4.5 through the Anthropic Python SDK: a hand-written tool-calling loop, answers streamed as Server-Sent Events |
 | **Testing** | Vitest + Testing Library, pytest + respx (no network in tests) |
@@ -57,13 +71,17 @@ flowchart LR
   A -->|cached| T[(TMDB API)]
   A -->|cached, optional| O[(OMDb API)]
   A -->|"tool calling, optional"| C[(Claude API)]
+  A -->|"accounts, optional"| D[(Postgres)]
+  A -->|"sign-in, optional"| G[(Google OAuth)]
 ```
 
 The browser only talks to this app: the frontend and the API share one domain, and the API keys never leave the backend. The backend normalises TMDB's movie/TV differences into one API and caches responses in memory. The same layout runs on Vercel (`vercel.json`) and locally with Docker (`docker-compose.yml`, nginx in front).
 
-The AI assistant is an agent loop in the backend (`backend/app/services/assistant.py`): Claude gets the request plus tools that wrap the backend's own TMDB services (discover with filters, search, similar titles, where to watch), calls them as needed and finishes with a structured list of picks, which the backend only accepts if a tool returned them. Follow-ups resend a compact recap of the conversation, since the model has no memory. Its cost is kept in check with per-visitor and site-wide limits, a cache for repeated questions and a small, fast model.
+The AI assistant is an agent loop in the backend (`backend/app/services/assistant.py`): Claude gets the request plus tools that wrap the backend's own TMDB services (discover with filters, search, similar titles, where to watch), calls them as needed and finishes with a structured list of picks, which the backend only accepts if a tool returned them. Follow-ups resend a compact recap of the conversation, since the model has no memory. For a signed-in user the backend also adds their newest saved titles to the request, so answers lean towards their taste. Its cost is kept in check with per-visitor and site-wide limits, a cache for repeated (anonymous) questions and a small, fast model.
 
-Security basics are in place on both: a Content Security Policy and related headers, per-IP rate limiting on the API, validated inputs and no secrets in the client or in the repo.
+The AI picks on the home page reuse the same agent with a fixed request (`backend/app/services/ai_picks.py`). Since nobody is waiting to pay for each one, the answer is stored per user with a fingerprint of their lists and country, and only remade when that changed and it is over a day old; reloading the page costs nothing.
+
+Security basics are in place on both: a Content Security Policy and related headers, per-IP rate limiting on the API, validated inputs, sessions in an httpOnly cookie (only a hash of the token is stored), same-origin checks on writes and no secrets in the client or in the repo.
 
 ## 🚀 Running locally
 
@@ -114,7 +132,7 @@ Every pull request runs all of the above plus a dependency audit and a Docker bu
 
 ### Evals for the AI assistant
 
-Unit tests use a fake Claude, so they check the code, not the quality of the recommendations. For that there are evals: about 20 real requests (by genre, by streaming service, "something like X", in Spanish, off-topic, prompt injection, a follow-up...) sent to the real Claude and TMDB, each scored against rules that describe a good answer, never exact titles, since catalogs change: *every pick is a horror movie, streams on Netflix, isn't the title it was compared to*. An optional LLM judge (`--judge`) scores what rules can't, like whether the reasons fit the request.
+Unit tests use a fake Claude, so they check the code, not the quality of the recommendations. For that there are evals: about 30 real requests (by genre, by streaming service, "something like X", in Spanish, off-topic, prompt injection, a follow-up, a signed-in user's taste, the home page's AI picks...) sent to the real Claude and TMDB, each scored against rules that describe a good answer, never exact titles, since catalogs change: *every pick is a horror movie, streams on Netflix, isn't the title it was compared to*. An optional LLM judge (`--judge`) scores what rules can't, like whether the reasons fit the request.
 
 ```bash
 # backend/, with ANTHROPIC_API_KEY in .env (~$0.20 per run, more with --judge)
@@ -130,7 +148,8 @@ Vercel deploys `main` to production and every other branch to a private preview.
 
 ## 🗺️ Roadmap
 
-- **Personal recommendations:** a taste profile from favourites and 👍/👎 on the assistant's picks, and similar titles by embeddings.
+- **Group mode:** one recommendation for several people's tastes.
+- **Finer recommendations:** 👍/👎 on picks, and similar titles by embeddings (pgvector).
 
 ## 🙏 Credits
 
