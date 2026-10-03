@@ -56,6 +56,7 @@ describe("HomePage", () => {
         picks: [media({ id: 21, title: "Aliens" })],
         because: [{ source: alien, results: [media({ id: 22, title: "The Thing" })] }],
       },
+      "me/ai-picks?region=US": null,
     });
     renderRoute("/");
 
@@ -70,12 +71,30 @@ describe("HomePage", () => {
       ...homeApi(),
       me: { name: "Ana", email: "ana@example.com", avatar_url: null },
       "me/recommendations": { picks: [], because: [] },
+      "me/ai-picks?region=US": null,
     });
     renderRoute("/");
 
     // While they load, the row keeps its place; with nothing to show it goes away.
     expect(await screen.findByRole("region", { name: "Top Picks for You" })).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole("region", { name: "Top Picks for You" })).not.toBeInTheDocument());
+  });
+
+  it("shows the AI's picks", async () => {
+    mockApi({
+      ...homeApi(),
+      me: { name: "Ana", email: "ana@example.com", avatar_url: null },
+      "me/recommendations": { picks: [], because: [] },
+      "me/ai-picks?region=US": {
+        intro: "Slow-burn horror, like your favorites.",
+        picks: [{ item: media({ id: 30, title: "The Witch" }), reason: "The same creeping dread as Hereditary.", providers: [] }],
+      },
+    });
+    renderRoute("/");
+
+    const row = await screen.findByRole("region", { name: "Picked for You by AI" });
+    expect(await within(row).findByRole("link", { name: /The Witch/ })).toHaveAttribute("href", "/movie/30/the-witch");
+    expect(within(row).getByText("Slow-burn horror, like your favorites.")).toBeInTheDocument();
   });
 
   it("asks for no recommendations when signed out", async () => {
@@ -86,6 +105,8 @@ describe("HomePage", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/me"), expect.anything()));
     expect(screen.queryByRole("region", { name: "Top Picks for You" })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining("me/recommendations"), expect.anything());
+    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining("me/ai-picks"), expect.anything());
+    expect(screen.queryByRole("region", { name: "Picked for You by AI" })).not.toBeInTheDocument();
   });
 });
 

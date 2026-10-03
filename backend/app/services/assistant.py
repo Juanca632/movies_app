@@ -18,7 +18,8 @@ from app.clients.tmdb import TMDBClient, TMDBError
 from app.core.cache import TTLStore
 from app.core.config import Settings
 from app.core.ratelimit import RateLimiter
-from app.schemas.assistant import Answer, AssistantEvent, Pick, Status, Taste, Turn
+from app.schemas.assistant import Answer, AssistantEvent, Pick, PickRef, Status, Taste, Turn
+from app.schemas.me import SavedTitle
 from app.schemas.media import MediaSummary, MediaType, Provider
 from app.services.discover import DiscoverService, Sort
 from app.services.media import to_summary
@@ -208,6 +209,20 @@ def _one_line(text: str) -> str:
 
 def _titles(refs: list[Any]) -> str:
     return ", ".join(f"{_one_line(r.title)} ({r.media_type} {r.id})" for r in refs)
+
+
+def taste_from(favorites: list[SavedTitle], watchlist: list[SavedTitle]) -> Taste | None:
+    """A user's lists (newest first) as the assistant reads them; None when both are empty."""
+    if not favorites and not watchlist:
+        return None
+
+    def refs(titles: list[SavedTitle]) -> list[PickRef]:
+        return [
+            PickRef(media_type=t.media_type, id=t.id, title=t.title[:200])
+            for t in titles[:MAX_TASTE]
+        ]
+
+    return Taste(favorites=refs(favorites), watchlist=refs(watchlist))
 
 
 def _with_taste(taste: Taste | None) -> str:
@@ -437,6 +452,14 @@ class AssistantService:
         if not (self._per_client.allows(client) and self._site.allows("site")):
             return False
         self._per_client.hit(client)
+        self._site.hit("site")
+        return True
+
+    def allow_unasked(self) -> bool:
+        """Count an answer nobody typed (the AI picks on the home page) against the site's
+        daily limit only: no visitor asked, and each user gets at most one a day anyway."""
+        if not self._site.allows("site"):
+            return False
         self._site.hit("site")
         return True
 
