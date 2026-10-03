@@ -1,6 +1,8 @@
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.deps import AssistantDep, DbDep, MediaServiceDep
 from app.api.session import (
@@ -16,6 +18,8 @@ from app.schemas.media import MediaType
 from app.services.ai_picks import AiPicksService
 from app.services.lists import MAX_PER_LIST, ListFullError, ListsService
 from app.services.recommendations import cached_for_you
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/me", tags=["Accounts"])
 
@@ -79,7 +83,12 @@ async def ai_picks(
     region: Annotated[str, Query(pattern="^[A-Z]{2}$")] = "US",
 ) -> Answer | None:
     favorites, watchlist = await lists.titles("favorite"), await lists.titles("watchlist")
-    return await AiPicksService(db, assistant, user.id).picks(favorites, watchlist, region)
+    try:
+        return await AiPicksService(db, assistant, user.id).picks(favorites, watchlist, region)
+    except SQLAlchemyError:
+        # e.g. deployed before `alembic upgrade head`: the row is extra, the home page is not.
+        log.exception("could not read or store AI picks")
+        return None
 
 
 # After the fixed paths above: "/{kind}" would match them and answer 422.

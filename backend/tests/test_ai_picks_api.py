@@ -94,3 +94,19 @@ async def test_no_picks_without_the_assistant(signed_in_ask, tmdb_routes):
     await save(signed_in_ask, "favorite", {"id": 7, "title": "Alien"})
 
     assert (await signed_in_ask.get(PICKS)).json() is None
+
+
+async def test_a_missing_table_hides_the_picks(
+    signed_in_ask, picking, tmdb_routes, db_sessionmaker
+):
+    from sqlalchemy import text
+
+    await save(signed_in_ask, "favorite", {"id": 7, "title": "Alien"})
+    async with db_sessionmaker() as db:
+        await db.execute(text("DROP TABLE ai_picks"))
+        await db.commit()
+
+    response = await signed_in_ask.get(PICKS)
+
+    assert response.status_code == 200
+    assert response.json() is None
