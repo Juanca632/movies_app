@@ -10,9 +10,10 @@ from app.api.session import (
     SettingsDep,
     clear_session_cookie,
 )
-from app.schemas.me import ListKind, Profile, SavedTitle
+from app.schemas.me import ForYou, ListKind, Profile, SavedTitle
 from app.schemas.media import MediaType
 from app.services.lists import MAX_PER_LIST, ListFullError, ListsService
+from app.services.recommendations import for_you
 
 router = APIRouter(prefix="/me", tags=["Accounts"])
 
@@ -50,6 +51,17 @@ async def delete_account(
     return response
 
 
+@router.get(
+    "/recommendations",
+    summary="Recommendations from the signed-in user's lists",
+    description="Top picks drawn from both lists, plus rows of titles like recent favourites. "
+    "Titles already saved are left out; empty lists give empty recommendations.",
+)
+async def recommendations(lists: ListsDep, media: MediaServiceDep) -> ForYou:
+    return await for_you(media, await lists.titles("favorite"), await lists.titles("watchlist"))
+
+
+# After the fixed paths above: "/{kind}" would match them and answer 422.
 @router.get("/{kind}", summary="A list of the signed-in user, most recently saved first")
 async def list_titles(kind: ListKind, lists: ListsDep) -> list[SavedTitle]:
     return await lists.titles(kind)

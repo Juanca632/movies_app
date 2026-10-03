@@ -44,6 +44,41 @@ describe("HomePage", () => {
     await userEvent.click(await within(row).findByRole("button", { name: "Try again" }));
     expect(await within(row).findByRole("link", { name: /Avatar 3/ })).toBeInTheDocument();
   });
+
+  it("recommends titles from what the user saved", async () => {
+    const alien = { id: 20, media_type: "movie", title: "Alien", poster_path: null, release_date: null, saved_at: "2026-10-01T00:00:00Z" };
+    mockApi({
+      ...homeApi(),
+      me: { name: "Ana", email: "ana@example.com", avatar_url: null },
+      "me/favorite": [alien],
+      "me/watchlist": [],
+      "me/recommendations": {
+        picks: [media({ id: 21, title: "Aliens" })],
+        because: [{ source: alien, results: [media({ id: 22, title: "The Thing" })] }],
+      },
+    });
+    renderRoute("/");
+
+    const picks = await screen.findByRole("region", { name: "Top Picks for You" });
+    expect(await within(picks).findByRole("link", { name: /Aliens/ })).toHaveAttribute("href", "/movie/21/aliens");
+    const because = screen.getByRole("region", { name: "Because You Liked Alien" });
+    expect(within(because).getByRole("link", { name: /The Thing/ })).toBeInTheDocument();
+  });
+
+  it("asks for no recommendations while nothing is saved", async () => {
+    const fetchMock = mockApi({
+      ...homeApi(),
+      me: { name: "Ana", email: "ana@example.com", avatar_url: null },
+      "me/favorite": [],
+      "me/watchlist": [],
+    });
+    renderRoute("/");
+
+    await screen.findByRole("region", { name: "Popular TV Shows" });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("me/watchlist"), expect.anything()));
+    expect(screen.queryByRole("region", { name: "Top Picks for You" })).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining("me/recommendations"), expect.anything());
+  });
 });
 
 describe("MediaPage", () => {

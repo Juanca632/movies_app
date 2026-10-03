@@ -1,5 +1,5 @@
 import type { UseQueryResult } from "@tanstack/react-query";
-import { useMediaList, usePopularPeople } from "../api/queries";
+import { useForYou, useMediaList, usePopularPeople } from "../api/queries";
 import type { CastMember, Category, MediaSummary, MediaType, PersonSummary } from "../api/types";
 import { personSubtitle } from "../lib/tmdb";
 import { MediaCard, PersonCard } from "./cards";
@@ -64,4 +64,26 @@ export function PopularPeopleRow({ title }: { title: string }) {
       onRetry={() => query.refetch()}
     />
   );
+}
+
+/** The signed-in user's top picks, from everything they saved; nothing until they save a title. */
+export function TopPicksRow() {
+  const query = useForYou();
+  return (
+    <MediaRow
+      title="Top Picks for You"
+      description="Based on your favorites and your list"
+      items={query.data?.picks}
+      // A disabled query (signed out, nothing saved) is pending too, but has nothing to wait for.
+      query={{ ...query, isPending: query.isLoading }}
+    />
+  );
+}
+
+/** One row per recent favourite, Netflix style. */
+export function BecauseYouLikedRows() {
+  const { data } = useForYou();
+  return data?.because.map((row) => (
+    <MediaRow key={`${row.source.media_type}-${row.source.id}`} title={`Because You Liked ${row.source.title}`} items={row.results} />
+  ));
 }

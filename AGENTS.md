@@ -53,6 +53,7 @@ Rules:
   - The session is a random token in an `httpOnly; Secure; SameSite=Lax` cookie; only its SHA-256 lives in `sessions`. 30 days, extended at most once a day.
   - Private routes use `CurrentUserDep` (401 signed out); writes also add `SameOrigin` (403 if `Origin` is another site). `/me` answers 503 when accounts aren't set up (all of `DATABASE_URL` and the three Google/session keys), so the UI hides sign-in.
   - Lists (`services/lists.py`): `GET /me/{favorite|watchlist}`, `PUT` and `DELETE /me/{kind}/{movie|tv}/{id}` (idempotent); `DELETE /me` deletes the account, cascading to sessions and lists. Saving stores a snapshot (title, poster, date) from the cached detail, so a list renders without TMDB; at most 1000 titles per list. The frontend loads whole lists to know what is saved.
+  - Recommendations (`services/recommendations.py`, `GET /me/recommendations`): TMDB's recommendations for the 10 newest titles of each list (cached details), favourites weighing double, titles recommended by several saves ranking higher, saved titles left out. Gives the top picks and up to 3 "Because you liked" rows. No AI, no extra cost.
   - The redirect URI is built from `PUBLIC_URL`, else from the request's forwarded host.
 - Migrations: Alembic in `backend/alembic/`. Run `alembic upgrade head` by hand from `backend/` (never when a Vercel function starts); it prefers `DATABASE_URL_UNPOOLED` when set. After changing a model, add a migration (`alembic revision --autogenerate -m "..."`, then review it). Tests use in-memory SQLite (`db_sessionmaker` fixture); the CI `migrations` job checks them on real Postgres with `alembic check`.
 
@@ -60,7 +61,7 @@ Rules:
 
 - `src/api/`: `client.ts` (`getJson`, `sendJson`, `ApiError`; base URL `VITE_API_URL`, else `/api/v1`: same origin everywhere, through Vite's dev proxy (which keeps the Host header, needed for sign-in) locally), `queries.ts` (React Query hooks), `types.ts`.
 - `src/components/`: presentational components; `src/pages/`: one per route (`MediaPage` serves both movies and TV).
-- Accounts: `useAccount` (signed-in / signed-out / unavailable, from `GET /me`), `useSavedList`, `useToggleSaved` (optimistic) and `useSignOut` in `queries.ts`. `AccountMenu` in the navbar, `SaveButtons` on the detail page and hover preview, `pages/MyListPage.tsx`. Sign-in is a plain link to `/api/v1/auth/google/login?next=`. Without accounts on the server none of it renders.
+- Accounts: `useAccount` (signed-in / signed-out / unavailable, from `GET /me`), `useSavedList`, `useToggleSaved` (optimistic) and `useSignOut` in `queries.ts`. `AccountMenu` in the navbar, `SaveButtons` on the detail page and hover preview, `pages/MyListPage.tsx`, and `TopPicksRow` / `BecauseYouLikedRows` on the home page (`useForYou`, asked for only once something is saved). Sign-in is a plain link to `/api/v1/auth/google/login?next=`. Without accounts on the server none of it renders.
 - Country: `src/lib/region.ts`, a `useSyncExternalStore` store detected from `navigator.languages` and saved in `localStorage`.
 - Design: dark streaming style, amber accent, Inter + Outfit fonts.
 - Public URLs: `/movie/:id/:slug`, `/tv-show/:id/:slug?season=` (kept for old links), `/person/:id/:slug`, `/search?q=`, `/browse/movie|tv?genre=&provider=&sort=`, `/calendar?kind=theaters|home|tv&month=YYYY-MM`, `/my-list?tab=watchlist|favorites`, `/privacy`, and `?ask=` on any URL for the AI assistant.
@@ -120,7 +121,7 @@ Rules:
 
 - Phase 0 (done): backend rewritten with httpx, unified API, search, Docker, CI.
 - Phase 1 (done): frontend rewrite and redesign, search with suggestions, tests. App name still open (proposal: "Marquee"). Next.js postponed; components and hooks are portable.
-- Phase 2 (done): Postgres, Google sign-in (httpOnly cookie), favourites and "My list". Still to do: setting up Neon and Google in production.
-- Phase 3 (in progress): natural-language "what to watch tonight" assistant and its evals (done). Next: group mode; with Phase 2, embeddings (pgvector) and recommendations from favourites.
+- Phase 2 (done): Postgres, Google sign-in (httpOnly cookie), favourites and "My list", live in production (Neon + Google).
+- Phase 3 (in progress): natural-language "what to watch tonight" assistant and its evals (done). Recommendation rows from the user's lists (done). Next: the assistant using the user's taste, group mode, embeddings (pgvector).
 - Phase 4 (almost done): deployed on Vercel, README with screenshots in `docs/screenshots/`. Missing: custom domain and, if needed, the Firewall rate-limit rule.
 - Also done: directors/creators and crew credits, sagas, seasons and episodes, release calendar, link previews, browse by genre/service, country with flags, hover previews, trailers, awards and scores (OMDb), security review.
