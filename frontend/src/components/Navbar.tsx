@@ -56,12 +56,12 @@ function Navbar() {
       )}
 
       <nav className={`page-x h-16 items-center gap-4 sm:gap-6 ${searchOpen ? "hidden sm:flex" : "flex"}`}>
-        <Link to="/" className="flex shrink-0 items-center gap-2" aria-label="MyMoviesApp home">
+        <Link to="/" className="flex shrink-0 items-center gap-2" aria-label="MoviesApp home">
           <span className="grid size-8 place-items-center rounded-lg bg-accent text-bg">
             <PlayIcon className="size-4" />
           </span>
           <span className="font-display text-lg font-bold tracking-tight sm:hidden lg:inline">
-            MyMovies<span className="text-accent">App</span>
+            Movies<span className="text-accent">App</span>
           </span>
         </Link>
 

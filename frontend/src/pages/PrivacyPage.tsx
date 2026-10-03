@@ -26,7 +26,7 @@ function PrivacyPage() {
       </header>
 
       <p>
-        MyMoviesApp is a personal portfolio project. You can browse and search everything without an account; signing in
+        MoviesApp is a personal portfolio project. You can browse and search everything without an account; signing in
         with Google is optional and only used to keep your list and favorites. This page explains what is stored and why.
       </p>
 

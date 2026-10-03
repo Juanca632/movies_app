@@ -1,4 +1,4 @@
-# 🎬 MyMoviesApp
+# 🎬 MoviesApp
 
 A streaming-style explorer for movies, TV shows and people, built on the TMDB API: see what's trending, filter by genre and by the services you can actually watch in your country, open trailers, check awards and critic scores, and ask an AI assistant what to watch tonight.
 

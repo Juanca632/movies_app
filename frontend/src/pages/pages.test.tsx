@@ -118,7 +118,7 @@ describe("MediaPage", () => {
     expect(screen.getByRole("link", { name: "Netflix" })).toHaveAttribute("href", "https://www.netflix.com/search?q=Inception");
     expect(screen.getByRole("link", { name: "HBO Max" })).toHaveAttribute("href", "https://www.themoviedb.org/movie/1/watch");
     expect(screen.getByRole("link", { name: /Interstellar/ })).toHaveAttribute("href", "/movie/2/interstellar");
-    expect(document.title).toBe("Inception · MyMoviesApp");
+    expect(document.title).toBe("Inception · MoviesApp");
   });
 
   it("asks the tv endpoint for TV shows and shows seasons", async () => {

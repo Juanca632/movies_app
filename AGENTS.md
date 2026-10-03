@@ -1,4 +1,4 @@
-# MyMoviesApp
+# MoviesApp
 
 Portfolio project: a streaming-style explorer for movies, TV shows and people on top of the TMDB API, with an AI assistant that recommends what to watch. Live demo (Vercel): https://movies-app-swart-xi.vercel.app
 
@@ -121,7 +121,7 @@ Rules:
 ## Roadmap
 
 - Phase 0 (done): backend rewritten with httpx, unified API, search, Docker, CI.
-- Phase 1 (done): frontend rewrite and redesign, search with suggestions, tests. App name still open (proposal: "Marquee"). Next.js postponed; components and hooks are portable.
+- Phase 1 (done): frontend rewrite and redesign, search with suggestions, tests. The app is called MoviesApp. Next.js postponed; components and hooks are portable.
 - Phase 2 (done): Postgres, Google sign-in (httpOnly cookie), favourites and "My list", live in production (Neon + Google).
 - Phase 3 (in progress): natural-language "what to watch tonight" assistant and its evals (done). Recommendation rows from the user's lists and an assistant that knows the user's taste (done). Next: group mode, embeddings (pgvector).
 - Phase 4 (almost done): deployed on Vercel, README with screenshots in `docs/screenshots/`. Missing: custom domain and, if needed, the Firewall rate-limit rule.

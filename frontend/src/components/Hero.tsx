@@ -10,6 +10,13 @@ import TrailerButton from "./TrailerButton";
 const SLIDES = 6;
 const INTERVAL_MS = 8000;
 
+/** Long titles get a smaller type, so they take two lines at most instead of half the banner. */
+function titleSize(title: string) {
+  if (title.length > 40) return "text-3xl sm:text-4xl lg:text-5xl";
+  if (title.length > 22) return "text-4xl sm:text-5xl lg:text-6xl";
+  return "text-4xl sm:text-6xl lg:text-7xl";
+}
+
 /** Home spotlight: rotates through the most popular movies. */
 function Hero() {
   const { data, isPending, isError, refetch } = useMediaList("movie", "popular");
@@ -44,7 +51,7 @@ function Hero() {
         {movie && (
           <div key={movie.id} className="max-w-2xl animate-fade-in">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-accent">Popular now</p>
-            <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-6xl lg:text-7xl">
+            <h1 className={`line-clamp-3 font-display font-bold leading-[1.05] tracking-tight text-balance ${titleSize(movie.title)}`}>
               {movie.title}
             </h1>
             <div className="mt-4 flex items-center gap-3 text-sm text-muted">
