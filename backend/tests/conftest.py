@@ -77,7 +77,7 @@ async def site(settings, tmdb, db_sessionmaker):
     are sent back) and with a cookie jar. Google is reached through respx, see accounts.py."""
     import httpx
 
-    from app.api.deps import get_sessionmaker, get_tmdb
+    from app.api.deps import get_optional_sessionmaker, get_sessionmaker, get_tmdb
     from app.api.session import get_google
     from app.clients.google import GoogleOAuthClient
     from app.core.config import get_settings
@@ -93,8 +93,10 @@ async def site(settings, tmdb, db_sessionmaker):
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[get_tmdb] = lambda: tmdb
     app.dependency_overrides[get_sessionmaker] = lambda: db_sessionmaker
+    app.dependency_overrides[get_optional_sessionmaker] = lambda: db_sessionmaker
     app.dependency_overrides[get_google] = lambda: google
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url=ORIGIN) as client:
+        client.app = app  # for tests that override more dependencies
         yield client
     await google.aclose()

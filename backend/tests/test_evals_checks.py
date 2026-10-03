@@ -148,3 +148,10 @@ def test_duplicated_case_ids_are_rejected(tmp_path):
     path.write_text("- {id: a, question: one}\n- {id: a, question: two}\n")
     with pytest.raises(ValueError, match="Duplicated"):
         load_cases(str(path))
+
+
+def test_the_ai_picks_cases_ask_what_the_app_asks():
+    from app.services.ai_picks import QUESTION
+
+    cases = [c for c in load_cases("evals/cases.yaml") if c.id.startswith("ai-picks")]
+    assert cases and all(case.question == QUESTION for case in cases)

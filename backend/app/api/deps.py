@@ -78,6 +78,16 @@ def get_assistant(request: Request) -> AssistantService | None:
 AssistantDep = Annotated[AssistantService | None, Depends(get_assistant)]
 
 
+def get_optional_sessionmaker(request: Request) -> async_sessionmaker[AsyncSession] | None:
+    """For features that only get better with accounts, and work without them."""
+    return getattr(request.app.state, "db", None)
+
+
+OptionalSessionmakerDep = Annotated[
+    async_sessionmaker[AsyncSession] | None, Depends(get_optional_sessionmaker)
+]
+
+
 def get_sessionmaker(request: Request) -> async_sessionmaker[AsyncSession]:
     sessionmaker = getattr(request.app.state, "db", None)
     if sessionmaker is None:

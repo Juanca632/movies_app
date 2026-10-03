@@ -12,7 +12,7 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.assistant import Answer, Turn
+from app.schemas.assistant import Answer, Taste, Turn
 from app.schemas.media import MediaType
 
 
@@ -46,6 +46,7 @@ class Case(BaseModel):
     question: str
     region: str = "US"
     history: list[Turn] = []
+    taste: Taste | None = None  # a signed-in user's saved titles
     expect: Expect = Field(default_factory=Expect)
 
 

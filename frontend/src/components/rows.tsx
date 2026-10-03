@@ -1,5 +1,6 @@
+import { useState } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { useMediaList, usePopularPeople } from "../api/queries";
+import { useForYou, useMediaList, usePopularPeople } from "../api/queries";
 import type { CastMember, Category, MediaSummary, MediaType, PersonSummary } from "../api/types";
 import { personSubtitle } from "../lib/tmdb";
 import { MediaCard, PersonCard } from "./cards";
@@ -64,4 +65,30 @@ export function PopularPeopleRow({ title }: { title: string }) {
       onRetry={() => query.refetch()}
     />
   );
+}
+
+/** The signed-in user's top picks, from everything they saved; nothing until they save a title. */
+export function TopPicksRow() {
+  const query = useForYou();
+  return (
+    <MediaRow
+      title="Top Picks for You"
+      description="Based on your favorites and your list"
+      items={query.data?.picks}
+      // A disabled query (signed out, nothing saved) is pending too, but has nothing to wait for.
+      query={{ ...query, isPending: query.isLoading }}
+    />
+  );
+}
+
+/**
+ * "Because you liked" one of the recent favourites, a different one on each visit. Picked once
+ * per page view, so the row doesn't jump when the recommendations refetch.
+ */
+export function BecauseYouLikedRow() {
+  const { data } = useForYou();
+  const [luck] = useState(Math.random);
+  const rows = data?.because ?? [];
+  const row = rows[Math.floor(luck * rows.length)];
+  return row && <MediaRow title={`Because You Liked ${row.source.title}`} items={row.results} />;
 }

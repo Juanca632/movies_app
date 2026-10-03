@@ -40,11 +40,12 @@ class ListsService:
     def _key(self, kind: ListKind, media_type: MediaType, tmdb_id: int) -> tuple:
         return (self._user_id, kind, media_type, tmdb_id)
 
-    async def titles(self, kind: ListKind) -> list[SavedTitle]:
+    async def titles(self, kind: ListKind, limit: int | None = None) -> list[SavedTitle]:
         rows = await self._db.scalars(
             select(models.SavedTitle)
             .where(models.SavedTitle.user_id == self._user_id, models.SavedTitle.kind == kind)
             .order_by(models.SavedTitle.created_at.desc(), models.SavedTitle.tmdb_id.desc())
+            .limit(limit)
         )
         return [_saved(row) for row in rows]
 

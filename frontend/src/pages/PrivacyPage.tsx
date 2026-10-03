@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 
-const UPDATED = "September 30, 2026";
+const UPDATED = "October 3, 2026";
 const ISSUES = "https://github.com/Juanca632/movies_app/issues";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -26,7 +26,7 @@ function PrivacyPage() {
       </header>
 
       <p>
-        MyMoviesApp is a personal portfolio project. You can browse and search everything without an account; signing in
+        MoviesApp is a personal portfolio project. You can browse and search everything without an account; signing in
         with Google is optional and only used to keep your list and favorites. This page explains what is stored and why.
       </p>
 
@@ -64,11 +64,19 @@ function PrivacyPage() {
         </ul>
         <p>
           We never see your Google password, and we ask Google for nothing beyond your basic profile. This data is used only
-          to sign you in and show your lists. It lives in a database hosted by{" "}
+          to sign you in, show your lists and recommend titles from them. It lives in a database hosted by{" "}
           <a href="https://neon.com/privacy-policy" target="_blank" rel="noreferrer" className={external}>
             Neon
           </a>{" "}
           in the United States.
+        </p>
+        <p>
+          When you ask the AI assistant while signed in, the titles you saved most recently (up to 15 from each list) go to
+          Anthropic with your question, so the answer fits your taste. Those answers are never cached or shown to anyone else.
+        </p>
+        <p>
+          The same titles are sent to Anthropic, about once a day at most and only after your lists change, to make the AI
+          picks on the home page. The latest picks are stored with your account and deleted with it.
         </p>
       </Section>
 

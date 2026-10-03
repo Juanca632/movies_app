@@ -4,9 +4,11 @@ import { API_URL, ApiError, getJson, sendJson } from "./client";
 import type {
   Account,
   Acclaim,
+  AssistantAnswer,
   Category,
   Collection,
   DiscoverFilters,
+  ForYou,
   Genre,
   ListKind,
   MediaDetail,
@@ -168,6 +170,8 @@ export const useSearch = (query: string, page: number) =>
 // anything else going wrong also just hides sign-in, the rest of the app does not need it.
 const ACCOUNT_KEY = ["me"] as const;
 const listKey = (kind: ListKind) => ["me", kind] as const;
+const FOR_YOU_KEY = ["me", "for-you"] as const;
+const AI_PICKS_KEY = ["me", "ai-picks"] as const;
 
 async function fetchAccount(signal: AbortSignal): Promise<Account> {
   try {
@@ -207,7 +211,25 @@ export const useToggleSaved = (kind: ListKind) => {
       return { previous };
     },
     onError: (_error, _vars, context) => queryClient.setQueryData(listKey(kind), context?.previous),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: listKey(kind) }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: listKey(kind) });
+      queryClient.invalidateQueries({ queryKey: FOR_YOU_KEY });
+      // Cheap: new AI picks are made at most once a day; until then saved titles are just left out.
+      queryClient.invalidateQueries({ queryKey: AI_PICKS_KEY });
+    },
+  });
+};
+
+/**
+ * Recommendations from the user's lists, asked for as soon as we know they are signed in (not
+ * after loading the lists: one round trip less). Nothing saved simply gives empty rows.
+ */
+export const useForYou = () => {
+  const { data: account } = useAccount();
+  return useQuery({
+    queryKey: FOR_YOU_KEY,
+    queryFn: ({ signal }) => getJson<ForYou>("me/recommendations", signal),
+    enabled: account?.status === "signed-in",
   });
 };
 
@@ -226,3 +248,19 @@ export const useSignOut = () => useEndSession(() => sendJson("POST", "auth/logou
 
 /** Deletes the account with its lists, for good; the browser ends up signed out. */
 export const useDeleteAccount = () => useEndSession(() => sendJson("DELETE", "me"));
+
+/**
+ * Titles the AI picked from the user's lists. The server keeps them and only asks the AI again
+ * when the lists changed (at most once a day), so the first load after a change takes a while.
+ * Null with nothing saved or no assistant on the server.
+ */
+export const useAiPicks = () => {
+  const { data: account } = useAccount();
+  const region = useRegion();
+  return useQuery({
+    queryKey: [...AI_PICKS_KEY, region],
+    // A new answer takes the AI 10-20 seconds; the assistant's own requests allow 60.
+    queryFn: ({ signal }) => getJson<Omit<AssistantAnswer, "type"> | null>(`me/ai-picks?region=${region}`, signal, 60_000),
+    enabled: account?.status === "signed-in",
+  });
+};

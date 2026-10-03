@@ -44,6 +44,75 @@ describe("HomePage", () => {
     await userEvent.click(await within(row).findByRole("button", { name: "Try again" }));
     expect(await within(row).findByRole("link", { name: /Avatar 3/ })).toBeInTheDocument();
   });
+
+  it("recommends titles from what the user saved", async () => {
+    const alien = { id: 20, media_type: "movie", title: "Alien", poster_path: null, release_date: null, saved_at: "2026-10-01T00:00:00Z" };
+    mockApi({
+      ...homeApi(),
+      me: { name: "Ana", email: "ana@example.com", avatar_url: null },
+      "me/favorite": [alien],
+      "me/watchlist": [],
+      "me/recommendations": {
+        picks: [media({ id: 21, title: "Aliens" })],
+        because: [
+          { source: alien, results: [media({ id: 22, title: "The Thing" })] },
+          { source: { ...alien, id: 23, title: "Heat" }, results: [media({ id: 24, title: "Collateral" })] },
+        ],
+      },
+      "me/ai-picks?region=US": null,
+    });
+    renderRoute("/");
+
+    const picks = await screen.findByRole("region", { name: "Top Picks for You" });
+    expect(await within(picks).findByRole("link", { name: /Aliens/ })).toHaveAttribute("href", "/movie/21/aliens");
+    // One "because you liked" row, for one of the favourites.
+    const because = screen.getAllByRole("region", { name: /^Because You Liked/ });
+    expect(because).toHaveLength(1);
+    expect(within(because[0]).getByRole("link", { name: /The Thing|Collateral/ })).toBeInTheDocument();
+  });
+
+  it("shows no recommendations to users with nothing saved", async () => {
+    mockApi({
+      ...homeApi(),
+      me: { name: "Ana", email: "ana@example.com", avatar_url: null },
+      "me/recommendations": { picks: [], because: [] },
+      "me/ai-picks?region=US": null,
+    });
+    renderRoute("/");
+
+    // While they load, the row keeps its place; with nothing to show it goes away.
+    expect(await screen.findByRole("region", { name: "Top Picks for You" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Top Picks for You" })).not.toBeInTheDocument());
+  });
+
+  it("shows the AI's picks", async () => {
+    mockApi({
+      ...homeApi(),
+      me: { name: "Ana", email: "ana@example.com", avatar_url: null },
+      "me/recommendations": { picks: [], because: [] },
+      "me/ai-picks?region=US": {
+        intro: "Slow-burn horror, like your favorites.",
+        picks: [{ item: media({ id: 30, title: "The Witch" }), reason: "The same creeping dread as Hereditary.", providers: [] }],
+      },
+    });
+    renderRoute("/");
+
+    const row = await screen.findByRole("region", { name: "Picked for You by AI" });
+    expect(await within(row).findByRole("link", { name: /The Witch/ })).toHaveAttribute("href", "/movie/30/the-witch");
+    expect(within(row).getByText("Slow-burn horror, like your favorites.")).toBeInTheDocument();
+  });
+
+  it("asks for no recommendations when signed out", async () => {
+    const fetchMock = mockApi({ ...homeApi(), me: () => new Response("Not signed in", { status: 401 }) });
+    renderRoute("/");
+
+    await screen.findByRole("region", { name: "Popular TV Shows" });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/me"), expect.anything()));
+    expect(screen.queryByRole("region", { name: "Top Picks for You" })).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining("me/recommendations"), expect.anything());
+    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining("me/ai-picks"), expect.anything());
+    expect(screen.queryByRole("region", { name: "Picked for You by AI" })).not.toBeInTheDocument();
+  });
 });
 
 describe("MediaPage", () => {
@@ -75,7 +144,7 @@ describe("MediaPage", () => {
     expect(screen.getByRole("link", { name: "Netflix" })).toHaveAttribute("href", "https://www.netflix.com/search?q=Inception");
     expect(screen.getByRole("link", { name: "HBO Max" })).toHaveAttribute("href", "https://www.themoviedb.org/movie/1/watch");
     expect(screen.getByRole("link", { name: /Interstellar/ })).toHaveAttribute("href", "/movie/2/interstellar");
-    expect(document.title).toBe("Inception · MyMoviesApp");
+    expect(document.title).toBe("Inception · MoviesApp");
   });
 
   it("asks the tv endpoint for TV shows and shows seasons", async () => {
