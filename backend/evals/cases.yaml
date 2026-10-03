@@ -136,6 +136,32 @@
     genre: Science Fiction
     exclude_titles: [Interstellar, Arrival, Blade Runner 2049]
 
+# --- AI picks on the home page (app/services/ai_picks.py: QUESTION, keep in sync) ---
+- id: ai-picks-horror
+  question: Based on the titles I saved, pick 8 movies or TV shows I would love. Mix well-known titles with a few I may not have heard of.
+  taste:
+    favorites:
+      - {media_type: movie, id: 493922, title: Hereditary}
+      - {media_type: movie, id: 138843, title: The Conjuring}
+      - {media_type: movie, id: 270303, title: It Follows}
+  expect:
+    picks: [6, 8]
+    genre: Horror
+    exclude_titles: [Hereditary, The Conjuring, It Follows]
+
+- id: ai-picks-mixed
+  question: Based on the titles I saved, pick 8 movies or TV shows I would love. Mix well-known titles with a few I may not have heard of.
+  taste:
+    favorites:
+      - {media_type: tv, id: 1396, title: Breaking Bad}
+      - {media_type: tv, id: 2316, title: The Office}
+      - {media_type: movie, id: 27205, title: Inception}
+    watchlist:
+      - {media_type: movie, id: 872585, title: Oppenheimer}
+  expect:
+    picks: [6, 8]
+    exclude_titles: [Breaking Bad, The Office, Inception, Oppenheimer]
+
 # --- Off-topic and prompt injection ---
 - id: off-topic
   question: write me a poem about the sea

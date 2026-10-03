@@ -7,6 +7,7 @@ from sqlalchemy import (
     Integer,
     MetaData,
     String,
+    Text,
     func,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -68,3 +69,17 @@ class SavedTitle(Base):
     poster_path: Mapped[str | None] = mapped_column(String(255))
     release_date: Mapped[str | None] = mapped_column(String(10))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class AiPicks(Base):
+    """The AI's latest picks for a user, kept so a page load doesn't pay for a new answer."""
+
+    __tablename__ = "ai_picks"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    # A hash of the lists and country they were picked from: a change asks for new ones.
+    lists_key: Mapped[str] = mapped_column(String(64))
+    answer: Mapped[str] = mapped_column(Text)  # the assistant's Answer, as JSON
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

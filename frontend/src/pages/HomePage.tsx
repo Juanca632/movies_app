@@ -1,3 +1,4 @@
+import AiPicksRow from "../components/AiPicksRow";
 import Hero from "../components/Hero";
 import MoodRow from "../components/MoodRow";
 import { BecauseYouLikedRows, CategoryRow, PopularPeopleRow, TopPicksRow } from "../components/rows";
@@ -11,6 +12,7 @@ function HomePage() {
       <Hero />
       <div className="relative z-10 -mt-4 flex flex-col gap-10 sm:gap-12 lg:-mt-24">
         <MoodRow />
+        <AiPicksRow />
         <TopPicksRow />
         <CategoryRow title="Now Playing in Theaters" mediaType="movie" category="now_playing" />
         <CategoryRow title="Trending Movies" mediaType="movie" category="popular" />

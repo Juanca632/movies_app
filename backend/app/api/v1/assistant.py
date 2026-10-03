@@ -10,9 +10,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.api.deps import AssistantDep, MediaServiceDep, OptionalSessionmakerDep
 from app.api.session import SESSION_COOKIE, SettingsDep
 from app.clients.tmdb import TMDBError
-from app.schemas.assistant import AskRequest, AssistantEvent, Failure, PickRef, Taste
-from app.schemas.me import SavedTitle
-from app.services.assistant import MAX_TASTE, AssistantError
+from app.schemas.assistant import AskRequest, AssistantEvent, Failure, Taste
+from app.services.assistant import MAX_TASTE, AssistantError, taste_from
 from app.services.auth import AuthService
 from app.services.lists import ListsService
 
@@ -26,10 +25,6 @@ UNAVAILABLE = "The assistant is not available right now. Try again later."
 def _client_ip(request: Request) -> str:
     # Both nginx and Vercel put the visitor's address in X-Real-IP.
     return request.headers.get("x-real-ip") or (request.client.host if request.client else "?")
-
-
-def _refs(titles: list[SavedTitle]) -> list[PickRef]:
-    return [PickRef(media_type=t.media_type, id=t.id, title=t.title[:200]) for t in titles]
 
 
 async def get_taste(
@@ -59,9 +54,7 @@ async def get_taste(
     except SQLAlchemyError:
         log.exception("could not load the user's lists for the assistant")
         return None
-    if not favorites and not watchlist:
-        return None
-    return Taste(favorites=_refs(favorites), watchlist=_refs(watchlist))
+    return taste_from(favorites, watchlist)
 
 
 TasteDep = Annotated[Taste | None, Depends(get_taste)]

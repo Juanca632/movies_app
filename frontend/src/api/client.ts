@@ -28,9 +28,12 @@ export class ApiError extends Error {
   }
 }
 
-/** GET a JSON endpoint of the backend. `signal` lets React Query cancel stale requests. */
-export async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const timeout = AbortSignal.timeout(TIMEOUT_MS);
+/**
+ * GET a JSON endpoint of the backend. `signal` lets React Query cancel stale requests;
+ * `timeoutMs` is for the few endpoints that may take longer, like the AI's.
+ */
+export async function getJson<T>(path: string, signal?: AbortSignal, timeoutMs = TIMEOUT_MS): Promise<T> {
+  const timeout = AbortSignal.timeout(timeoutMs);
   const response = await fetch(`${API_URL}/${path}`, {
     signal: signal ? anySignal([signal, timeout]) : timeout,
   });

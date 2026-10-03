@@ -1,8 +1,8 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
-from app.api.deps import DbDep, MediaServiceDep
+from app.api.deps import AssistantDep, DbDep, MediaServiceDep
 from app.api.session import (
     AuthServiceDep,
     CurrentUserDep,
@@ -10,8 +10,10 @@ from app.api.session import (
     SettingsDep,
     clear_session_cookie,
 )
+from app.schemas.assistant import Answer
 from app.schemas.me import ForYou, ListKind, Profile, SavedTitle
 from app.schemas.media import MediaType
+from app.services.ai_picks import AiPicksService
 from app.services.lists import MAX_PER_LIST, ListFullError, ListsService
 from app.services.recommendations import cached_for_you
 
@@ -60,6 +62,24 @@ async def delete_account(
 async def recommendations(lists: ListsDep, media: MediaServiceDep) -> ForYou:
     favorites, watchlist = await lists.titles("favorite"), await lists.titles("watchlist")
     return await cached_for_you(media, favorites, watchlist)
+
+
+@router.get(
+    "/ai-picks",
+    summary="Titles the AI picked from the signed-in user's lists",
+    description="Kept and reused: new picks are only made when the lists or the country "
+    "changed, at most once a day, so the first load after a change can take a few seconds. "
+    "Null with nothing saved, or when the assistant is not available.",
+)
+async def ai_picks(
+    lists: ListsDep,
+    db: DbDep,
+    assistant: AssistantDep,
+    user: CurrentUserDep,
+    region: Annotated[str, Query(pattern="^[A-Z]{2}$")] = "US",
+) -> Answer | None:
+    favorites, watchlist = await lists.titles("favorite"), await lists.titles("watchlist")
+    return await AiPicksService(db, assistant, user.id).picks(favorites, watchlist, region)
 
 
 # After the fixed paths above: "/{kind}" would match them and answer 422.

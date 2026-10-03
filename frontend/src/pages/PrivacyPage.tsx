@@ -74,6 +74,10 @@ function PrivacyPage() {
           When you ask the AI assistant while signed in, the titles you saved most recently (up to 15 from each list) go to
           Anthropic with your question, so the answer fits your taste. Those answers are never cached or shown to anyone else.
         </p>
+        <p>
+          The same titles are sent to Anthropic, about once a day at most and only after your lists change, to make the AI
+          picks on the home page. The latest picks are stored with your account and deleted with it.
+        </p>
       </Section>
 
       <Section title="What we don't do">
