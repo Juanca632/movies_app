@@ -1,7 +1,7 @@
 import AiPicksRow from "../components/AiPicksRow";
 import Hero from "../components/Hero";
 import MoodRow from "../components/MoodRow";
-import { BecauseYouLikedRows, CategoryRow, PopularPeopleRow, TopPicksRow } from "../components/rows";
+import { BecauseYouLikedRow, CategoryRow, PopularPeopleRow, TopPicksRow } from "../components/rows";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 
 function HomePage() {
@@ -16,7 +16,7 @@ function HomePage() {
         <TopPicksRow />
         <CategoryRow title="Now Playing in Theaters" mediaType="movie" category="now_playing" />
         <CategoryRow title="Trending Movies" mediaType="movie" category="popular" />
-        <BecauseYouLikedRows />
+        <BecauseYouLikedRow />
         <PopularPeopleRow title="Popular Stars" />
         <CategoryRow title="Coming Soon" mediaType="movie" category="upcoming" />
         <CategoryRow title="Popular TV Shows" mediaType="tv" category="popular" />

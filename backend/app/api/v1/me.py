@@ -60,7 +60,7 @@ async def delete_account(
 @router.get(
     "/recommendations",
     summary="Recommendations from the signed-in user's lists",
-    description="Top picks drawn from both lists, plus rows of titles like recent favourites. "
+    description="Top picks drawn from both lists, plus titles like each recent favourite. "
     "Titles already saved are left out; empty lists give empty recommendations.",
 )
 async def recommendations(lists: ListsDep, media: MediaServiceDep) -> ForYou:
