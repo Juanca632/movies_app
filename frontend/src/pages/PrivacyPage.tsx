@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 
-const UPDATED = "September 30, 2026";
+const UPDATED = "October 3, 2026";
 const ISSUES = "https://github.com/Juanca632/movies_app/issues";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -64,11 +64,15 @@ function PrivacyPage() {
         </ul>
         <p>
           We never see your Google password, and we ask Google for nothing beyond your basic profile. This data is used only
-          to sign you in and show your lists. It lives in a database hosted by{" "}
+          to sign you in, show your lists and recommend titles from them. It lives in a database hosted by{" "}
           <a href="https://neon.com/privacy-policy" target="_blank" rel="noreferrer" className={external}>
             Neon
           </a>{" "}
           in the United States.
+        </p>
+        <p>
+          When you ask the AI assistant while signed in, the titles you saved most recently (up to 15 from each list) go to
+          Anthropic with your question, so the answer fits your taste. Those answers are never cached or shown to anyone else.
         </p>
       </Section>
 

@@ -74,6 +74,7 @@ Rules:
   - `discover` returns only titles streaming (subscription) in the user's country, unless the user asks for new releases or theaters (`include_not_streaming`). The most popular titles are often still in theaters.
   - Tool input is validated with Pydantic before anything runs, since prompt injection could steer it.
 - The model has no memory: the frontend resends a recap of up to 5 earlier turns (question and picked titles).
+- Personalised for signed-in users: `/ask` reads the session cookie (`get_taste` in `api/v1/assistant.py`) and adds the newest saved titles (up to 15 per list) to the user message; the prompt says how to use them (taste, `similar_to` on favourites, never re-recommend saved titles, the request comes first). Personal answers are never cached. Anything failing there just means an anonymous answer.
 - Cost is about 1-2 cents per question. Limits are in memory: 10/hour per IP and 300/day for the whole site. Answers are cached for 1 hour, first questions only. Tokens and cost are logged. Without `ANTHROPIC_API_KEY`, `/ask` returns 503.
 - Frontend: `components/AssistantPanel.tsx`, a side panel (≥ sm) or bottom sheet on phones, open while the URL has `?ask`.
   - `lib/askPanel.ts`: a `?ask=question` link asks it on arrival.
@@ -82,7 +83,7 @@ Rules:
   - Entry points: navbar, `BottomNav`, `MoodRow` on the home page (a row of moods with backdrops, plus a field; it reuses `Row`), and the search box for queries of 3+ words.
   - AI styling: ✦ gradient icon and the thin `ai-ring` border (`ai-*` utilities).
 - Evals (`backend/evals/`):
-  - `cases.yaml`: about 24 requests with rules. The rules describe the kind of title, never exact titles, because TMDB changes daily.
+  - `cases.yaml`: about 27 requests with rules (some with a signed-in user's `taste`). The rules describe the kind of title, never exact titles, because TMDB changes daily.
   - `checks.py`: the rules, tested in `tests/test_evals_checks.py`.
   - `run.py`: runs the cases and records every tool call. Reports go to `evals/results/` (git-ignored).
   - `judge.py`: optional `--judge` using Claude Opus 5.
@@ -122,6 +123,6 @@ Rules:
 - Phase 0 (done): backend rewritten with httpx, unified API, search, Docker, CI.
 - Phase 1 (done): frontend rewrite and redesign, search with suggestions, tests. App name still open (proposal: "Marquee"). Next.js postponed; components and hooks are portable.
 - Phase 2 (done): Postgres, Google sign-in (httpOnly cookie), favourites and "My list", live in production (Neon + Google).
-- Phase 3 (in progress): natural-language "what to watch tonight" assistant and its evals (done). Recommendation rows from the user's lists (done). Next: the assistant using the user's taste, group mode, embeddings (pgvector).
+- Phase 3 (in progress): natural-language "what to watch tonight" assistant and its evals (done). Recommendation rows from the user's lists and an assistant that knows the user's taste (done). Next: group mode, embeddings (pgvector).
 - Phase 4 (almost done): deployed on Vercel, README with screenshots in `docs/screenshots/`. Missing: custom domain and, if needed, the Firewall rate-limit rule.
 - Also done: directors/creators and crew credits, sagas, seasons and episodes, release calendar, link previews, browse by genre/service, country with flags, hover previews, trailers, awards and scores (OMDb), security review.

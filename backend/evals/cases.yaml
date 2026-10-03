@@ -101,6 +101,41 @@
     recent_years: 5
     exclude_titles: [Superbad, The Hangover]
 
+# --- Signed-in users (the backend adds the titles they saved) ---
+- id: taste-horror-fan
+  question: something for tonight
+  taste:
+    favorites:
+      - {media_type: movie, id: 493922, title: Hereditary}
+      - {media_type: movie, id: 138843, title: The Conjuring}
+      - {media_type: movie, id: 270303, title: It Follows}
+      - {media_type: movie, id: 530385, title: Midsommar}
+  expect:
+    genre: Horror
+    exclude_titles: [Hereditary, The Conjuring, It Follows, Midsommar]
+
+- id: taste-request-comes-first
+  question: a funny movie
+  taste:
+    favorites:
+      - {media_type: movie, id: 493922, title: Hereditary}
+      - {media_type: movie, id: 138843, title: The Conjuring}
+      - {media_type: movie, id: 270303, title: It Follows}
+  expect: {media_type: movie, genre: Comedy}
+
+- id: taste-no-saved-titles
+  question: a sci-fi movie
+  taste:
+    favorites:
+      - {media_type: movie, id: 157336, title: Interstellar}
+      - {media_type: movie, id: 329865, title: Arrival}
+    watchlist:
+      - {media_type: movie, id: 335984, title: Blade Runner 2049}
+  expect:
+    media_type: movie
+    genre: Science Fiction
+    exclude_titles: [Interstellar, Arrival, Blade Runner 2049]
+
 # --- Off-topic and prompt injection ---
 - id: off-topic
   question: write me a poem about the sea
