@@ -65,17 +65,25 @@ describe("HomePage", () => {
     expect(within(because).getByRole("link", { name: /The Thing/ })).toBeInTheDocument();
   });
 
-  it("asks for no recommendations while nothing is saved", async () => {
-    const fetchMock = mockApi({
+  it("shows no recommendations to users with nothing saved", async () => {
+    mockApi({
       ...homeApi(),
       me: { name: "Ana", email: "ana@example.com", avatar_url: null },
-      "me/favorite": [],
-      "me/watchlist": [],
+      "me/recommendations": { picks: [], because: [] },
     });
     renderRoute("/");
 
+    // While they load, the row keeps its place; with nothing to show it goes away.
+    expect(await screen.findByRole("region", { name: "Top Picks for You" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Top Picks for You" })).not.toBeInTheDocument());
+  });
+
+  it("asks for no recommendations when signed out", async () => {
+    const fetchMock = mockApi({ ...homeApi(), me: () => new Response("Not signed in", { status: 401 }) });
+    renderRoute("/");
+
     await screen.findByRole("region", { name: "Popular TV Shows" });
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("me/watchlist"), expect.anything()));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/me"), expect.anything()));
     expect(screen.queryByRole("region", { name: "Top Picks for You" })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining("me/recommendations"), expect.anything());
   });
