@@ -216,5 +216,17 @@ export interface SavedTitle {
   saved_at: string;
 }
 
+/** Titles like one of the user's favourites. */
+export interface BecauseYouLiked {
+  source: SavedTitle;
+  results: MediaSummary[];
+}
+
+/** Recommendations drawn from the user's lists. */
+export interface ForYou {
+  picks: MediaSummary[];
+  because: BecauseYouLiked[];
+}
+
 /** Whether sign-in exists at all on this server, and who is signed in. */
 export type Account = { status: "unavailable" } | { status: "signed-out" } | { status: "signed-in"; profile: Profile };

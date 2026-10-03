@@ -7,6 +7,7 @@ import type {
   Category,
   Collection,
   DiscoverFilters,
+  ForYou,
   Genre,
   ListKind,
   MediaDetail,
@@ -168,6 +169,7 @@ export const useSearch = (query: string, page: number) =>
 // anything else going wrong also just hides sign-in, the rest of the app does not need it.
 const ACCOUNT_KEY = ["me"] as const;
 const listKey = (kind: ListKind) => ["me", kind] as const;
+const FOR_YOU_KEY = ["me", "for-you"] as const;
 
 async function fetchAccount(signal: AbortSignal): Promise<Account> {
   try {
@@ -207,7 +209,22 @@ export const useToggleSaved = (kind: ListKind) => {
       return { previous };
     },
     onError: (_error, _vars, context) => queryClient.setQueryData(listKey(kind), context?.previous),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: listKey(kind) }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: listKey(kind) });
+      queryClient.invalidateQueries({ queryKey: FOR_YOU_KEY });
+    },
+  });
+};
+
+/** Recommendations from the user's lists; only asked for once they have saved something. */
+export const useForYou = () => {
+  const favorites = useSavedList("favorite");
+  const watchlist = useSavedList("watchlist");
+  const hasSaved = Boolean(favorites.data?.length || watchlist.data?.length);
+  return useQuery({
+    queryKey: FOR_YOU_KEY,
+    queryFn: ({ signal }) => getJson<ForYou>("me/recommendations", signal),
+    enabled: hasSaved,
   });
 };
 

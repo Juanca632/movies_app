@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from app.schemas.media import MediaType
+from app.schemas.media import MediaSummary, MediaType
 
 ListKind = Literal["favorite", "watchlist"]
 
@@ -23,3 +23,17 @@ class SavedTitle(BaseModel):
     poster_path: str | None = None
     release_date: str | None = None
     saved_at: datetime
+
+
+class BecauseYouLiked(BaseModel):
+    """Titles like one of the user's favourites."""
+
+    source: SavedTitle
+    results: list[MediaSummary]
+
+
+class ForYou(BaseModel):
+    """Recommendations drawn from the user's lists."""
+
+    picks: list[MediaSummary]  # best first
+    because: list[BecauseYouLiked]  # one row per recent favourite

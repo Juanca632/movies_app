@@ -1,6 +1,6 @@
 import Hero from "../components/Hero";
 import MoodRow from "../components/MoodRow";
-import { CategoryRow, PopularPeopleRow } from "../components/rows";
+import { BecauseYouLikedRows, CategoryRow, PopularPeopleRow, TopPicksRow } from "../components/rows";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 
 function HomePage() {
@@ -11,8 +11,10 @@ function HomePage() {
       <Hero />
       <div className="relative z-10 -mt-4 flex flex-col gap-10 sm:gap-12 lg:-mt-24">
         <MoodRow />
+        <TopPicksRow />
         <CategoryRow title="Now Playing in Theaters" mediaType="movie" category="now_playing" />
         <CategoryRow title="Trending Movies" mediaType="movie" category="popular" />
+        <BecauseYouLikedRows />
         <PopularPeopleRow title="Popular Stars" />
         <CategoryRow title="Coming Soon" mediaType="movie" category="upcoming" />
         <CategoryRow title="Popular TV Shows" mediaType="tv" category="popular" />
