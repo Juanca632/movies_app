@@ -25,7 +25,7 @@ def movie(movie_id: int, recommended: list[int] = ()) -> dict:
 
 # Two favourites and a planned one; 11 is recommended by all three, 3 is already a favourite.
 CATALOGUE = {
-    1: movie(1, [10, 11, 12, 13, 3]),
+    1: movie(1, [10, 11, 12, 13, 18, 3]),
     3: movie(3, [11, 14, 15, 16, 17]),
     5: movie(5, [12, 11]),
 }
@@ -72,10 +72,11 @@ async def test_recommendations_rank_titles_liked_from_several_saves(signed_in, t
     picks = [p["id"] for p in body["picks"]]
     assert picks[0] == 11
     assert 3 not in picks
-    assert sorted(picks) == [10, 11, 12, 13, 14, 15, 16, 17]
+    assert sorted(picks) == [10, 11, 12, 13, 14, 15, 16, 17, 18]
     # One row per favourite, newest first, without saved titles.
     rows = [(row["source"]["id"], [r["id"] for r in row["results"]]) for row in body["because"]]
-    assert rows == [(3, [11, 14, 15, 16, 17]), (1, [10, 11, 12, 13])]
+    # 11 is already in the row for 3, so the row for 1 doesn't repeat it.
+    assert rows == [(3, [11, 14, 15, 16, 17]), (1, [10, 12, 13, 18])]
 
 
 async def test_recommendations_are_remembered_until_the_lists_change(
@@ -122,7 +123,7 @@ class FakeMedia:
 async def test_titles_gone_from_tmdb_are_skipped():
     result = await for_you(FakeMedia(), [saved(404), saved(1)], [])
 
-    assert [p.id for p in result.picks] == [10, 11, 12, 13, 3]
+    assert [p.id for p in result.picks] == [10, 11, 12, 13, 18, 3]
     assert [row.source.id for row in result.because] == [1]
 
 
@@ -132,6 +133,14 @@ async def test_short_rows_are_left_out():
 
     assert [p.id for p in result.picks] == [12, 11]
     assert result.because == []
+
+
+async def test_a_row_mostly_repeating_an_earlier_one_gives_way():
+    # Movie 3's row takes 11, 14, 15, 16 and 17; movie 5 would only add 12, too short a row.
+    result = await for_you(FakeMedia(), [saved(3), saved(5), saved(1)], [])
+
+    rows = [(row.source.id, [r.id for r in row.results]) for row in result.because]
+    assert rows == [(3, [11, 14, 15, 16, 17]), (1, [10, 12, 13, 18])]
 
 
 async def test_fails_when_no_saved_title_can_be_read():
