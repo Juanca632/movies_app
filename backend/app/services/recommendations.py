@@ -1,6 +1,7 @@
 import asyncio
 
 from app.clients.tmdb import TMDBError
+from app.core.cache import TTLStore
 from app.schemas.me import BecauseYouLiked, ForYou, SavedTitle
 from app.schemas.media import MediaSummary
 from app.services.media import MediaService
@@ -14,6 +15,10 @@ MAX_PICKS = 20
 MAX_BECAUSE_ROWS = 3
 # A "because you liked" row with fewer titles looks broken.
 MIN_ROW = 4
+
+# Recomputing takes up to 20 TMDB requests, and a home page reload asks again.
+CACHE_TTL = 600  # seconds
+_cache = TTLStore(512)
 
 Key = tuple[str, int]
 
@@ -65,3 +70,16 @@ async def for_you(
 
     ranked = sorted(scores, key=lambda key: (-scores[key], -titles[key].vote_count))
     return ForYou(picks=[titles[key] for key in ranked[:MAX_PICKS]], because=because)
+
+
+async def cached_for_you(
+    media: MediaService, favorites: list[SavedTitle], watchlist: list[SavedTitle]
+) -> ForYou:
+    """`for_you`, remembered for a while. The key is the lists themselves: saving or removing a
+    title changes it, so nothing needs invalidating, on whichever server instance."""
+    key = (tuple(map(_key, favorites)), tuple(map(_key, watchlist)))
+    result = _cache.get(key)
+    if result is None:
+        result = await for_you(media, favorites, watchlist)
+        _cache.set(key, result, CACHE_TTL)
+    return result

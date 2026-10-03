@@ -216,15 +216,16 @@ export const useToggleSaved = (kind: ListKind) => {
   });
 };
 
-/** Recommendations from the user's lists; only asked for once they have saved something. */
+/**
+ * Recommendations from the user's lists, asked for as soon as we know they are signed in (not
+ * after loading the lists: one round trip less). Nothing saved simply gives empty rows.
+ */
 export const useForYou = () => {
-  const favorites = useSavedList("favorite");
-  const watchlist = useSavedList("watchlist");
-  const hasSaved = Boolean(favorites.data?.length || watchlist.data?.length);
+  const { data: account } = useAccount();
   return useQuery({
     queryKey: FOR_YOU_KEY,
     queryFn: ({ signal }) => getJson<ForYou>("me/recommendations", signal),
-    enabled: hasSaved,
+    enabled: account?.status === "signed-in",
   });
 };
 

@@ -4,7 +4,9 @@ import pytest
 import respx
 
 from app.clients.tmdb import TMDBNotFoundError, TMDBUnavailableError
+from app.core.cache import TTLStore
 from app.schemas.me import SavedTitle
+from app.services import recommendations
 from app.services.media import to_summary
 from app.services.recommendations import for_you
 from tests.accounts import ORIGIN, sign_in
@@ -27,6 +29,11 @@ CATALOGUE = {
     3: movie(3, [11, 14, 15, 16, 17]),
     5: movie(5, [12, 11]),
 }
+
+
+@pytest.fixture(autouse=True)
+def empty_cache(monkeypatch):
+    monkeypatch.setattr(recommendations, "_cache", TTLStore(16))
 
 
 @pytest.fixture
@@ -69,6 +76,28 @@ async def test_recommendations_rank_titles_liked_from_several_saves(signed_in, t
     # One row per favourite, newest first, without saved titles.
     rows = [(row["source"]["id"], [r["id"] for r in row["results"]]) for row in body["because"]]
     assert rows == [(3, [11, 14, 15, 16, 17]), (1, [10, 11, 12, 13])]
+
+
+async def test_recommendations_are_remembered_until_the_lists_change(
+    signed_in, tmdb_movies, monkeypatch
+):
+    computed = []
+
+    async def spy(media, favorites, watchlist):
+        computed.append([t.id for t in favorites])
+        return await for_you(media, favorites, watchlist)
+
+    monkeypatch.setattr(recommendations, "for_you", spy)
+    await signed_in.put("/api/v1/me/favorite/movie/1", headers=SAME_SITE)
+
+    first = (await signed_in.get("/api/v1/me/recommendations")).json()
+    again = (await signed_in.get("/api/v1/me/recommendations")).json()
+    await signed_in.put("/api/v1/me/favorite/movie/3", headers=SAME_SITE)
+    changed = (await signed_in.get("/api/v1/me/recommendations")).json()
+
+    assert again == first
+    assert computed == [[1], [3, 1]]
+    assert [row["source"]["id"] for row in changed["because"]] == [3, 1]
 
 
 def saved(movie_id: int) -> SavedTitle:
