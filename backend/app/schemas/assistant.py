@@ -22,6 +22,13 @@ class Turn(BaseModel):
     picks: Annotated[list[PickRef], Field(max_length=8)] = []
 
 
+class Taste(BaseModel):
+    """What a signed-in user saved, newest first: their taste, and titles they already know."""
+
+    favorites: list[PickRef] = []
+    watchlist: list[PickRef] = []
+
+
 class AskRequest(BaseModel):
     question: Question
     region: Annotated[str, StringConstraints(pattern="^[A-Z]{2}$")] = "US"

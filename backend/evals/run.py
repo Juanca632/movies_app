@@ -85,7 +85,7 @@ async def _run_case(
     error: str | None = None
     started = time.perf_counter()
     try:
-        async for event in service.ask(case.question, case.region, case.history):
+        async for event in service.ask(case.question, case.region, case.history, case.taste):
             if isinstance(event, Answer):
                 answer = event
             elif isinstance(event, Failure):
