@@ -54,15 +54,20 @@ describe("HomePage", () => {
       "me/watchlist": [],
       "me/recommendations": {
         picks: [media({ id: 21, title: "Aliens" })],
-        because: [{ source: alien, results: [media({ id: 22, title: "The Thing" })] }],
+        because: [
+          { source: alien, results: [media({ id: 22, title: "The Thing" })] },
+          { source: { ...alien, id: 23, title: "Heat" }, results: [media({ id: 24, title: "Collateral" })] },
+        ],
       },
     });
     renderRoute("/");
 
     const picks = await screen.findByRole("region", { name: "Top Picks for You" });
     expect(await within(picks).findByRole("link", { name: /Aliens/ })).toHaveAttribute("href", "/movie/21/aliens");
-    const because = screen.getByRole("region", { name: "Because You Liked Alien" });
-    expect(within(because).getByRole("link", { name: /The Thing/ })).toBeInTheDocument();
+    // One "because you liked" row, for one of the favourites.
+    const because = screen.getAllByRole("region", { name: /^Because You Liked/ });
+    expect(because).toHaveLength(1);
+    expect(within(because[0]).getByRole("link", { name: /The Thing|Collateral/ })).toBeInTheDocument();
   });
 
   it("shows no recommendations to users with nothing saved", async () => {

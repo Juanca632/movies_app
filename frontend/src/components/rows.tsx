@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { useForYou, useMediaList, usePopularPeople } from "../api/queries";
 import type { CastMember, Category, MediaSummary, MediaType, PersonSummary } from "../api/types";
@@ -80,10 +81,14 @@ export function TopPicksRow() {
   );
 }
 
-/** One row per recent favourite, Netflix style. */
-export function BecauseYouLikedRows() {
+/**
+ * "Because you liked" one of the recent favourites, a different one on each visit. Picked once
+ * per page view, so the row doesn't jump when the recommendations refetch.
+ */
+export function BecauseYouLikedRow() {
   const { data } = useForYou();
-  return data?.because.map((row) => (
-    <MediaRow key={`${row.source.media_type}-${row.source.id}`} title={`Because You Liked ${row.source.title}`} items={row.results} />
-  ));
+  const [luck] = useState(Math.random);
+  const rows = data?.because ?? [];
+  const row = rows[Math.floor(luck * rows.length)];
+  return row && <MediaRow title={`Because You Liked ${row.source.title}`} items={row.results} />;
 }

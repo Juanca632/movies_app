@@ -36,4 +36,4 @@ class ForYou(BaseModel):
     """Recommendations drawn from the user's lists."""
 
     picks: list[MediaSummary]  # best first
-    because: list[BecauseYouLiked]  # one row per recent favourite
+    because: list[BecauseYouLiked]  # one per recent favourite; the home page shows one at random
