@@ -1,4 +1,4 @@
-# MyMoviesApp — frontend
+# MoviesApp — frontend
 
 React 19 + TypeScript + Vite, styled with Tailwind 4. Talks only to the FastAPI backend (`/api/v1`), never to TMDB directly.
 

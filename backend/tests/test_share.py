@@ -39,7 +39,7 @@ async def test_movie_preview_describes_the_title(api):
     assert og(html, "og:description") == "A thief who steals corporate secrets through dreams."
     assert og(html, "og:image") == "https://image.tmdb.org/t/p/w780/back.jpg"
     assert og(html, "og:type") == "video.movie"
-    assert "<title>Inception (2010) · MyMoviesApp</title>" in html
+    assert "<title>Inception (2010) · MoviesApp</title>" in html
 
 
 @respx.mock
@@ -100,4 +100,4 @@ async def test_unknown_title_gets_the_generic_card(api):
     response = await api.get("/movie/404/missing")
 
     assert response.status_code == 404
-    assert og(response.text, "og:title") == "MyMoviesApp"
+    assert og(response.text, "og:title") == "MoviesApp"

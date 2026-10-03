@@ -11,7 +11,7 @@ from html import escape
 from app.schemas.media import MediaDetail
 from app.schemas.people import PersonDetail
 
-SITE_NAME = "MyMoviesApp"
+SITE_NAME = "MoviesApp"
 SITE_DESCRIPTION = (
     "Discover movies, TV shows and actors: what's in theaters, what's trending and where to "
     "watch it."
