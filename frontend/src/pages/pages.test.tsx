@@ -80,7 +80,7 @@ describe("HomePage", () => {
     await waitFor(() => expect(screen.queryByRole("region", { name: "Top Picks for You" })).not.toBeInTheDocument());
   });
 
-  it("shows the AI's picks with why it chose each one", async () => {
+  it("shows the AI's picks", async () => {
     mockApi({
       ...homeApi(),
       me: { name: "Ana", email: "ana@example.com", avatar_url: null },
@@ -94,7 +94,6 @@ describe("HomePage", () => {
 
     const row = await screen.findByRole("region", { name: "Picked for You by AI" });
     expect(await within(row).findByRole("link", { name: /The Witch/ })).toHaveAttribute("href", "/movie/30/the-witch");
-    expect(within(row).getByText("The same creeping dread as Hereditary.")).toBeInTheDocument();
     expect(within(row).getByText("Slow-burn horror, like your favorites.")).toBeInTheDocument();
   });
 

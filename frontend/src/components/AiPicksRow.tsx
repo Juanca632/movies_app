@@ -1,21 +1,12 @@
 import { useAiPicks } from "../api/queries";
-import type { Pick } from "../api/types";
 import { MediaCard } from "./cards";
 import { AiSparkIcon } from "./icons";
 import Row from "./Row";
 
-function PickCard({ pick }: { pick: Pick }) {
-  return (
-    <div>
-      <MediaCard item={pick.item} />
-      <p className="mt-1 line-clamp-3 text-xs leading-snug text-muted">{pick.reason}</p>
-    </div>
-  );
-}
-
 /**
- * The AI's own picks from the signed-in user's lists, each with why. Made on the server without
- * being asked and reused until the lists change, so most loads cost nothing.
+ * The AI's own picks from the signed-in user's lists, as plain cards like every other row; the
+ * AI's intro says why. Made on the server without being asked and reused until the lists change,
+ * so most loads cost nothing.
  */
 function AiPicksRow() {
   const query = useAiPicks();
@@ -26,7 +17,7 @@ function AiPicksRow() {
       description={query.data?.intro ?? (query.isLoading ? "Choosing titles from your taste…" : undefined)}
       items={query.data?.picks}
       getKey={(pick) => `${pick.item.media_type}-${pick.item.id}`}
-      renderItem={(pick) => <PickCard pick={pick} />}
+      renderItem={(pick) => <MediaCard item={pick.item} />}
       // A disabled query (signed out) is pending too, but has nothing to wait for.
       isPending={query.isLoading}
       isError={query.isError}
