@@ -1,6 +1,6 @@
 # MoviesApp
 
-Portfolio project: a streaming-style explorer for movies, TV shows and people on top of the TMDB API, with an AI assistant that recommends what to watch. Live demo (Vercel): https://movies-app-swart-xi.vercel.app
+Portfolio project: a streaming-style explorer for movies, TV shows and people on top of the TMDB API, with an AI assistant that recommends what to watch. Live demo (Vercel): https://moviesapp.juancrestrepo.dev
 
 ## Product
 
@@ -114,6 +114,7 @@ Rules:
 
 - Vercel (Hobby), with Git integration: `main` deploys to production and other branches to previews. The CD workflow (`cd.yml`) only tags a semver version and creates a GitHub release; it does not deploy.
 - `vercel.json` uses Services (beta): a `frontend` service (Vite, SPA fallback to `index.html`) and a `backend` service (FastAPI as a function, detected from `app/main.py`). `/api/*` goes to the backend.
+- Domain: `moviesapp.juancrestrepo.dev`, a `CNAME` to Vercel in Cloudflare DNS, set to "DNS only" (Cloudflare's proxy would clash with Vercel's certificate and firewall). `movies-app-swart-xi.vercel.app` redirects to it (308). `PUBLIC_URL`, `CORS_ORIGINS` (JSON list: this domain and the `vercel.app` one; unset, it falls back to the localhost dev origins) and the Google OAuth client (redirect URI `/api/v1/auth/google/callback`, authorized domain) use this domain; change all of them together, then redeploy (env changes only apply to new deployments). The app itself is same-origin, so CORS only matters for other sites. Installed PWAs are tied to the origin.
 - Secrets live in the Vercel project's environment variables. The rate limit is a Vercel Firewall rule (one per project on Hobby), configured in the dashboard.
 - **There must be no `pyproject.toml` in `backend/`**: Vercel prefers it over `requirements.txt` and would deploy without FastAPI. That is why ruff and pytest are configured in `ruff.toml` and `pytest.ini`.
 - `docker-compose.yml`: Postgres + backend (runs the migrations on start) + frontend (nginx on :3000, proxying `/api/` to the backend). Docker isn't available in the dev WSL, so the Dockerfiles are only validated by the CI `docker` job.
@@ -121,7 +122,6 @@ Rules:
 ## Known issues
 
 - The assistant's limits live in memory, per Vercel instance, so they are not exact.
-- The domain `mymoviesapp.xyz` shows as parked on Afternic (probably expired): check the registrar or use another domain.
 
 ## Roadmap
 
@@ -129,5 +129,5 @@ Rules:
 - Phase 1 (done): frontend rewrite and redesign, search with suggestions, tests. The app is called MoviesApp. Next.js postponed; components and hooks are portable.
 - Phase 2 (done): Postgres, Google sign-in (httpOnly cookie), favourites and "My list", live in production (Neon + Google).
 - Phase 3 (in progress): natural-language "what to watch tonight" assistant and its evals (done). Recommendation rows from the user's lists and an assistant that knows the user's taste, AI picks on the home page (done). Next: group mode, embeddings (pgvector).
-- Phase 4 (almost done): deployed on Vercel, README with screenshots in `docs/screenshots/`. Missing: custom domain and, if needed, the Firewall rate-limit rule.
+- Phase 4 (almost done): deployed on Vercel, README with screenshots in `docs/screenshots/`, custom domain. Missing: if needed, the Firewall rate-limit rule.
 - Also done: directors/creators and crew credits, sagas, seasons and episodes, release calendar, link previews, browse by genre/service, country with flags, hover previews, trailers, awards and scores (OMDb), security review.
