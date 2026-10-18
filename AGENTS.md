@@ -1,6 +1,6 @@
 # MoviesApp
 
-Portfolio project: a streaming-style explorer for movies, TV shows and people on top of the TMDB API, with an AI assistant that recommends what to watch. Live demo (Vercel): https://movies-app-swart-xi.vercel.app
+Portfolio project: a streaming-style explorer for movies, TV shows and people on top of the TMDB API, with an AI assistant that recommends what to watch. Live demo (Vercel): https://moviesapp.juancrestrepo.dev
 
 ## Product
 
@@ -63,6 +63,10 @@ Rules:
 - `src/api/`: `client.ts` (`getJson`, `sendJson`, `ApiError`; base URL `VITE_API_URL`, else `/api/v1`: same origin everywhere, through Vite's dev proxy (which keeps the Host header, needed for sign-in) locally), `queries.ts` (React Query hooks), `types.ts`.
 - `src/components/`: presentational components; `src/pages/`: one per route (`MediaPage` serves both movies and TV).
 - Accounts: `useAccount` (signed-in / signed-out / unavailable, from `GET /me`), `useSavedList`, `useToggleSaved` (optimistic) and `useSignOut` in `queries.ts`. `AccountMenu` in the navbar, `SaveButtons` on the detail page and hover preview, `pages/MyListPage.tsx`, and `AiPicksRow` (`useAiPicks`, 60 s timeout), `TopPicksRow` / `BecauseYouLikedRow` (one recent favourite at random per visit) on the home page (`useForYou`, asked for as soon as `/me` says signed in, with a skeleton meanwhile). Sign-in is a plain link to `/api/v1/auth/google/login?next=`. Without accounts on the server none of it renders.
+- Installable PWA (`vite-plugin-pwa` in `vite.config.ts`, icons in `public/`):
+  - The service worker precaches only hashed bundles, icons and `public/offline.html`. Pages are network-only (the offline page when that fails) and `/api` never goes through it, so a deploy shows up on the next load without clearing caches. Never cache `index.html` or API responses there.
+  - `src/lib/serviceWorker.ts`: a deploy takes over at once (`skipWaiting` + `clientsClaim`) and the running page switches on its next in-app navigation (a full load); it also looks for updates when the app returns to the foreground and hourly. A chunk missing after a deploy (`vite:preloadError`) reloads once.
+  - `nginx.conf` serves `index.html`, `sw.js` and the manifest with `no-cache`; Vercel already revalidates them.
 - Country: `src/lib/region.ts`, a `useSyncExternalStore` store detected from `navigator.languages` and saved in `localStorage`.
 - Design: dark streaming style, amber accent, Inter + Outfit fonts.
 - Public URLs: `/movie/:id/:slug`, `/tv-show/:id/:slug?season=` (kept for old links), `/person/:id/:slug`, `/search?q=`, `/browse/movie|tv?genre=&provider=&sort=`, `/calendar?kind=theaters|home|tv&month=YYYY-MM`, `/my-list?tab=watchlist|favorites`, `/privacy`, and `?ask=` on any URL for the AI assistant.
@@ -110,6 +114,7 @@ Rules:
 
 - Vercel (Hobby), with Git integration: `main` deploys to production and other branches to previews. The CD workflow (`cd.yml`) only tags a semver version and creates a GitHub release; it does not deploy.
 - `vercel.json` uses Services (beta): a `frontend` service (Vite, SPA fallback to `index.html`) and a `backend` service (FastAPI as a function, detected from `app/main.py`). `/api/*` goes to the backend.
+- Domain: `moviesapp.juancrestrepo.dev`, a `CNAME` to Vercel in Cloudflare DNS, set to "DNS only" (Cloudflare's proxy would clash with Vercel's certificate and firewall). `movies-app-swart-xi.vercel.app` redirects to it (308). `PUBLIC_URL`, `CORS_ORIGINS` (JSON list: this domain and the `vercel.app` one; unset, it falls back to the localhost dev origins) and the Google OAuth client (redirect URI `/api/v1/auth/google/callback`, authorized domain) use this domain; change all of them together, then redeploy (env changes only apply to new deployments). The app itself is same-origin, so CORS only matters for other sites. Installed PWAs are tied to the origin.
 - Secrets live in the Vercel project's environment variables. The rate limit is a Vercel Firewall rule (one per project on Hobby), configured in the dashboard.
 - **There must be no `pyproject.toml` in `backend/`**: Vercel prefers it over `requirements.txt` and would deploy without FastAPI. That is why ruff and pytest are configured in `ruff.toml` and `pytest.ini`.
 - `docker-compose.yml`: Postgres + backend (runs the migrations on start) + frontend (nginx on :3000, proxying `/api/` to the backend). Docker isn't available in the dev WSL, so the Dockerfiles are only validated by the CI `docker` job.
@@ -117,7 +122,6 @@ Rules:
 ## Known issues
 
 - The assistant's limits live in memory, per Vercel instance, so they are not exact.
-- The domain `mymoviesapp.xyz` shows as parked on Afternic (probably expired): check the registrar or use another domain.
 
 ## Roadmap
 
@@ -125,5 +129,5 @@ Rules:
 - Phase 1 (done): frontend rewrite and redesign, search with suggestions, tests. The app is called MoviesApp. Next.js postponed; components and hooks are portable.
 - Phase 2 (done): Postgres, Google sign-in (httpOnly cookie), favourites and "My list", live in production (Neon + Google).
 - Phase 3 (in progress): natural-language "what to watch tonight" assistant and its evals (done). Recommendation rows from the user's lists and an assistant that knows the user's taste, AI picks on the home page (done). Next: group mode, embeddings (pgvector).
-- Phase 4 (almost done): deployed on Vercel, README with screenshots in `docs/screenshots/`. Missing: custom domain and, if needed, the Firewall rate-limit rule.
+- Phase 4 (almost done): deployed on Vercel, README with screenshots in `docs/screenshots/`, custom domain. Missing: if needed, the Firewall rate-limit rule.
 - Also done: directors/creators and crew credits, sagas, seasons and episodes, release calendar, link previews, browse by genre/service, country with flags, hover previews, trailers, awards and scores (OMDb), security review.

@@ -2,7 +2,7 @@
 
 A streaming-style explorer for movies, TV shows and people, built on the TMDB API: see what's trending, filter by genre and by the services you can actually watch in your country, open trailers, check awards and critic scores, ask an AI assistant what to watch tonight and, once signed in, get recommendations from your own favorites.
 
-**Live demo → [movies-app-swart-xi.vercel.app](https://movies-app-swart-xi.vercel.app)**
+**Live demo → [moviesapp.juancrestrepo.dev](https://moviesapp.juancrestrepo.dev)**
 
 ![Home page with the featured movie and rows of posters](docs/screenshots/home.jpg)
 
@@ -53,7 +53,7 @@ A streaming-style explorer for movies, TV shows and people, built on the TMDB AP
 
 | | |
 |---|---|
-| **Frontend** | React 19, TypeScript, Vite 6, Tailwind CSS 4, TanStack Query, React Router 7 |
+| **Frontend** | React 19, TypeScript, Vite 6, Tailwind CSS 4, TanStack Query, React Router 7; installable PWA (vite-plugin-pwa) |
 | **Backend** | Python 3.12, FastAPI, httpx (async client with retries and a TTL cache), pydantic-settings |
 | **Accounts** | Google sign-in (OAuth code flow with PKCE, run by the backend), httpOnly session cookie, Postgres on [Neon](https://neon.tech) with SQLAlchemy 2 (async) and Alembic |
 | **Data** | [TMDB](https://www.themoviedb.org/) (titles, people, images, trailers; streaming data by JustWatch) and [OMDb](https://www.omdbapi.com/) (awards and critic scores) |
