@@ -53,7 +53,7 @@ A streaming-style explorer for movies, TV shows and people, built on the TMDB AP
 
 | | |
 |---|---|
-| **Frontend** | React 19, TypeScript, Vite 6, Tailwind CSS 4, TanStack Query, React Router 7 |
+| **Frontend** | React 19, TypeScript, Vite 6, Tailwind CSS 4, TanStack Query, React Router 7; installable PWA (vite-plugin-pwa) |
 | **Backend** | Python 3.12, FastAPI, httpx (async client with retries and a TTL cache), pydantic-settings |
 | **Accounts** | Google sign-in (OAuth code flow with PKCE, run by the backend), httpOnly session cookie, Postgres on [Neon](https://neon.tech) with SQLAlchemy 2 (async) and Alembic |
 | **Data** | [TMDB](https://www.themoviedb.org/) (titles, people, images, trailers; streaming data by JustWatch) and [OMDb](https://www.omdbapi.com/) (awards and critic scores) |
