@@ -2,7 +2,7 @@
 
 A streaming-style explorer for movies, TV shows and people, built on the TMDB API: see what's trending, filter by genre and by the services you can actually watch in your country, open trailers, check awards and critic scores, ask an AI assistant what to watch tonight and, once signed in, get recommendations from your own favorites.
 
-**Live demo → [movies-app-swart-xi.vercel.app](https://movies-app-swart-xi.vercel.app)**
+**Live demo → [moviesapp.juancrestrepo.dev](https://moviesapp.juancrestrepo.dev)**
 
 ![Home page with the featured movie and rows of posters](docs/screenshots/home.jpg)
 
