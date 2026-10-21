@@ -28,7 +28,7 @@ function SearchPage() {
       {!query ? (
         <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center text-muted">
           <SearchIcon className="size-10 text-subtle" />
-          <p>Search for movies, TV shows and people using the bar above.</p>
+          <p>Find movies, TV shows and people with the search at the top.</p>
         </div>
       ) : (
         <>

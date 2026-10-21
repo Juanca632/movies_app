@@ -9,12 +9,12 @@ const LABELS: Record<CriticScore["source"], string> = {
 };
 
 /** Awards and critic scores (OMDb). Renders nothing when there is nothing to show. */
-function Acclaim({ imdbId }: { imdbId: string | null }) {
+function Acclaim({ imdbId, className = "" }: { imdbId: string | null; className?: string }) {
   const { data } = useAcclaim(imdbId);
   if (!data || (!data.awards && !data.scores.length)) return null;
 
   return (
-    <section aria-label="Awards and ratings" className="mt-5 space-y-3">
+    <section aria-label="Awards and ratings" className={`mt-5 space-y-3 ${className}`}>
       {data.scores.length > 0 && (
         <ul className="flex flex-wrap gap-2 text-sm">
           {data.scores.map((score) => (

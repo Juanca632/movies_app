@@ -19,11 +19,23 @@ export default defineConfig({
         short_name: 'MoviesApp',
         description:
           "Discover movies, TV shows and actors: what's in theaters, what's trending and where to watch it.",
+        // A stable identity, so a future start_url change doesn't make it a different app.
+        id: '/',
         start_url: '/',
         scope: '/',
+        lang: 'en',
+        dir: 'ltr',
+        categories: ['entertainment'],
         display: 'standalone',
         background_color: '#0a0a0c',
         theme_color: '#0a0a0c',
+        // Long-press on the home-screen icon (Android, desktop) jumps straight to these.
+        shortcuts: [
+          { name: 'Ask AI what to watch', short_name: 'Ask AI', url: '/?ask=' },
+          { name: 'Release calendar', short_name: 'Calendar', url: '/calendar' },
+          { name: 'Browse movies', short_name: 'Movies', url: '/browse/movie' },
+          { name: 'Browse TV shows', short_name: 'TV Shows', url: '/browse/tv' },
+        ],
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

@@ -115,12 +115,13 @@ function SearchBox({ autoFocus = false, className = "max-w-sm" }: { autoFocus?: 
           aria-autocomplete="list"
           aria-activedescendant={showList && active >= 0 ? optionId(active) : undefined}
           autoComplete="off"
-          className="w-full rounded-full border border-white/10 bg-surface/80 py-2 pl-10 pr-4 text-sm text-fg placeholder-subtle outline-none transition focus:border-accent/70 focus:bg-surface"
+          className="w-full text-ellipsis rounded-full border border-white/10 bg-surface/80 py-2 pl-10 pr-4 text-sm text-fg placeholder-subtle outline-none transition focus:border-accent/70 focus:bg-surface"
         />
       </form>
 
       {showList && (
-        <div className="absolute inset-x-0 top-full mt-2 overflow-hidden rounded-xl border border-white/10 bg-surface/95 shadow-2xl shadow-black/60 backdrop-blur-md">
+        // Scrolls on its own when taller than the screen (a short phone, or one sideways).
+        <div className="absolute inset-x-0 top-full mt-2 max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-surface/95 shadow-2xl shadow-black/60 backdrop-blur-md">
           <ul id={listId} role="listbox" aria-label="Suggestions" className="py-1">
             {suggestions.map((result, i) => (
               <li key={`${result.media_type}-${result.id}`} id={optionId(i)} role="option" aria-selected={i === active}>

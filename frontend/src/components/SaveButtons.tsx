@@ -19,8 +19,8 @@ const LISTS: List[] = [
 type Item = Pick<MediaSummary, "id" | "media_type" | "title" | "poster_path" | "release_date">;
 
 const STYLES = {
-  // Next to "Watch trailer" on the detail page.
-  full: "gap-2 px-4 py-2.5 text-sm",
+  // Next to "Watch trailer" on the detail page; halves of the row on phones, 44px tall to tap.
+  full: "min-h-11 flex-1 justify-center gap-2 px-4 text-sm sm:flex-none",
   // Round icon buttons in the hover preview.
   icon: "size-8 justify-center",
 };
@@ -43,7 +43,7 @@ function SaveButton({ item, kind, label, name, Icon, variant }: List & { item: I
         const saved_at = new Date().toISOString();
         toggle.mutate({ item: { id, media_type, title, poster_path, release_date, saved_at }, save: !saved });
       }}
-      className={`inline-flex items-center rounded-full font-semibold ring-1 backdrop-blur-sm transition disabled:opacity-60 ${STYLES[variant]} ${
+      className={`inline-flex items-center rounded-full font-semibold ring-1 backdrop-blur-sm transition active:scale-[0.97] disabled:opacity-60 ${STYLES[variant]} ${
         saved ? "bg-accent/15 text-accent ring-accent/50 hover:bg-accent/25" : "bg-white/10 text-fg ring-white/15 hover:bg-white/20"
       }`}
     >
@@ -67,7 +67,7 @@ function SaveButtons({ item, variant = "full", className = "" }: { item: Item; v
             href={signInUrl(pathname + search)}
             aria-label={variant === "icon" ? `${label}: sign in` : undefined}
             title={`Sign in to save ${item.title}`}
-            className={`inline-flex items-center rounded-full bg-white/10 font-semibold text-fg ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-white/20 ${STYLES[variant]}`}
+            className={`inline-flex items-center rounded-full bg-white/10 font-semibold text-fg ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-white/20 active:scale-[0.97] ${STYLES[variant]}`}
           >
             <Icon className="size-4" />
             {variant === "full" && label}

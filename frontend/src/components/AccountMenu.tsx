@@ -58,7 +58,7 @@ function AccountMenu() {
     return (
       <a
         href={signInUrl(pathname + search)}
-        className="shrink-0 whitespace-nowrap rounded-full bg-accent px-3.5 py-1.5 text-sm font-semibold text-bg transition hover:bg-accent-strong"
+        className="flex h-10 shrink-0 select-none items-center whitespace-nowrap rounded-full bg-accent px-4 text-sm font-semibold text-bg transition hover:bg-accent-strong active:scale-95 sm:h-auto sm:px-3.5 sm:py-1.5"
       >
         Sign in
       </a>
@@ -90,7 +90,7 @@ function AccountMenu() {
         onClick={() => setOpen(!open)}
         className={`block rounded-full ring-2 transition ${open ? "ring-accent/70" : "ring-transparent hover:ring-white/25"}`}
       >
-        <Avatar profile={profile} className="size-8" />
+        <Avatar profile={profile} className="size-9 sm:size-8" />
       </button>
 
       {open && (

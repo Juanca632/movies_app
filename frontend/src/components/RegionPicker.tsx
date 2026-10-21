@@ -95,7 +95,7 @@ function RegionPicker() {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => (open ? close() : openList())}
-        className={`flex items-center gap-1.5 rounded-full border bg-surface/80 py-2 pl-2.5 pr-2 text-xs font-semibold text-fg transition hover:border-white/25 ${
+        className={`flex h-10 items-center gap-1.5 rounded-full border bg-surface/80 pl-2.5 pr-2 text-xs active:scale-95 sm:h-auto sm:py-2 sm:active:scale-100 font-semibold text-fg transition hover:border-white/25 ${
           open ? "border-accent/70" : "border-white/10"
         }`}
       >
@@ -108,7 +108,9 @@ function RegionPicker() {
         <div
           role="dialog"
           aria-label="Choose your country"
-          className="absolute right-0 top-full mt-2 w-72 overflow-hidden rounded-xl border border-white/10 bg-surface/95 shadow-2xl shadow-black/60 backdrop-blur-md"
+          // Phones: the pill isn't at the screen's edge, so a popover anchored to it would spill off the
+          // left side; it spans the screen under the bar instead.
+          className="fixed inset-x-4 top-[calc(4rem+env(safe-area-inset-top))] overflow-hidden sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-72 rounded-xl border border-white/10 bg-surface/95 shadow-2xl shadow-black/60 backdrop-blur-md"
         >
           <div className="border-b border-white/5 p-2">
             <div className="relative">
@@ -135,7 +137,7 @@ function RegionPicker() {
             </div>
           </div>
 
-          <ul ref={list} id={listId} role="listbox" aria-label="Countries" className="max-h-80 overflow-y-auto overscroll-contain py-1">
+          <ul ref={list} id={listId} role="listbox" aria-label="Countries" className="max-h-[min(20rem,calc(100dvh-12rem))] overflow-y-auto overscroll-contain py-1">
             {matches.map((r, i) => {
               const selected = r.code === region;
               return (
@@ -146,7 +148,7 @@ function RegionPicker() {
                   aria-selected={selected}
                   onClick={() => choose(r.code)}
                   onMouseMove={() => setActive(i)}
-                  className={`flex cursor-pointer items-center gap-3 px-3 py-2 text-sm transition-colors ${i === active ? "bg-accent/15" : ""} ${
+                  className={`flex cursor-pointer items-center gap-3 px-3 py-2.5 text-sm sm:py-2 transition-colors ${i === active ? "bg-accent/15" : ""} ${
                     selected ? "font-semibold text-accent" : "text-fg"
                   }`}
                 >

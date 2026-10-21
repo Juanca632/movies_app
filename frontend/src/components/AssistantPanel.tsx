@@ -17,6 +17,34 @@ const DISMISS_PX = 90;
 /** Matches --animate-slide-down / --animate-slide-out-right. */
 const EXIT_MS = 200;
 
+/**
+ * How much of the layout viewport the on-screen keyboard (or browser UI) covers at the bottom.
+ * iOS Safari doesn't shrink `position: fixed` / dvh for the keyboard, so without this the sheet's
+ * input would sit behind it, or iOS would pan the whole sheet up, hiding its header. (Android
+ * resizes the layout itself, `interactive-widget=resizes-content`, so this stays 0 there.)
+ */
+function useKeyboardInset(enabled: boolean) {
+  const [inset, setInset] = useState<{ bottom: number; height: number } | null>(null);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!enabled || !viewport) return;
+    const update = () => {
+      const bottom = Math.round(window.innerHeight - viewport.height - viewport.offsetTop);
+      // Small differences are just the browser's toolbars, which dvh already accounts for.
+      setInset(bottom > 40 ? { bottom, height: Math.round(viewport.height) } : null);
+    };
+    update();
+    viewport.addEventListener("resize", update);
+    viewport.addEventListener("scroll", update);
+    return () => {
+      viewport.removeEventListener("resize", update);
+      viewport.removeEventListener("scroll", update);
+      setInset(null);
+    };
+  }, [enabled]);
+  return inset;
+}
+
 function PickCard({ pick, to, regionName }: { pick: Pick; to: string; regionName: string }) {
   const { item } = pick;
   const services = pick.providers.filter((provider) => !isAdTier(provider));
@@ -24,7 +52,7 @@ function PickCard({ pick, to, regionName }: { pick: Pick; to: string; regionName
   return (
     <li className="flex gap-3 rounded-xl bg-bg/50 p-3 ring-1 ring-white/5">
       {/* self-start: stretched to the text's height, the poster would lose its 2:3 shape. */}
-      <Link to={to} tabIndex={-1} aria-hidden className="block aspect-[2/3] w-[5.5rem] shrink-0 self-start overflow-hidden rounded-lg">
+      <Link to={to} tabIndex={-1} aria-hidden className="block aspect-[2/3] w-20 shrink-0 self-start overflow-hidden rounded-lg sm:w-[5.5rem]">
         <TmdbImage path={item.poster_path} size="w185" alt="" />
       </Link>
       <div className="min-w-0 space-y-1.5">
@@ -117,6 +145,8 @@ function TurnView({ turn, pickHref, region, regionName, busy }: TurnViewProps) {
 function Panel({ leaving, close }: PanelProps) {
   // Wide screens: a card floating next to the page, which stays usable. Phones: a modal bottom sheet.
   const wide = useMediaQuery("(min-width: 640px)");
+  // On touch screens focusing the input pops the keyboard up over the examples and half the sheet.
+  const touch = useMediaQuery("(pointer: coarse)");
   const region = useRegion();
   const regionName = useRegionName(region);
   const chat = useChat();
@@ -128,6 +158,7 @@ function Panel({ leaving, close }: PanelProps) {
   const dragStart = useRef<number | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
+  const keyboard = useKeyboardInset(!wide);
 
   // `close` is a new function on every render; Escape always uses the latest one.
   const closeRef = useRef(close);
@@ -141,12 +172,12 @@ function Panel({ leaving, close }: PanelProps) {
     return () => opener?.focus?.({ preventScroll: true });
   }, []);
 
-  // (Re)opening, including right after a swipe-dismiss: in place and ready to type.
+  // (Re)opening, including right after a swipe-dismiss: in place and ready to type (with a keyboard).
   useEffect(() => {
     if (leaving) return;
     setDragY(0);
-    input.current?.focus({ preventScroll: true });
-  }, [leaving]);
+    (touch ? panel.current : input.current)?.focus({ preventScroll: true });
+  }, [leaving]); // eslint-disable-line react-hooks/exhaustive-deps -- only on (re)opening, not when the pointer changes
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -231,6 +262,8 @@ function Panel({ leaving, close }: PanelProps) {
       ? { transform: "translateY(100%)", transition: `transform ${EXIT_MS}ms ease-in` }
       : { transform: `translateY(${dragY}px)` }
     : undefined;
+  // With the keyboard up, the sheet rests on it and shrinks to the space left above it.
+  const keyboardStyle = keyboard ? { bottom: keyboard.bottom, maxHeight: keyboard.height - 12 } : undefined;
   const motion = dragY ? "" : leaving ? "animate-slide-down sm:animate-slide-out-right" : "animate-slide-up sm:animate-slide-in-right";
 
   return (
@@ -239,24 +272,26 @@ function Panel({ leaving, close }: PanelProps) {
         <div
           aria-hidden
           onClick={close}
-          className={`fixed inset-0 z-[60] bg-black/60 ${leaving ? "animate-fade-out" : "animate-fade-in [animation-duration:200ms]"}`}
+          className={`fixed inset-0 z-[60] touch-none bg-black/60 ${leaving ? "animate-fade-out" : "animate-fade-in [animation-duration:200ms]"}`}
         />
       )}
       {/* Phones: a sheet from the bottom edge. Wide screens: a card floating over the page's right side,
           below the navbar, whose search and country picker stay usable. */}
+      {/* A phone held sideways is wide but short: there the card also covers the navbar. */}
       <aside
         ref={panel}
         role="dialog"
         aria-modal={!wide}
         aria-labelledby="assistant-title"
-        style={dragStyle}
-        className={`fixed inset-x-0 bottom-0 z-[60] flex h-[88dvh] flex-col rounded-t-2xl border-t border-white/10 bg-surface shadow-2xl shadow-black/60 sm:inset-x-auto sm:bottom-3 sm:right-3 sm:top-[4.5rem] sm:h-auto sm:w-[460px] sm:rounded-2xl lg:w-[520px] sm:border sm:bg-surface/95 sm:backdrop-blur-xl ${motion} ${
+        tabIndex={-1}
+        style={{ ...keyboardStyle, ...dragStyle }}
+        className={`fixed inset-x-0 bottom-0 z-[60] flex outline-none h-[88dvh] max-h-[calc(100dvh-0.75rem)] flex-col rounded-t-2xl border-t border-white/10 bg-surface shadow-2xl shadow-black/60 sm:inset-x-auto sm:bottom-3 sm:right-3 sm:top-[4.5rem] [@media(min-width:640px)_and_(max-height:500px)]:top-3 sm:h-auto sm:w-[460px] sm:rounded-2xl lg:w-[520px] sm:border sm:bg-surface/95 sm:backdrop-blur-xl ${motion} ${
           leaving ? "pointer-events-none" : ""
         }`}
       >
         <header {...drag} className="touch-none select-none border-b border-white/5 sm:touch-auto sm:select-auto">
           <div aria-hidden className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20 sm:hidden" />
-          <div className="flex items-center gap-2 px-5 py-3">
+          <div className="flex items-center gap-2 py-2 pl-5 pr-3 sm:py-3 sm:pr-5">
             <h2 id="assistant-title" className="flex flex-1 items-center gap-2 font-display text-lg font-semibold tracking-tight">
               <AiSparkIcon className="size-5" />
               Ask AI
@@ -268,7 +303,7 @@ function Panel({ leaving, close }: PanelProps) {
                   newChat();
                   input.current?.focus();
                 }}
-                className="rounded-full px-3 py-1 text-xs font-medium text-muted transition hover:bg-white/10 hover:text-fg"
+                className="rounded-full px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-white/10 hover:text-fg"
               >
                 New chat
               </button>
@@ -277,7 +312,7 @@ function Panel({ leaving, close }: PanelProps) {
               type="button"
               aria-label="Close"
               onClick={close}
-              className="grid size-8 place-items-center rounded-full text-muted transition hover:bg-white/10 hover:text-fg"
+              className="-mr-1.5 grid size-10 place-items-center rounded-full text-muted sm:mr-0 sm:size-8 transition hover:bg-white/10 hover:text-fg"
             >
               <CloseIcon className="size-4" />
             </button>
@@ -318,7 +353,9 @@ function Panel({ leaving, close }: PanelProps) {
           )}
         </div>
 
-        <form onSubmit={onSubmit} className="border-t border-white/5 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+        <form onSubmit={onSubmit} className={`border-t border-white/5 p-3 ${
+            keyboard ? "" : "pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          }`}>
           {full && <p className="mb-2 px-2 text-xs text-subtle">This chat is full. Start a new one to keep asking.</p>}
           {/* A thin gradient ring marks it as AI; while it works the colours circle around. */}
           <div className={`ai-ring flex items-center gap-2 rounded-full p-1 pl-4 [--ai-inner:var(--color-bg)] ${busy ? "ai-spin [--ai-glow:0.15]" : ""}`}>
@@ -332,7 +369,7 @@ function Panel({ leaving, close }: PanelProps) {
               disabled={full}
               onChange={(event) => setDraft(event.target.value)}
               maxLength={MAX_QUESTION}
-              placeholder={chat.length ? "Refine it or ask something else…" : "A short comedy on Netflix for tonight…"}
+              placeholder={chat.length ? "Refine it or ask again…" : "A comedy for tonight…"}
               className="min-w-0 flex-1 bg-transparent py-2 text-sm text-fg placeholder:text-subtle focus-visible:outline-none disabled:opacity-50"
             />
             <button

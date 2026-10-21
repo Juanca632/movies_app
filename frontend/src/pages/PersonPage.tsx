@@ -21,7 +21,7 @@ function Biography({ text }: { text: string }) {
     <div className="mt-5 max-w-2xl">
       <p className={`whitespace-pre-line leading-relaxed text-fg/85 ${isLong && !expanded ? "line-clamp-5" : ""}`}>{text}</p>
       {isLong && (
-        <button type="button" onClick={() => setExpanded(!expanded)} className="mt-2 text-sm font-semibold text-accent hover:text-accent-strong">
+        <button type="button" onClick={() => setExpanded(!expanded)} className="mt-1 py-2 pr-4 text-sm font-semibold text-accent hover:text-accent-strong">
           {expanded ? "Show less" : "Read more"}
         </button>
       )}
@@ -57,14 +57,21 @@ export function PersonDetailView({ person }: { person: PersonDetail }) {
         backdropPath={backdrop}
         blurBackdrop
         aside={<TmdbImage path={person.profile_path} size="w500" alt={person.name} fallback={UserIcon} priority className="aspect-[2/3]" />}
+        header={
+          <>
+            {person.known_for_department && (
+              <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-accent sm:mb-2 sm:text-xs">
+                {person.known_for_department}
+              </p>
+            )}
+            <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-balance break-words min-[400px]:text-3xl sm:text-4xl lg:text-5xl">
+              {person.name}
+            </h1>
+          </>
+        }
       >
-        {person.known_for_department && (
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">{person.known_for_department}</p>
-        )}
-        <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-balance sm:text-5xl">{person.name}</h1>
-
         {(born || person.place_of_birth) && (
-          <dl className="mt-4 grid gap-1 text-sm text-muted">
+          <dl className="grid gap-1 text-sm text-muted sm:mt-4">
             {born && (
               <div className="flex gap-2">
                 <dt className="text-subtle">Born</dt>

@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { isNotFound } from "../api/client";
 import { useCollection, useMediaDetail } from "../api/queries";
@@ -13,9 +13,12 @@ import TmdbImage from "../components/TmdbImage";
 import TrailerButton from "../components/TrailerButton";
 import WatchProviders from "../components/WatchProviders";
 import Seasons from "../components/Seasons";
-import { formatDate, formatRuntime, personHref, year } from "../lib/tmdb";
+import { formatDate, formatRating, formatRuntime, personHref, year } from "../lib/tmdb";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 import { LoadErrorPage, NotFoundPage } from "./StatusPages";
+
+const compactNumber = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+const LONG_OVERVIEW = 220;
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -60,6 +63,22 @@ function NextEpisode({ media }: { media: MediaDetail }) {
   );
 }
 
+/** Clamped on phones, where a long synopsis would push everything else off the screen. */
+function Overview({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const clamp = text.length > LONG_OVERVIEW && !expanded;
+  return (
+    <div className="mt-5 max-w-2xl max-sm:order-2">
+      <p className={`leading-relaxed text-fg/85 ${clamp ? "max-sm:line-clamp-4" : ""}`}>{text}</p>
+      {clamp && (
+        <button type="button" onClick={() => setExpanded(true)} className="-my-2 py-2 text-sm font-semibold text-accent sm:hidden">
+          More
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function MediaDetailView({ media }: { media: MediaDetail }) {
   useDocumentTitle(media.title);
   const backdrop = media.backdrop_path ?? media.images.backdrops[0]?.file_path;
@@ -67,29 +86,48 @@ export function MediaDetailView({ media }: { media: MediaDetail }) {
   const { data: collection } = useCollection(media.collection?.id ?? null);
   const sagaIds = new Set(collection?.parts.map((part) => part.id));
   const recommendations = media.recommendations.filter((item) => !sagaIds.has(item.id));
+  // The vote count stays glued to the rating, so a wrap never separates them.
+  const rating = formatRating(media.vote_average) && (
+    <span className="inline-flex items-baseline gap-1.5">
+      <Rating value={media.vote_average} className="text-base text-fg" />
+      {media.vote_count > 0 && (
+        <span className="text-subtle">
+          ({compactNumber.format(media.vote_count)}
+          <span className="max-[359px]:sr-only"> votes</span>)
+        </span>
+      )}
+    </span>
+  );
+  const meta = [rating, ...facts(media)].filter(Boolean);
 
   return (
     <article>
       <DetailHero
         backdropPath={backdrop}
         aside={<TmdbImage path={media.poster_path} size="w500" alt={`${media.title} poster`} priority className="aspect-[2/3]" />}
+        header={
+          <>
+            <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-accent sm:mb-2 sm:text-xs">
+              {media.media_type === "movie" ? "Movie" : "TV Series"}
+            </p>
+            <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-balance break-words min-[400px]:text-3xl sm:text-4xl lg:text-5xl">
+              {media.title}
+            </h1>
+          </>
+        }
       >
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-          {media.media_type === "movie" ? "Movie" : "TV Series"}
-        </p>
-        <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-balance sm:text-5xl">{media.title}</h1>
-        {media.tagline && <p className="mt-2 italic text-muted">{media.tagline}</p>}
+        {media.tagline && <p className="italic text-muted sm:mt-2">{media.tagline}</p>}
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
-          <Rating value={media.vote_average} className="text-base text-fg" />
-          {media.vote_count > 0 && <span className="text-subtle">({media.vote_count.toLocaleString("en-US")} votes)</span>}
-          {facts(media)
-            .filter(Boolean)
-            .map((fact) => (
-              <span key={fact} className="before:mr-3 before:content-['·'] first:before:hidden">
-                {fact}
+        {/* Every item has its dot in the gap before it; the negative margin pushes the dot of an item
+            starting a line out of the clipped box, so a wrapped line never starts with "·". */}
+        <div className="mt-3 overflow-hidden text-sm text-muted sm:mt-4">
+          <div className="-ml-6 flex flex-wrap items-center gap-y-1">
+            {meta.map((item, index) => (
+              <span key={index} className="relative whitespace-nowrap pl-6 before:absolute before:left-2.5 before:content-['·']">
+                {item}
               </span>
             ))}
+          </div>
         </div>
 
         <Creators media={media} />
@@ -105,12 +143,14 @@ export function MediaDetailView({ media }: { media: MediaDetail }) {
           </ul>
         )}
 
-        <Acclaim imdbId={media.imdb_id} />
-
-        {media.overview && <p className="mt-5 max-w-2xl leading-relaxed text-fg/85">{media.overview}</p>}
-        <div className="mt-6 flex flex-wrap gap-2">
-          {media.trailer && <TrailerButton mediaType={media.media_type} id={media.id} title={media.title} className="px-5 py-2.5 text-sm" />}
-          <SaveButtons item={media} />
+        {/* Phones put the actions first, within thumb reach; desktop keeps them below the overview. */}
+        <Acclaim imdbId={media.imdb_id} className="max-sm:order-2" />
+        {media.overview && <Overview text={media.overview} />}
+        <div className="mt-5 grid grid-cols-2 gap-2 max-sm:order-1 sm:mt-6 sm:flex sm:flex-wrap">
+          {media.trailer && (
+            <TrailerButton mediaType={media.media_type} id={media.id} title={media.title} solid className="col-span-2 min-h-11 justify-center px-5 text-sm" />
+          )}
+          <SaveButtons item={media} className="col-span-2" />
         </div>
       </DetailHero>
 

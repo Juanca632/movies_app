@@ -6,7 +6,7 @@ import { useDocumentTitle } from "../lib/useDocumentTitle";
 
 function Message({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="page-x flex min-h-[70vh] flex-col items-center justify-center gap-4 pt-16 text-center">
+    <div className="page-x flex min-h-[65svh] flex-col items-center justify-center gap-4 pt-16 text-center">
       <p className="font-display text-7xl font-extrabold text-accent/90">{title}</p>
       {children}
     </div>
