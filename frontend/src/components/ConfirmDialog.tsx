@@ -69,7 +69,8 @@ function ConfirmDialog({
   return createPortal(
     <div
       onClick={(event) => event.target === event.currentTarget && cancel.current()}
-      className="fixed inset-0 z-[80] grid animate-fade-in place-items-center bg-black/70 p-4 backdrop-blur-sm [animation-duration:150ms]"
+      // Phones: an action sheet from the bottom edge, within thumb reach. Wider screens: a centered card.
+      className="fixed inset-0 z-[80] grid animate-fade-in touch-none items-end bg-black/70 backdrop-blur-sm [animation-duration:150ms] sm:place-items-center sm:p-4"
     >
       <div
         ref={panel}
@@ -78,7 +79,7 @@ function ConfirmDialog({
         aria-labelledby={titleId}
         aria-describedby={messageId}
         onKeyDown={trapFocus}
-        className="w-full max-w-sm animate-pop-in rounded-2xl border border-white/10 bg-surface p-6 shadow-2xl shadow-black/70 motion-reduce:animate-none"
+        className="w-full animate-slide-up rounded-t-2xl border-t border-white/10 bg-surface px-5 pt-6 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl shadow-black/70 motion-reduce:animate-none sm:max-w-sm sm:animate-pop-in sm:rounded-2xl sm:border sm:p-6"
       >
         <h2 id={titleId} className="font-display text-lg font-bold tracking-tight text-fg">
           {title}
@@ -91,13 +92,14 @@ function ConfirmDialog({
             {error}
           </p>
         )}
-        <div className="mt-6 flex justify-end gap-2">
+        {/* Phones: full-width buttons, the action on top where the thumb lands first. */}
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
             ref={cancelButton}
             type="button"
             disabled={pending}
             onClick={onCancel}
-            className="rounded-full px-4 py-2 text-sm font-semibold text-fg ring-1 ring-white/15 transition hover:bg-white/10 disabled:opacity-50"
+            className="rounded-full px-4 py-3 text-sm font-semibold text-fg ring-1 ring-white/15 transition hover:bg-white/10 disabled:opacity-50 sm:py-2"
           >
             Cancel
           </button>
@@ -105,7 +107,7 @@ function ConfirmDialog({
             type="button"
             disabled={pending}
             onClick={onConfirm}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition disabled:opacity-60 ${
+            className={`rounded-full px-4 py-3 text-sm font-semibold transition disabled:opacity-60 sm:py-2 ${
               danger ? "bg-red-500 text-white hover:bg-red-600" : "bg-accent text-bg hover:bg-accent-strong"
             }`}
           >

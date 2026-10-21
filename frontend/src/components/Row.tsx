@@ -3,11 +3,16 @@ import { CardSkeleton } from "./cards";
 import ErrorState from "./ErrorState";
 import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 
+// On phones, widths follow the screen so a row always ends in a partly visible card (2.4, 2.75
+// or 3.4 posters in view, gutter and gaps included): a cut-off card is what says "swipe for more".
+// A fixed width would land on whole cards at some sizes and look like the end of the row.
 const ITEM_WIDTH = {
-  media: "w-32 sm:w-40 xl:w-44",
-  person: "w-28 sm:w-32 xl:w-36",
+  media:
+    "w-[calc((100vw-1rem)/2.4-0.75rem)] min-[360px]:w-[calc((100vw-1rem)/2.75-0.75rem)] min-[480px]:w-[calc((100vw-1rem)/3.4-0.75rem)] sm:w-40 xl:w-44",
+  person:
+    "w-[calc((100vw-1rem)/2.9-0.75rem)] min-[360px]:w-[calc((100vw-1rem)/3.3-0.75rem)] min-[480px]:w-[calc((100vw-1rem)/4.1-0.75rem)] sm:w-32 xl:w-36",
   // Landscape cards (16:9), e.g. the AI's moods.
-  wide: "w-60 sm:w-72 xl:w-80",
+  wide: "w-[min(calc((100vw-1rem)/1.3-0.75rem),18rem)] sm:w-72 xl:w-80",
 };
 
 interface RowProps<T> {
@@ -60,14 +65,14 @@ function Row<T>({ title, icon, action, description, items, getKey, renderItem, v
     <section aria-label={title} className="group/row">
       {action ? (
         <div className="page-x mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-          <h2 className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight sm:text-2xl">
+          <h2 className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight min-[360px]:text-xl sm:text-2xl">
             {icon}
             {title}
           </h2>
           {action}
         </div>
       ) : (
-        <h2 className="page-x mb-2 flex items-center gap-2 font-display text-xl font-semibold tracking-tight sm:text-2xl">
+        <h2 className="page-x mb-2 flex items-center gap-2 font-display text-lg font-semibold tracking-tight min-[360px]:text-xl sm:text-2xl">
           {icon}
           {title}
         </h2>
@@ -83,16 +88,17 @@ function Row<T>({ title, icon, action, description, items, getKey, renderItem, v
               <ChevronLeftIcon className="size-8" />
             </button>
           )}
-          {/* overflow-x also clips vertically: pt-1 keeps the posters' hover ring visible. */}
+          {/* overflow-x also clips vertically: pt-1 keeps the posters' hover ring visible. Snapping
+              uses page-x's own gutter (notch included), so cards stop where the titles start. */}
           <ul
             ref={scroller}
             onScroll={updateEdges}
-            className="page-x flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain pt-1 pb-2 scrollbar-none sm:scroll-px-8 sm:gap-4 xl:scroll-px-12"
+            className="page-x flex snap-x snap-mandatory scroll-pl-[max(var(--gutter),env(safe-area-inset-left))] scroll-pr-[max(var(--gutter),env(safe-area-inset-right))] gap-3 overflow-x-auto overscroll-x-contain pt-1 pb-2 scrollbar-none sm:gap-4"
           >
             {isPending
-              ? Array.from({ length: 10 }, (_, i) => (
+              ? Array.from({ length: 8 }, (_, i) => (
                   <li key={i} className={`shrink-0 ${ITEM_WIDTH[variant]}`}>
-                    <CardSkeleton />
+                    <CardSkeleton variant={variant} />
                   </li>
                 ))
               : items?.map((item) => (

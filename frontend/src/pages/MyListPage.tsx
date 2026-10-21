@@ -1,17 +1,48 @@
+import type { ComponentType, ReactNode } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { signInUrl, useAccount, useSavedList } from "../api/queries";
 import type { ListKind, MediaSummary, SavedTitle } from "../api/types";
 import { CARD_GRID, CardSkeleton, MediaCard } from "../components/cards";
 import Chip from "../components/Chip";
 import ErrorState from "../components/ErrorState";
+import { BookmarkIcon, HeartIcon } from "../components/icons";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 import { NotFoundPage } from "./StatusPages";
 
 // ?tab= in the URL; the API calls the second list "favorite".
-const TABS: { tab: string; kind: ListKind; label: string; empty: string }[] = [
-  { tab: "watchlist", kind: "watchlist", label: "My list", empty: "Save movies and shows to watch later with the bookmark button." },
-  { tab: "favorites", kind: "favorite", label: "Favorites", empty: "Mark the ones you love with the heart button." },
+interface Tab {
+  tab: string;
+  kind: ListKind;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  empty: string;
+}
+
+const TABS: Tab[] = [
+  {
+    tab: "watchlist",
+    kind: "watchlist",
+    label: "My list",
+    icon: BookmarkIcon,
+    empty: "Save movies and shows to watch later with the bookmark button.",
+  },
+  { tab: "favorites", kind: "favorite", label: "Favorites", icon: HeartIcon, empty: "Mark the ones you love with the heart button." },
 ];
+
+const BUTTON = "rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-bg transition hover:bg-accent-strong";
+
+/** Centered, like a native app's empty screen, instead of a stray line at the top-left. */
+function EmptyState({ icon: Icon, children, action }: { icon: Tab["icon"]; children: ReactNode; action: ReactNode }) {
+  return (
+    <div className="flex flex-col items-center gap-5 py-12 text-center sm:py-16">
+      <span className="grid size-16 place-items-center rounded-full bg-surface ring-1 ring-white/10">
+        <Icon className="size-7 text-accent" />
+      </span>
+      <p className="max-w-xs text-muted">{children}</p>
+      {action}
+    </div>
+  );
+}
 
 // Cards take a full summary; a saved title has no rating or overview, so those stay empty.
 const toSummary = (saved: SavedTitle): MediaSummary => ({
@@ -31,7 +62,7 @@ function Header() {
   );
 }
 
-function SavedGrid({ kind, empty }: { kind: ListKind; empty: string }) {
+function SavedGrid({ kind, icon, empty }: Pick<Tab, "kind" | "icon" | "empty">) {
   const { data, isPending, isError, refetch } = useSavedList(kind);
 
   if (isError) return <ErrorState message="We couldn't load your list." onRetry={() => refetch()} />;
@@ -46,12 +77,16 @@ function SavedGrid({ kind, empty }: { kind: ListKind; empty: string }) {
   }
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-start gap-4">
-        <p className="text-muted">{empty}</p>
-        <Link to="/" className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bg transition hover:bg-accent-strong">
-          Find something
-        </Link>
-      </div>
+      <EmptyState
+        icon={icon}
+        action={
+          <Link to="/" className={BUTTON}>
+            Find something
+          </Link>
+        }
+      >
+        {empty}
+      </EmptyState>
     );
   }
   return (
@@ -80,27 +115,28 @@ function MyListPage() {
       {account.status === "signed-out" ? (
         <>
           <Header />
-          <div className="flex flex-col items-start gap-4">
-            <p className="text-muted">Sign in to save movies and shows to watch later, and keep your favorites.</p>
-            <a
-              href={signInUrl(pathname + search)}
-              className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bg transition hover:bg-accent-strong"
-            >
-              Sign in with Google
-            </a>
-          </div>
+          <EmptyState
+            icon={BookmarkIcon}
+            action={
+              <a href={signInUrl(pathname + search)} className={BUTTON}>
+                Sign in with Google
+              </a>
+            }
+          >
+            Sign in to save movies and shows to watch later, and keep your favorites.
+          </EmptyState>
         </>
       ) : (
         <>
           <Header />
-          <div role="group" aria-label="List" className="mb-8 flex flex-wrap gap-2">
+          <div role="group" aria-label="List" className="mb-8 flex gap-2">
             {TABS.map((t) => (
               <Chip key={t.tab} active={t === current} onClick={() => setParams({ tab: t.tab }, { replace: true })}>
                 {t.label}
               </Chip>
             ))}
           </div>
-          <SavedGrid key={current.kind} kind={current.kind} empty={current.empty} />
+          <SavedGrid key={current.kind} kind={current.kind} icon={current.icon} empty={current.empty} />
         </>
       )}
     </div>

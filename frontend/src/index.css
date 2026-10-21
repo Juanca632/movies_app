@@ -33,7 +33,7 @@
   @keyframes shimmer {
     0%,
     100% {
-      opacity: 0.55;
+      opacity: 0.7;
     }
     50% {
       opacity: 1;
@@ -119,10 +119,29 @@
     overflow-x: clip;
     overscroll-behavior-x: none;
     scrollbar-color: var(--color-surface-2) transparent;
+    /* The grey flash on every tap gives a web page away; buttons and links have their own states. */
+    -webkit-tap-highlight-color: transparent;
+    /* iOS enlarges text when a phone turns sideways; the layout already adapts. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Scrolling to a focused element or an anchor shouldn't leave it under the fixed bars. */
+    scroll-padding-top: calc(4rem + env(safe-area-inset-top));
+    @media (width < 40rem) {
+      scroll-padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+    }
   }
 
   body {
     @apply bg-bg font-sans text-fg antialiased;
+  }
+
+  /* Installed, it should feel like an app: no iOS link/image preview sheet on long-press (there are
+     no tabs to open it in anyway). In the browser that menu stays. */
+  @media (display-mode: standalone) {
+    a,
+    img {
+      -webkit-touch-callout: none;
+    }
   }
 
   /* The browser's own "clear" cross sits next to our close button on phones and reads as a duplicate. */
@@ -142,8 +161,29 @@
   }
 }
 
+/* The page gutter, widened by the notch / rounded corners when a phone is sideways (the viewport
+   uses viewport-fit=cover, so nothing else keeps content out of them). */
 @utility page-x {
-  @apply px-4 sm:px-8 xl:px-12;
+  --gutter: 1rem;
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+  @media (width >= 40rem) {
+    --gutter: 2rem;
+  }
+  @media (width >= 80rem) {
+    --gutter: 3rem;
+  }
+}
+
+/* iOS zooms the page into any text field under 16px when it gets focus, and doesn't zoom back.
+   Unlayered, so it beats the text-sm our fields use, ours or a future one (it would also cap a
+   bigger field at 16px: none is). */
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"]),
+  textarea,
+  select {
+    font-size: max(1rem, 1em);
+  }
 }
 
 /* ---- AI look, kept discreet: a thin gradient ring that circles while working, and a shimmer ---- */

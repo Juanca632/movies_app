@@ -89,7 +89,7 @@ describe("BrowsePage", () => {
     const { router } = renderRoute("/browse/movie");
 
     const sort = await screen.findByRole("combobox", { name: "Sort by" });
-    expect(sort).toHaveTextContent("Most popular");
+    expect(sort).toHaveTextContent("Popular");
     sort.focus();
     await userEvent.keyboard("{ArrowDown}");
     expect(screen.getByRole("listbox", { name: "Sort by" })).toHaveFocus();

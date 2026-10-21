@@ -442,7 +442,7 @@ describe("SearchPage", () => {
   it("prompts for a query when there is none", async () => {
     mockApi({});
     renderRoute("/search");
-    expect(await screen.findByText(/Search for movies, TV shows and people/)).toBeInTheDocument();
+    expect(await screen.findByText(/Find movies, TV shows and people/)).toBeInTheDocument();
   });
 });
 

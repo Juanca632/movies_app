@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useDiscover, useGenres, useProviders, useRegionName } from "../api/queries";
 import { DISCOVER_SORTS, type DiscoverSort, type MediaType } from "../api/types";
@@ -14,7 +14,8 @@ import { NotFoundPage } from "./StatusPages";
 const LABELS: Record<MediaType, string> = { movie: "Movies", tv: "TV Shows" };
 
 const SORT_LABELS: Record<DiscoverSort, string> = {
-  popular: "Most popular",
+  // Short enough not to be cut off in the half-width dropdown of a 320px phone.
+  popular: "Popular",
   top_rated: "Top rated",
   newest: "Newest",
 };
@@ -52,6 +53,28 @@ function Browse({ mediaType }: { mediaType: MediaType }) {
   const serviceName = services?.find((p) => p.provider_id === provider)?.provider_name;
   useDocumentTitle([genreName, LABELS[mediaType]].filter(Boolean).join(" "));
 
+  // A genre chosen elsewhere (a link, the back button) may sit off-screen in the phone's chip scroller.
+  const genreBar = useRef<HTMLDivElement>(null);
+  const genresLoaded = Boolean(genres.data);
+  useEffect(() => {
+    const bar = genreBar.current;
+    const chip = bar?.querySelector<HTMLElement>("[aria-pressed=true]");
+    // Scrolls the bar only: scrollIntoView would also move the page, e.g. a restored scroll position.
+    if (bar && chip) bar.scrollTo?.({ left: chip.offsetLeft - bar.offsetLeft - (bar.clientWidth - chip.offsetWidth) / 2, behavior: "smooth" });
+  }, [genre, genresLoaded]);
+
+  // Like a native list, the next page loads on its own as the end comes into view (the button stays as
+  // a fallback and for keyboards).
+  const loadMore = useRef<HTMLDivElement>(null);
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = results;
+  useEffect(() => {
+    const target = loadMore.current;
+    if (!target || !hasNextPage || isFetchingNextPage || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => entry.isIntersecting && fetchNextPage(), { rootMargin: "600px 0px" });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const update = (key: string, value: string | number | null) => {
     const next = new URLSearchParams(params);
     if (value === null || value === "" || (key === "sort" && value === "popular")) next.delete(key);
@@ -77,7 +100,7 @@ function Browse({ mediaType }: { mediaType: MediaType }) {
       {genres.isError ? (
         <ErrorState className="mb-6" message="Couldn't load genres." onRetry={() => genres.refetch()} />
       ) : (
-        <div role="group" aria-label="Genres" className="-mx-4 mb-6 flex gap-2 overflow-x-auto overscroll-x-contain px-4 pb-1 scrollbar-none sm:mx-0 sm:flex-wrap sm:px-0">
+        <div ref={genreBar} role="group" aria-label="Genres" className="-mx-4 mb-6 flex gap-2 overflow-x-auto overscroll-x-contain px-4 pb-1 scrollbar-none sm:mx-0 sm:flex-wrap sm:px-0">
           <Chip active={genre === null} onClick={() => update("genre", null)}>
             All
           </Chip>
@@ -89,7 +112,7 @@ function Browse({ mediaType }: { mediaType: MediaType }) {
         </div>
       )}
 
-      <div className="mb-8 flex items-end gap-3 sm:gap-6">
+      <div className="mb-8 flex items-end gap-2 sm:gap-6">
         <Dropdown
           label="Sort by"
           value={sort}
@@ -128,7 +151,7 @@ function Browse({ mediaType }: { mediaType: MediaType }) {
       )}
 
       {results.hasNextPage && (
-        <div className="mt-12 flex justify-center">
+        <div ref={loadMore} className="mt-12 flex justify-center">
           <button
             type="button"
             disabled={results.isFetchingNextPage}

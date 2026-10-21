@@ -7,7 +7,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+      className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition active:scale-95 ${
         active ? "border-accent bg-accent text-bg" : "border-white/10 bg-surface/60 text-muted hover:border-white/25 hover:text-fg"
       }`}
     >

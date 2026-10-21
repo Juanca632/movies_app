@@ -2,18 +2,28 @@ import { useState, type ComponentType, type SVGProps } from "react";
 import { imageUrl } from "../lib/tmdb";
 import { FilmIcon } from "./icons";
 
+type ImageSize = Parameters<typeof imageUrl>[1];
+
+/** Pixel width of each TMDB size, for `srcset`. */
+const WIDTH: Partial<Record<ImageSize, number>> = { w92: 92, w185: 185, w300: 300, w342: 342, w500: 500, w780: 780, w1280: 1280 };
+
 interface TmdbImageProps {
   path: string | null | undefined;
-  size: Parameters<typeof imageUrl>[1];
+  /** The default size, used as `src`. */
+  size: ImageSize;
   alt: string;
   className?: string;
   /** Icon shown when TMDB has no image or it fails to load. */
   fallback?: ComponentType<SVGProps<SVGSVGElement>>;
   priority?: boolean;
+  /** Other sizes to offer in `srcset`, so 3x phones get sharp posters and 1x screens small files. */
+  srcSet?: ImageSize[];
+  /** The rendered width (CSS `sizes`); required for `srcSet` to pick the right file. */
+  sizes?: string;
 }
 
 /** A TMDB image that fills its (sized) parent, with a placeholder when missing. */
-function TmdbImage({ path, size, alt, className = "", fallback: Fallback = FilmIcon, priority }: TmdbImageProps) {
+function TmdbImage({ path, size, alt, className = "", fallback: Fallback = FilmIcon, priority, srcSet, sizes }: TmdbImageProps) {
   const [failed, setFailed] = useState(false);
   const src = imageUrl(path, size);
 
@@ -29,14 +39,51 @@ function TmdbImage({ path, size, alt, className = "", fallback: Fallback = FilmI
     );
   }
 
+  const candidates = srcSet && sizes ? [size, ...srcSet].map((s) => `${imageUrl(path, s)} ${WIDTH[s]}w`).join(", ") : undefined;
+
+  // Keyed by src, so a new image fades in again instead of inheriting the old one's state.
+  return (
+    <FadeInImg
+      key={src}
+      src={src}
+      srcSet={candidates}
+      sizes={candidates ? sizes : undefined}
+      alt={alt}
+      priority={priority}
+      onError={() => setFailed(true)}
+      className={`size-full object-cover ${className}`}
+    />
+  );
+}
+
+interface FadeInImgProps {
+  src: string;
+  srcSet?: string;
+  sizes?: string;
+  alt: string;
+  priority?: boolean;
+  onError: () => void;
+  className: string;
+}
+
+/** Fades in once decoded instead of popping in line by line over the card's placeholder. */
+function FadeInImg({ src, srcSet, sizes, alt, priority, onError, className }: FadeInImgProps) {
+  const [loaded, setLoaded] = useState(false);
   return (
     <img
+      // An image already in the browser's cache can finish before React attaches onLoad.
+      ref={(img) => {
+        if (img?.complete && img.naturalWidth > 0) setLoaded(true);
+      }}
       src={src}
+      srcSet={srcSet}
+      sizes={sizes}
       alt={alt}
       loading={priority ? "eager" : "lazy"}
       decoding="async"
-      onError={() => setFailed(true)}
-      className={`size-full object-cover ${className}`}
+      onLoad={() => setLoaded(true)}
+      onError={onError}
+      className={`transition-[opacity,transform] duration-500 ease-out motion-reduce:transition-none ${loaded ? "opacity-100" : "opacity-0"} ${className}`}
     />
   );
 }
