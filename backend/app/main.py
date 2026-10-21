@@ -77,7 +77,10 @@ def create_app() -> FastAPI:
     async def unavailable(_: Request, __: TMDBUnavailableError) -> JSONResponse:
         return JSONResponse({"detail": "Upstream service unavailable"}, status_code=502)
 
+    # Also under /api/v1, the only prefix Vercel routes to this function: index.html pings it so
+    # a cold start begins while the page's scripts are still downloading.
     @app.get("/health", tags=["Health"])
+    @app.get("/api/v1/health", include_in_schema=False)
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 

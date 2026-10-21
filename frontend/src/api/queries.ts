@@ -1,4 +1,4 @@
-import { keepPreviousData, QueryClient, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, type Query, QueryClient, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRegion } from "../lib/region";
 import { API_URL, ApiError, getJson, sendJson } from "./client";
 import type {
@@ -40,6 +40,25 @@ export function createQueryClient() {
   });
 }
 
+const DAY_MS = 24 * 60 * 60_000;
+
+/**
+ * The home page's public lists are kept in localStorage, so a returning visitor sees the last
+ * ones at once while the backend wakes up (a cold start takes seconds), then they refresh.
+ * Only queries marked with `meta.persist` are saved; nothing private, nothing per title.
+ */
+export const persistOptions = {
+  maxAge: DAY_MS,
+  // Bump when a persisted response changes shape, so old saves are dropped.
+  buster: "1",
+  dehydrateOptions: {
+    shouldDehydrateQuery: (query: Query) => query.meta?.persist === true && query.state.status === "success",
+  },
+};
+
+// Kept in memory as long as in storage, or the saved copy would go once nothing uses it.
+const PERSISTED = { meta: { persist: true }, gcTime: DAY_MS } as const;
+
 // Lists that depend on local release dates; the rest are the same everywhere.
 const REGIONAL_CATEGORIES: readonly string[] = ["now_playing", "upcoming"];
 
@@ -54,6 +73,7 @@ export const useMediaList = <M extends MediaType>(mediaType: M, category: Catego
     queryFn: ({ signal }) =>
       getJson<Page<MediaSummary>>(`${mediaType}?category=${category}${region ? `&region=${region}` : ""}`, signal),
     select: (page) => page.results,
+    ...PERSISTED,
   });
 };
 
@@ -95,6 +115,7 @@ export const useGenres = (mediaType: MediaType) =>
     queryKey: ["genres", mediaType],
     queryFn: ({ signal }) => getJson<Genre[]>(`genres/${mediaType}`, signal),
     ...STATIC,
+    meta: PERSISTED.meta,
   });
 
 export const useRegions = () =>
@@ -102,6 +123,7 @@ export const useRegions = () =>
     queryKey: ["regions"],
     queryFn: ({ signal }) => getJson<Region[]>("regions", signal),
     ...STATIC,
+    meta: PERSISTED.meta,
   });
 
 /** Country name for a code, falling back to the code until the list loads. */
@@ -149,6 +171,7 @@ export const usePopularPeople = () =>
   useQuery({
     queryKey: ["person", "popular"],
     queryFn: ({ signal }) => getJson<PersonSummary[]>("person/popular", signal),
+    ...PERSISTED,
   });
 
 export const usePerson = (id: string) =>
