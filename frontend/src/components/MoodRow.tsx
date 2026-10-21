@@ -49,9 +49,13 @@ function AskField() {
         onChange={(event) => setDraft(event.target.value)}
         maxLength={300}
         placeholder="Or ask anything…"
-        className="min-w-0 flex-1 bg-transparent py-1.5 text-sm text-fg placeholder:text-muted focus-visible:outline-none"
+        enterKeyHint="send"
+        className="min-w-0 flex-1 bg-transparent py-2 text-sm text-fg placeholder:text-muted focus-visible:outline-none sm:py-1.5"
       />
-      <button type="submit" className="shrink-0 rounded-full bg-white/10 px-3.5 py-1.5 text-sm font-semibold text-fg transition hover:bg-white/15">
+      <button
+        type="submit"
+        className="h-9 shrink-0 rounded-full bg-white/10 px-4 text-sm font-semibold text-fg transition hover:bg-white/15 active:bg-white/20 sm:h-8 sm:px-3.5"
+      >
         Ask
       </button>
     </form>
@@ -65,9 +69,16 @@ function MoodCard({ mood }: { mood: Mood }) {
       type="button"
       onClick={() => openPanel(mood.question)}
       aria-label={`${mood.label}: ask AI for “${mood.question}”`}
-      className="group relative block aspect-video w-full overflow-hidden rounded-lg bg-surface text-left ring-1 ring-white/5 transition duration-300 hover:ring-ai-violet/60"
+      className="group relative block aspect-video w-full overflow-hidden rounded-lg bg-surface text-left ring-1 ring-white/5 transition duration-300 select-none hover:ring-ai-violet/60 active:scale-[0.97] active:duration-100"
     >
-      <TmdbImage path={mood.backdrop} size="w780" alt="" className="transition duration-500 group-hover:scale-105" />
+      <TmdbImage
+        path={mood.backdrop}
+        size="w780"
+        srcSet={["w300"]}
+        sizes="(min-width: 1280px) 320px, (min-width: 640px) 288px, 288px"
+        alt=""
+        className="group-hover:scale-105"
+      />
       <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
       <div className="absolute inset-x-3 bottom-2.5">
         <p className="font-display text-lg font-semibold leading-tight tracking-tight text-fg drop-shadow">{mood.label}</p>

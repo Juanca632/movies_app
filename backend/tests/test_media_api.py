@@ -172,6 +172,8 @@ async def test_tmdb_down_becomes_502(api):
 
 async def test_health(api):
     assert (await api.get("/health")).json() == {"status": "ok"}
+    # The frontend's warm-up ping, which has to go through Vercel's /api route.
+    assert (await api.get("/api/v1/health")).json() == {"status": "ok"}
 
 
 def video(

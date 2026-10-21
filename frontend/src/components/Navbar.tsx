@@ -31,7 +31,8 @@ function Navbar() {
   useEffect(() => setSearchOpen(false), [key]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50">
+    // Kept below the status bar / notch whenever the page is drawn under it (viewport-fit=cover).
+    <header className="fixed inset-x-0 top-0 z-50 pt-[env(safe-area-inset-top)]">
       {/* The gradient stays and the solid layer fades in over it: swapping one background for the
           other left the bar see-through halfway, flashing the bright hero behind it. */}
       <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-b from-bg/80 to-transparent" />
@@ -48,24 +49,25 @@ function Navbar() {
             type="button"
             aria-label="Close search"
             onClick={() => setSearchOpen(false)}
-            className="grid size-9 shrink-0 place-items-center rounded-full text-muted transition hover:bg-white/10 hover:text-fg"
+            className="grid size-10 shrink-0 place-items-center rounded-full text-muted transition hover:bg-white/10 hover:text-fg active:bg-white/10"
           >
             <CloseIcon className="size-5" />
           </button>
         </div>
       )}
 
-      <nav className={`page-x h-16 items-center gap-4 sm:gap-6 ${searchOpen ? "hidden sm:flex" : "flex"}`}>
-        <Link to="/" className="flex shrink-0 items-center gap-2" aria-label="MoviesApp home">
+      <nav className={`page-x h-16 items-center gap-3 sm:gap-6 ${searchOpen ? "hidden sm:flex" : "flex"}`}>
+        <Link to="/" className="flex shrink-0 select-none items-center gap-2" aria-label="MoviesApp home">
           <span className="grid size-8 place-items-center rounded-lg bg-accent text-bg">
             <PlayIcon className="size-4" />
           </span>
-          <span className="font-display text-lg font-bold tracking-tight sm:hidden lg:inline">
+          {/* Small phones (320px) only fit the icon next to search, country and sign-in. */}
+          <span className="hidden font-display text-lg font-bold tracking-tight min-[380px]:inline sm:hidden lg:inline">
             Movies<span className="text-accent">App</span>
           </span>
         </Link>
 
-        <ul className="hidden shrink-0 items-center gap-5 text-sm font-medium sm:flex">
+        <ul className="hidden shrink-0 select-none items-center gap-5 text-sm font-medium sm:flex">
           {LINKS.map(({ to, label }) => (
             <li key={to}>
               <NavLink
@@ -98,7 +100,7 @@ function Navbar() {
             type="button"
             aria-label="Search"
             onClick={() => setSearchOpen(true)}
-            className="grid size-9 shrink-0 place-items-center rounded-full border border-white/10 bg-surface/80 text-fg transition hover:border-white/25 sm:hidden"
+            className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 bg-surface/80 text-fg transition hover:border-white/25 active:scale-95 sm:hidden"
           >
             <SearchIcon className="size-4" />
           </button>

@@ -30,7 +30,7 @@ function Overview({ text }: { text: string }) {
     <>
       <p className={`mt-2 text-sm leading-relaxed text-fg/80 ${isLong && !expanded ? "line-clamp-3" : ""}`}>{text}</p>
       {isLong && (
-        <button type="button" onClick={() => setExpanded(!expanded)} className="mt-1 text-xs font-semibold text-accent hover:text-accent-strong">
+        <button type="button" onClick={() => setExpanded(!expanded)} className="py-1.5 pr-4 text-xs font-semibold text-accent hover:text-accent-strong">
           {expanded ? "Show less" : "Read more"}
         </button>
       )}
@@ -46,23 +46,29 @@ function EpisodeItem({ episode }: { episode: Episode }) {
     : [date, formatRuntime(episode.runtime), formatRating(episode.vote_average) && `★ ${formatRating(episode.vote_average)}`];
 
   return (
-    <li className="flex gap-4 sm:gap-6">
-      <div className={`aspect-video w-32 shrink-0 overflow-hidden rounded-lg bg-surface ring-1 ring-white/5 sm:w-56 ${upcoming ? "opacity-50" : ""}`}>
+    // Phones: still and title side by side, the synopsis full width below (as streaming apps do).
+    <li className="grid grid-cols-[7.5rem_1fr] items-center gap-x-3 min-[400px]:grid-cols-[9rem_1fr] sm:grid-cols-[14rem_1fr] sm:grid-rows-[auto_1fr] sm:items-start sm:gap-x-6">
+      <div className={`aspect-video overflow-hidden rounded-lg bg-surface ring-1 ring-white/5 sm:row-span-2 ${upcoming ? "opacity-50" : ""}`}>
         <TmdbImage path={episode.still_path} size="w300" alt="" />
       </div>
-      <div className="min-w-0 flex-1">
-        <h3 className="font-medium text-fg">
+      <div className="min-w-0">
+        <h3 className="text-sm font-medium text-fg sm:text-base">
           <span className="text-subtle">{episode.episode_number}.</span> {episode.name}
         </h3>
-        <p className="mt-0.5 text-xs text-subtle">{facts.filter(Boolean).join(" · ")}</p>
-        {episode.overview && <Overview text={episode.overview} />}
+        {/* Non-breaking inside each fact, so a narrow column wraps between them, never "★ / 7.1". */}
+        <p className="mt-0.5 text-xs text-subtle">{facts.filter(Boolean).map((fact) => String(fact).replace(/ /g, "\u00a0")).join(" · ")}</p>
       </div>
+      {episode.overview && (
+        <div className="col-span-2 min-w-0 sm:col-span-1 sm:col-start-2">
+          <Overview text={episode.overview} />
+        </div>
+      )}
     </li>
   );
 }
 
 const LIST_BUTTON =
-  "rounded-full border border-line px-5 py-2 text-sm font-medium text-muted transition hover:border-accent hover:text-accent";
+  "min-h-11 rounded-full border border-line px-5 text-sm font-medium text-muted transition hover:border-accent hover:text-accent active:scale-[0.97] max-sm:flex-1";
 
 function EpisodeList({ episodes }: { episodes: Episode[] }) {
   const [visible, setVisible] = useState(FIRST_EPISODES);
@@ -104,13 +110,13 @@ function EpisodesSkeleton() {
   return (
     <ul aria-busy="true" aria-label="Loading episodes" className="animate-shimmer space-y-6">
       {Array.from({ length: 3 }, (_, i) => (
-        <li key={i} className="flex gap-4 sm:gap-6">
-          <div className="aspect-video w-32 shrink-0 rounded-lg bg-surface-2 sm:w-56" />
-          <div className="flex-1 space-y-2 pt-1">
-            <div className="h-4 w-1/2 rounded bg-surface-2" />
-            <div className="h-3 w-1/4 rounded bg-surface-2" />
-            <div className="h-12 rounded bg-surface-2" />
+        <li key={i} className="grid grid-cols-[7.5rem_1fr] items-center gap-x-3 gap-y-2 min-[400px]:grid-cols-[9rem_1fr] sm:grid-cols-[14rem_1fr] sm:items-start sm:gap-x-6">
+          <div className="aspect-video rounded-lg bg-surface-2 sm:row-span-2" />
+          <div className="space-y-2 sm:pt-1">
+            <div className="h-4 w-3/4 rounded bg-surface-2 sm:w-1/2" />
+            <div className="h-3 w-1/2 rounded bg-surface-2 sm:w-1/4" />
           </div>
+          <div className="col-span-2 h-12 rounded bg-surface-2 sm:col-span-1 sm:col-start-2" />
         </li>
       ))}
     </ul>
@@ -137,7 +143,7 @@ function Seasons({ tvId, seasons }: { tvId: number; seasons: SeasonSummary[] }) 
 
   return (
     <section aria-label="Episodes" className="page-x">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <h2 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">Episodes</h2>
         {seasons.length > 1 && (
           <Dropdown

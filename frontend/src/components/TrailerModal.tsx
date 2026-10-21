@@ -35,23 +35,24 @@ function TrailerDialog({ request }: { request: TrailerRequest }) {
       aria-modal="true"
       aria-label={`${request.title} trailer`}
       onClick={(event) => event.target === event.currentTarget && closeTrailer()}
-      className="fixed inset-0 z-[70] grid animate-fade-in place-items-center bg-black/85 p-4 backdrop-blur-sm [animation-duration:200ms] sm:p-8"
+      className="fixed inset-0 z-[70] grid animate-fade-in grid-cols-1 place-items-center bg-black/90 pt-[max(1rem,env(safe-area-inset-top))] pr-[env(safe-area-inset-right)] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[env(safe-area-inset-left)] backdrop-blur-sm [animation-duration:200ms] sm:py-8 sm:pr-[max(2rem,env(safe-area-inset-right))] sm:pl-[max(2rem,env(safe-area-inset-left))]"
     >
-      <div className="w-full max-w-5xl">
-        <div className="mb-3 flex items-center justify-between gap-4">
+      {/* Edge to edge on phones; never taller than the screen, which matters in landscape. */}
+      <div className="w-full max-w-[min(64rem,calc((100dvh-6rem)*16/9))]">
+        <div className="mb-3 flex items-center justify-between gap-4 px-4 sm:px-0">
           <h2 className="truncate font-display text-lg font-semibold sm:text-xl">{request.title}</h2>
           <button
             ref={closeButton}
             type="button"
             aria-label="Close trailer"
             onClick={closeTrailer}
-            className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 text-fg transition hover:bg-white/20"
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-white/10 text-fg transition hover:bg-white/20 active:scale-95"
           >
             <CloseIcon className="size-5" />
           </button>
         </div>
 
-        <div className="grid aspect-video place-items-center overflow-hidden rounded-xl bg-black shadow-2xl shadow-black ring-1 ring-white/10">
+        <div className="grid aspect-video place-items-center overflow-hidden bg-black shadow-2xl shadow-black ring-white/10 sm:rounded-xl sm:ring-1">
           {trailer ? (
             <iframe
               src={`https://www.youtube-nocookie.com/embed/${trailer.key}?autoplay=1&rel=0`}

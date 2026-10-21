@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import { useRegionName, useReleases } from "../api/queries";
 import { RELEASE_KINDS, type MediaSummary, type ReleaseKind } from "../api/types";
 import { CARD_GRID, CardSkeleton, MediaCard } from "../components/cards";
-import Chip from "../components/Chip";
 import ErrorState from "../components/ErrorState";
 import { ChevronLeftIcon, ChevronRightIcon } from "../components/icons";
 import { useRegion } from "../lib/region";
@@ -72,20 +71,29 @@ function CalendarPage() {
         </p>
       </header>
 
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div role="group" aria-label="Release type" className="flex flex-wrap gap-2">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        {/* A segmented control: the three kinds fit side by side even on a 320px phone, where chips wrapped. */}
+        <div role="group" aria-label="Release type" className="flex rounded-full border border-white/10 bg-surface/60 p-1">
           {RELEASE_KINDS.map((k) => (
-            <Chip key={k} active={k === kind} onClick={() => update("kind", k)}>
+            <button
+              key={k}
+              type="button"
+              aria-pressed={k === kind}
+              onClick={() => update("kind", k)}
+              className={`flex-1 whitespace-nowrap rounded-full px-2 py-1.5 text-sm font-medium transition sm:flex-none sm:px-4 ${
+                k === kind ? "bg-accent text-bg" : "text-muted hover:text-fg"
+              }`}
+            >
               {KIND_LABELS[k]}
-            </Chip>
+            </button>
           ))}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between gap-1 sm:justify-start">
           <button
             type="button"
             aria-label="Previous month"
             onClick={() => update("month", shiftMonth(month, -1))}
-            className="grid size-9 place-items-center rounded-full text-muted transition hover:bg-white/10 hover:text-fg"
+            className="grid size-10 place-items-center rounded-full border border-white/10 text-muted transition hover:bg-white/10 hover:text-fg sm:size-9 sm:border-transparent"
           >
             <ChevronLeftIcon className="size-5" />
           </button>
@@ -96,7 +104,7 @@ function CalendarPage() {
             type="button"
             aria-label="Next month"
             onClick={() => update("month", shiftMonth(month, 1))}
-            className="grid size-9 place-items-center rounded-full text-muted transition hover:bg-white/10 hover:text-fg"
+            className="grid size-10 place-items-center rounded-full border border-white/10 text-muted transition hover:bg-white/10 hover:text-fg sm:size-9 sm:border-transparent"
           >
             <ChevronRightIcon className="size-5" />
           </button>

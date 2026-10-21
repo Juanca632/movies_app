@@ -11,6 +11,11 @@ import { UserIcon } from "./icons";
 export const CARD_GRID =
   "grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-8 sm:grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))]";
 
+// Rendered widths of the posters in rows and grids (roughly; a hint for picking from srcset), so
+// 3x phones get w500 and desktops w342 instead of everyone downloading the same file.
+const POSTER_SIZES = "(min-width: 1280px) 176px, (min-width: 640px) 168px, (min-width: 480px) 150px, 140px";
+const PROFILE_SIZES = "(min-width: 1280px) 144px, (min-width: 640px) 128px, 120px";
+
 // Previews only make sense with a real mouse; touch screens go straight to the page.
 const canHover = () => window.matchMedia?.("(hover: hover) and (pointer: fine)").matches ?? false;
 const PREVIEW_DELAY_MS = 500;
@@ -77,13 +82,13 @@ export function MediaCard({ item, current = false }: { item: MediaSummary; curre
       <Link
         to={mediaHref(item.media_type, item.id, item.title)}
         aria-current={current ? "page" : undefined}
-        className="group block"
+        className="group block select-none"
         {...preview.handlers}
       >
         <div
-          className={`relative aspect-[2/3] overflow-hidden rounded-lg bg-surface transition duration-300 ${current ? "ring-2 ring-accent" : "ring-1 ring-white/5 group-hover:ring-accent/60"}`}
+          className={`relative aspect-[2/3] overflow-hidden rounded-lg bg-surface transition duration-300 group-active:scale-[0.97] group-active:duration-100 ${current ? "ring-2 ring-accent" : "ring-1 ring-white/5 group-hover:ring-accent/60"}`}
         >
-          <TmdbImage path={item.poster_path} size="w342" alt="" />
+          <TmdbImage path={item.poster_path} size="w342" srcSet={["w185", "w500"]} sizes={POSTER_SIZES} alt="" />
           {item.vote_average > 0 && (
             <Rating
               value={item.vote_average}
@@ -113,10 +118,10 @@ interface PersonCardProps {
 
 export function PersonCard({ id, name, profilePath, subtitle }: PersonCardProps) {
   return (
-    <Link to={personHref(id, name)} className="group block">
+    <Link to={personHref(id, name)} className="group block select-none">
       {/* Portrait, like TMDB's photos, so faces are never cropped. */}
-      <div className="aspect-[2/3] overflow-hidden rounded-lg bg-surface ring-1 ring-white/5 transition duration-300 group-hover:ring-accent/60">
-        <TmdbImage path={profilePath} size="w185" alt="" fallback={UserIcon} />
+      <div className="aspect-[2/3] overflow-hidden rounded-lg bg-surface ring-1 ring-white/5 transition duration-300 group-hover:ring-accent/60 group-active:scale-[0.97] group-active:duration-100">
+        <TmdbImage path={profilePath} size="w185" srcSet={["w342"]} sizes={PROFILE_SIZES} alt="" fallback={UserIcon} />
       </div>
       <p className="mt-2 truncate text-sm font-medium group-hover:text-accent">{name}</p>
       {subtitle && <p className="truncate text-xs text-subtle">{subtitle}</p>}
@@ -124,11 +129,24 @@ export function PersonCard({ id, name, profilePath, subtitle }: PersonCardProps)
   );
 }
 
-export function CardSkeleton() {
+/**
+ * Placeholder with the exact box of the card it stands for (poster plus its text lines), so
+ * nothing jumps when the real cards replace it.
+ */
+export function CardSkeleton({ variant = "media" }: { variant?: "media" | "person" | "wide" }) {
+  if (variant === "wide") {
+    return <div aria-hidden className="aspect-video animate-shimmer rounded-lg bg-surface-2 motion-reduce:animate-none" />;
+  }
   return (
-    <div aria-hidden className="animate-shimmer">
+    <div aria-hidden className="animate-shimmer motion-reduce:animate-none">
       <div className="aspect-[2/3] rounded-lg bg-surface-2" />
-      <div className="mt-2 h-3.5 w-3/4 rounded bg-surface-2" />
+      {/* Same line boxes as the title (text-sm) and subtitle (text-xs) below a card. */}
+      <div className="mt-2 flex h-5 items-center">
+        <div className="h-3 w-4/5 rounded bg-surface-2" />
+      </div>
+      <div className="flex h-4 items-center">
+        <div className="h-2.5 w-2/5 rounded bg-surface-2" />
+      </div>
     </div>
   );
 }

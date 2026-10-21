@@ -23,7 +23,7 @@ function ProviderLogo({ provider, title, fallbackHref }: { provider: Provider; t
     <span className="grid h-12 place-items-center rounded-xl bg-surface-2 px-3 text-xs">{provider.provider_name}</span>
   );
   return href ? (
-    <a href={href} target="_blank" rel="noreferrer" title={label} className="block rounded-xl transition hover:opacity-80">
+    <a href={href} target="_blank" rel="noreferrer" title={label} className="block rounded-xl transition hover:opacity-80 active:scale-95">
       {logo}
     </a>
   ) : (
@@ -54,12 +54,15 @@ function WatchProviders({ providers, title }: { providers: Providers | null; tit
               </div>
             ))}
           </div>
-          <p className="mt-4 flex items-center gap-1 text-xs text-subtle">
+          <p className="mt-4 text-xs leading-relaxed text-subtle">
             Availability in {regionName}, powered by JustWatch
             {providers.link && (
-              <a href={providers.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-muted hover:text-accent">
-                · all options <ExternalIcon className="size-3" />
-              </a>
+              <>
+                {" · "}
+                <a href={providers.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 whitespace-nowrap text-muted hover:text-accent">
+                  all options <ExternalIcon className="size-3" />
+                </a>
+              </>
             )}
           </p>
         </>
