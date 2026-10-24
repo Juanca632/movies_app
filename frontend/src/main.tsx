@@ -27,19 +27,55 @@ function browserStorage() {
 }
 const persister = createSyncStoragePersister({ storage: browserStorage(), key: "moviesapp-cache" });
 
-/** index.html paints a splash before any script runs; it fades out once the first page is ready. */
+/** A cold backend takes seconds; past this the page shows its skeletons and WakeNotice instead. */
+const SPLASH_MAX_MS = 8000;
+
+/**
+ * index.html paints a splash before any script runs. It stays until the page has data to show
+ * (the backend may be waking up), so visitors see a normal launch instead of empty skeletons.
+ */
 function hideSplash() {
   const splash = document.getElementById("splash");
   if (!splash) return;
   splash.style.opacity = "0";
   setTimeout(() => splash.remove(), 300);
 }
-if (router.state.initialized) hideSplash();
+
+/** The page's queries, without the account's (it shows no skeleton). */
+function pageQueries() {
+  return queryClient
+    .getQueryCache()
+    .findAll({ type: "active" })
+    .filter((query) => query.queryKey[0] !== "me");
+}
+
+function hideSplashOnContent() {
+  const cache = queryClient.getQueryCache();
+  let unsubscribe = () => {};
+  const done = () => {
+    unsubscribe();
+    clearTimeout(timer);
+    hideSplash();
+  };
+  const timer = setTimeout(done, SPLASH_MAX_MS);
+  // Restored data from the last visit counts, and so does an error (the page shows its own message).
+  const check = () => {
+    if (pageQueries().some((query) => query.state.status !== "pending")) done();
+  };
+  unsubscribe = cache.subscribe(check);
+  // Give the page a moment to mount its queries; a page without any (privacy) shows at once.
+  setTimeout(() => {
+    if (pageQueries().length === 0) done();
+    else check();
+  }, 100);
+}
+
+if (router.state.initialized) hideSplashOnContent();
 else {
   const unsubscribe = router.subscribe((state) => {
     if (!state.initialized) return;
     unsubscribe();
-    hideSplash();
+    hideSplashOnContent();
   });
 }
 

@@ -68,7 +68,7 @@ Rules:
   - `src/lib/serviceWorker.ts`: a deploy takes over at once (`skipWaiting` + `clientsClaim`) and the running page switches on its next in-app navigation (a full load); it also looks for updates when the app returns to the foreground and hourly. A chunk missing after a deploy (`vite:preloadError`) reloads once.
   - `nginx.conf` serves `index.html`, `sw.js` and the manifest with `no-cache`; Vercel already revalidates them.
 - Cold starts (the backend is a serverless function that sleeps; its first answer takes seconds):
-  - `index.html` paints a splash (inline `style` attributes and SVG animations only, the CSP allows no inline `<style>` or `<script>`), which `main.tsx` fades out once the router is ready. It also preloads `/api/v1/health` so the function boots while the scripts download (`main.tsx` reads that response).
+  - `index.html` paints a splash (inline `style` attributes and SVG animations only, the CSP allows no inline `<style>` or `<script>`), which `main.tsx` fades out once the page has data to show (restored or fetched, an error counts too), at most 8 s; a page without queries shows at once. It also preloads `/api/v1/health` so the function boots while the scripts download (`main.tsx` reads that response).
   - The home's public lists (queries with `meta.persist`) are saved in localStorage (`persistOptions` in `queries.ts`, 1 day; bump `buster` when a saved response changes shape), so returning visitors see them at once and they refresh in the background. Never persist `/me` or anything private.
   - `components/WakeNotice.tsx`: "Waking up the server…" when skeletons are still waiting after 3 s.
 - Country: `src/lib/region.ts`, a `useSyncExternalStore` store detected from `navigator.languages` and saved in `localStorage`.
