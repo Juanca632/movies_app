@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 
-const UPDATED = "October 21, 2026";
+const UPDATED = "October 24, 2026";
 const ISSUES = "https://github.com/Juanca632/movies_app/issues";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -82,8 +82,12 @@ function PrivacyPage() {
 
       <Section title="What we don't do">
         <p>
-          No ads, no analytics or tracking cookies, and your data is never sold or shared. The movie databases we use (TMDB
-          and OMDb) only receive the IDs of titles, never anything about you.
+          No ads, no tracking cookies, and your data is never sold or shared. The movie databases we use (TMDB and OMDb)
+          only receive the IDs of titles, never anything about you.
+        </p>
+        <p>
+          Visits are counted with Vercel Web Analytics, which uses no cookies and doesn't identify you: it only sees the page,
+          the referring site, your country and the kind of device and browser.
         </p>
       </Section>
 

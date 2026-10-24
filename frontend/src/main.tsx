@@ -1,5 +1,6 @@
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { Analytics } from "@vercel/analytics/react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
@@ -51,6 +52,7 @@ createRoot(document.getElementById("root")!).render(
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, ...persistOptions }}>
       <RouterProvider router={router} />
       <WakeNotice />
+      <Analytics />
     </PersistQueryClientProvider>
   </StrictMode>,
 );
