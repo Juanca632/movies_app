@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
 import { Link, Outlet, ScrollRestoration, useNavigation } from "react-router-dom";
+import { showWelcome } from "../lib/welcome";
 import AssistantPanel from "./AssistantPanel";
 import BottomNav from "./BottomNav";
 import Navbar from "./Navbar";
 import TrailerModal from "./TrailerModal";
+import WelcomeTour from "./WelcomeTour";
 
 function Layout({ children }: { children?: ReactNode }) {
   const navigation = useNavigation();
@@ -26,6 +28,9 @@ function Layout({ children }: { children?: ReactNode }) {
             . This product uses the TMDB API but is not endorsed or certified by TMDB.
           </p>
           <div className="flex gap-4">
+            <button type="button" onClick={showWelcome} className="text-muted hover:text-accent">
+              How it works
+            </button>
             <Link to="/privacy" className="text-muted hover:text-accent">
               Privacy
             </Link>
@@ -38,6 +43,7 @@ function Layout({ children }: { children?: ReactNode }) {
       <BottomNav />
       <AssistantPanel />
       <TrailerModal />
+      <WelcomeTour />
       <ScrollRestoration />
     </div>
   );

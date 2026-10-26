@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 
-const UPDATED = "October 24, 2026";
+const UPDATED = "October 26, 2026";
 const ISSUES = "https://github.com/Juanca632/movies_app/issues";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -33,7 +33,7 @@ function PrivacyPage() {
       <Section title="Without an account">
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            Your country (for where to watch), your conversation with the AI assistant and a copy of the home page's public
+            Your country (for where to watch), your conversation with the AI assistant, whether you have seen the welcome tour and a copy of the home page's public
             lists (so it opens faster next time) are saved in your own browser's storage. They never reach our database, and clearing your browser data removes them.
           </li>
           <li>

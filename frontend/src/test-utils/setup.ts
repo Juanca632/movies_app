@@ -1,8 +1,12 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 import { forgetChat } from "../lib/chat";
 import { setRegion } from "../lib/region";
+import { closeWelcome } from "../lib/welcome";
+
+// The first-visit tour would cover every page under test; its own tests clear this.
+beforeEach(() => localStorage.setItem("moviesapp-welcome-seen", "1"));
 
 afterEach(() => {
   cleanup();
@@ -12,6 +16,7 @@ afterEach(() => {
   localStorage.clear();
   // The assistant's chat lives outside React: start every test with none.
   forgetChat();
+  closeWelcome();
 });
 
 // jsdom does not implement scrolling.
