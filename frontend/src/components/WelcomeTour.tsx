@@ -5,7 +5,8 @@ import { signInUrl, useAccount, useMediaList } from "../api/queries";
 import { ASK_EXAMPLES, ASK_PARAM, useAskPanel } from "../lib/askPanel";
 import { imageUrl } from "../lib/tmdb";
 import { lockScroll } from "../lib/scrollLock";
-import { closeWelcome, hasSeenWelcome, showWelcome, useWelcomeOpen, whenSplashGone } from "../lib/welcome";
+import { whenSplashGone } from "../lib/splash";
+import { closeWelcome, hasSeenWelcome, showWelcome, useWelcomeOpen } from "../lib/welcome";
 import { AiSparkIcon, BookmarkIcon, ChevronLeftIcon, CloseIcon, HeartIcon } from "./icons";
 
 /** Time on the page before the tour opens, so the visitor sees where they landed first. */

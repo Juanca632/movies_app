@@ -42,19 +42,3 @@ export function showWelcome() {
 }
 
 export const closeWelcome = () => setOpen(false);
-
-/** Run `callback` once index.html's splash is gone, so the tour isn't opened behind it. */
-export function whenSplashGone(callback: () => void) {
-  const splash = document.getElementById("splash");
-  if (!splash) {
-    callback();
-    return () => {};
-  }
-  const observer = new MutationObserver(() => {
-    if (splash.isConnected) return;
-    observer.disconnect();
-    callback();
-  });
-  observer.observe(splash.parentNode ?? document.body, { childList: true });
-  return () => observer.disconnect();
-}

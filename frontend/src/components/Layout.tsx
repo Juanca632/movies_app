@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Link, Outlet, ScrollRestoration, useNavigation } from "react-router-dom";
+import { markPageRendered } from "../lib/splash";
 import { showWelcome } from "../lib/welcome";
 import AssistantPanel from "./AssistantPanel";
 import BottomNav from "./BottomNav";
@@ -9,6 +10,8 @@ import WelcomeTour from "./WelcomeTour";
 
 function Layout({ children }: { children?: ReactNode }) {
   const navigation = useNavigation();
+  // The page's effects run before this one, so its queries and splash holds exist by now.
+  useEffect(markPageRendered, []);
 
   return (
     // On phones the bottom tab bar covers the last 4rem: keep the footer clear of it.

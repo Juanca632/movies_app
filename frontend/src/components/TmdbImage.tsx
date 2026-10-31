@@ -1,4 +1,5 @@
-import { useState, type ComponentType, type SVGProps } from "react";
+import { useLayoutEffect, useRef, useState, type ComponentType, type SVGProps } from "react";
+import { holdSplash, isSplashUp } from "../lib/splash";
 import { imageUrl } from "../lib/tmdb";
 import { FilmIcon } from "./icons";
 
@@ -66,14 +67,47 @@ interface FadeInImgProps {
   className: string;
 }
 
+/** Whether an element is at least partly inside the viewport. */
+function onScreen(element: Element) {
+  const rect = element.getBoundingClientRect();
+  return rect.width > 0 && rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth;
+}
+
 /** Fades in once decoded instead of popping in line by line over the card's placeholder. */
 function FadeInImg({ src, srcSet, sizes, alt, priority, onError, className }: FadeInImgProps) {
   const [loaded, setLoaded] = useState(false);
+  // Ready under the splash: shown finished when it lifts, not fading in after it.
+  const [instant, setInstant] = useState(false);
+  const image = useRef<HTMLImageElement | null>(null);
+
+  // On screen while the splash is up: keep it until this image is decoded (see lib/splash.ts).
+  useLayoutEffect(() => {
+    const element = image.current;
+    if (!element || !isSplashUp() || element.complete || !onScreen(element)) return;
+    const release = holdSplash();
+    const settle = () => {
+      Promise.resolve(element.decode?.()).catch(() => {}).then(release);
+    };
+    element.addEventListener("load", settle);
+    element.addEventListener("error", release);
+    return () => {
+      element.removeEventListener("load", settle);
+      element.removeEventListener("error", release);
+      release();
+    };
+  }, []);
+
+  const markLoaded = () => {
+    setInstant(isSplashUp());
+    setLoaded(true);
+  };
+
   return (
     <img
       // An image already in the browser's cache can finish before React attaches onLoad.
       ref={(img) => {
-        if (img?.complete && img.naturalWidth > 0) setLoaded(true);
+        image.current = img;
+        if (img?.complete && img.naturalWidth > 0) markLoaded();
       }}
       src={src}
       srcSet={srcSet}
@@ -81,9 +115,9 @@ function FadeInImg({ src, srcSet, sizes, alt, priority, onError, className }: Fa
       alt={alt}
       loading={priority ? "eager" : "lazy"}
       decoding="async"
-      onLoad={() => setLoaded(true)}
+      onLoad={markLoaded}
       onError={onError}
-      className={`transition-[opacity,transform] duration-500 ease-out motion-reduce:transition-none ${loaded ? "opacity-100" : "opacity-0"} ${className}`}
+      className={`${instant ? "" : "transition-[opacity,transform] duration-500"} ease-out motion-reduce:transition-none ${loaded ? "opacity-100" : "opacity-0"} ${className}`}
     />
   );
 }

@@ -56,9 +56,16 @@ describe("registerServiceWorker", () => {
   });
 
   it("registers the service worker after the page loads", () => {
+    const readyState = vi.spyOn(document, "readyState", "get").mockReturnValue("interactive");
     const { container } = setup({ controlled: false });
     expect(container.register).not.toHaveBeenCalled();
     window.dispatchEvent(new Event("load"));
+    expect(container.register).toHaveBeenCalledWith("/sw.js");
+    readyState.mockRestore();
+  });
+
+  it("registers it at once when the page has already loaded (after the splash)", () => {
+    const { container } = setup({ controlled: false });
     expect(container.register).toHaveBeenCalledWith("/sw.js");
   });
 });

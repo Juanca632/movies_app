@@ -112,6 +112,30 @@
   }
 }
 
+/* The splash in index.html (see the comment there). */
+.splash-logo {
+  animation: splash-pulse 1.8s ease-in-out infinite;
+}
+.splash-bar {
+  animation: splash-slide 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes splash-pulse {
+  50% {
+    opacity: 0.7;
+  }
+}
+@keyframes splash-slide {
+  50% {
+    transform: translateX(26px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash-logo,
+  .splash-bar {
+    animation: none;
+  }
+}
+
 @layer base {
   html {
     color-scheme: dark;
