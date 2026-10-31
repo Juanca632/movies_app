@@ -118,6 +118,8 @@
     /* Nothing should scroll the page sideways; horizontal scrolling belongs to the rows. */
     overflow-x: clip;
     overscroll-behavior-x: none;
+    /* Locking the scroll under an overlay hides the scrollbar; keep its room so the page doesn't shift. */
+    scrollbar-gutter: stable;
     scrollbar-color: var(--color-surface-2) transparent;
     /* The grey flash on every tap gives a web page away; buttons and links have their own states. */
     -webkit-tap-highlight-color: transparent;

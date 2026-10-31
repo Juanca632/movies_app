@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { lockScroll } from "../lib/scrollLock";
 
 interface ConfirmDialogProps {
   title: string;
@@ -37,16 +38,15 @@ function ConfirmDialog({
 
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockScroll();
     // Cancel is the safe default: Enter right away must not delete anything.
     cancelButton.current?.focus();
     const onKeyDown = (event: globalThis.KeyboardEvent) => event.key === "Escape" && cancel.current();
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previousFocus?.focus?.();
+      unlock();
+      previousFocus?.focus?.({ preventScroll: true });
     };
   }, []);
 

@@ -7,7 +7,7 @@ export const routes: RouteObject[] = [
   {
     element: <Layout />,
     errorElement: <RouteErrorPage />,
-    hydrateFallbackElement: <div className="min-h-dvh bg-bg" />,
+    hydrateFallbackElement: <div className="min-h-svh bg-bg" />,
     children: [
       { index: true, lazy: () => import("./pages/HomePage").then((m) => ({ Component: m.default })) },
       {

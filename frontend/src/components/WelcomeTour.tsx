@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { signInUrl, useAccount, useMediaList } from "../api/queries";
 import { ASK_EXAMPLES, ASK_PARAM, useAskPanel } from "../lib/askPanel";
 import { imageUrl } from "../lib/tmdb";
+import { lockScroll } from "../lib/scrollLock";
 import { closeWelcome, hasSeenWelcome, showWelcome, useWelcomeOpen, whenSplashGone } from "../lib/welcome";
 import { AiSparkIcon, BookmarkIcon, ChevronLeftIcon, CloseIcon, HeartIcon } from "./icons";
 
@@ -189,15 +190,14 @@ function TourDialog({ steps, signInHref, withSignIn }: { steps: Step[]; signInHr
 
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockScroll();
     nextButton.current?.focus();
     const onKeyDown = (event: globalThis.KeyboardEvent) => event.key === "Escape" && closeWelcome();
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previousFocus?.focus?.();
+      unlock();
+      previousFocus?.focus?.({ preventScroll: true });
     };
   }, []);
 
@@ -224,7 +224,9 @@ function TourDialog({ steps, signInHref, withSignIn }: { steps: Step[]; signInHr
     <div
       onClick={(event) => event.target === event.currentTarget && closeWelcome()}
       // A floating card on every screen: it is a welcome, not a menu, so no bottom sheet on phones.
-      className="fixed inset-0 z-[80] grid animate-fade-in place-items-center bg-black/70 p-4 backdrop-blur-sm [animation-duration:200ms]"
+      // Its height follows this fixed layer (max-h-full) rather than a dvh calculation, which lags
+      // behind the browser's toolbar as it slides in and out.
+      className="fixed inset-0 z-[80] flex animate-fade-in items-center justify-center bg-black/70 pt-[max(1rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] backdrop-blur-sm [animation-duration:200ms]"
     >
       <div
         ref={panel}
@@ -232,7 +234,7 @@ function TourDialog({ steps, signInHref, withSignIn }: { steps: Step[]; signInHr
         aria-modal="true"
         aria-labelledby={titleId}
         onKeyDown={trapFocus}
-        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-lg animate-pop-in overflow-y-auto rounded-3xl border border-white/10 bg-surface p-5 shadow-2xl shadow-black/70 motion-reduce:animate-none sm:p-8"
+        className="relative max-h-full w-full max-w-lg animate-pop-in overflow-y-auto overscroll-contain rounded-3xl border border-white/10 bg-surface p-5 shadow-2xl shadow-black/70 motion-reduce:animate-none sm:p-8"
       >
         <button
           type="button"
