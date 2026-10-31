@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, type SyntheticEvent } from "react";
+import { isSplashUp, useSplashHold } from "../lib/splash";
 import { imageUrl } from "../lib/tmdb";
 
 interface BackdropProps {
@@ -35,8 +36,24 @@ interface BackdropImageProps {
 
 function BackdropImage({ src, blur, priority, pending }: BackdropImageProps) {
   const [state, setState] = useState<"loading" | "loaded" | "failed">("loading");
+  // Ready under the splash: shown finished when it lifts, not fading in after it.
+  const [instant, setInstant] = useState(false);
   // No placeholder for a title that simply has no backdrop: that page stays plain.
   const placeholder = !blur && (pending || src);
+  // A banner is always on screen: keep the splash until it's ready (or there is none).
+  useSplashHold(!pending && (!src || state !== "loading"));
+  const fade = instant ? "" : "transition-opacity duration-700";
+
+  const onLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+    const underSplash = isSplashUp();
+    // Decoded before it's shown, so the first frame after the splash doesn't pay for a 1280px JPEG.
+    Promise.resolve(event.currentTarget.decode?.())
+      .catch(() => {})
+      .then(() => {
+        setInstant(underSplash);
+        setState("loaded");
+      });
+  };
 
   return (
     <>
@@ -45,7 +62,7 @@ function BackdropImage({ src, blur, priority, pending }: BackdropImageProps) {
       {placeholder && (
         // Fades out with the image fading in, so the banner never flashes black in between.
         <div
-          className={`absolute inset-0 bg-surface transition-opacity duration-700 ${
+          className={`absolute inset-0 bg-surface ${fade} ${
             state === "loaded" ? "opacity-0" : state === "loading" ? "animate-shimmer motion-reduce:animate-none" : ""
           }`}
         />
@@ -55,9 +72,9 @@ function BackdropImage({ src, blur, priority, pending }: BackdropImageProps) {
           src={src}
           alt=""
           fetchPriority={priority ? "high" : undefined}
-          onLoad={() => setState("loaded")}
+          onLoad={onLoad}
           onError={() => setState("failed")}
-          className={`size-full object-cover object-top transition-opacity duration-700 ease-out motion-reduce:transition-none ${
+          className={`size-full object-cover object-top ${fade} ease-out motion-reduce:transition-none ${
             state === "loaded" ? (blur ? "opacity-40" : "opacity-70") : "opacity-0"
           } ${blur ? "scale-110 blur-2xl" : ""}`}
         />

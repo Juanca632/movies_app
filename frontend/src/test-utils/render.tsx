@@ -31,6 +31,7 @@ export function renderRoute(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   return {
     router,
+    queryClient,
     ...render(
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />

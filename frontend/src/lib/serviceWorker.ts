@@ -35,7 +35,7 @@ export function registerServiceWorker(router: RouterLike, reload = reloadPage) {
     if (updated) reload();
   });
 
-  window.addEventListener("load", () => {
+  const register = () => {
     container
       .register("/sw.js")
       .then((registration) => {
@@ -50,7 +50,10 @@ export function registerServiceWorker(router: RouterLike, reload = reloadPage) {
         setInterval(check, UPDATE_INTERVAL_MS);
       })
       .catch(() => {});
-  });
+  };
+  // main.tsx calls this once the splash is gone, usually after the load event.
+  if (document.readyState === "complete") register();
+  else window.addEventListener("load", register);
 }
 
 /**

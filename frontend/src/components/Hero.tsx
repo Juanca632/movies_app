@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type TouchEvent } from "react";
 import { Link } from "react-router-dom";
 import { useMediaDetail, useMediaList } from "../api/queries";
+import type { MediaSummary } from "../api/types";
+import { whenSplashGone } from "../lib/splash";
 import { imageUrl, mediaHref, year } from "../lib/tmdb";
 import Backdrop from "./Backdrop";
 import ErrorState from "./ErrorState";
@@ -50,7 +52,13 @@ function HeroSkeleton() {
 /** Home spotlight: rotates through the most popular movies. */
 function Hero() {
   const { data, isPending, isError, refetch } = useMediaList("movie", "popular");
-  const slides = data?.filter((movie) => movie.backdrop_path).slice(0, SLIDES) ?? [];
+  const fresh = data?.filter((movie) => movie.backdrop_path).slice(0, SLIDES) ?? [];
+  // The first slides stay for the whole visit. A returning visitor's list is restored and then
+  // refetched; TMDB reorders it daily, which would swap the banner (and the image the splash
+  // waited for, and main.tsx preloaded) right after the page appears.
+  const [kept, setKept] = useState<MediaSummary[] | null>(null);
+  if (kept === null && fresh.length > 0) setKept(fresh);
+  const slides = kept ?? fresh;
   const [index, setIndex] = useState(0);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
@@ -66,10 +74,14 @@ function Hero() {
   // Also warms the cache for "View details"; the trailer button only shows once we know there is one.
   const detail = useMediaDetail("movie", String(movie?.id ?? ""), Boolean(movie));
 
-  // Fetch the next backdrop ahead of time, so the slide changes to a ready image.
+  // Fetch the next backdrop ahead of time, so the slide changes to a ready image; once the splash
+  // is gone, so it doesn't compete with the first one.
   useEffect(() => {
     const src = imageUrl(next?.backdrop_path, "w1280");
-    if (src) new Image().src = src;
+    if (!src) return;
+    return whenSplashGone(() => {
+      new Image().src = src;
+    });
   }, [next?.backdrop_path]);
 
   // Swiping sideways on phones changes slides, like any native carousel. Mostly vertical

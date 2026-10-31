@@ -31,6 +31,22 @@ describe("HomePage", () => {
     expect(screen.getByRole("link", { name: /Dune: Part Two/ })).toHaveAttribute("href", "/movie/10/dune-part-two");
   });
 
+  it("keeps the featured movie when the popular list refreshes in a new order", async () => {
+    let calls = 0;
+    mockApi({
+      ...homeApi(),
+      "movie?category=popular": () =>
+        Response.json(page([media({ id: ++calls === 1 ? 11 : 16, title: calls === 1 ? "Oppenheimer" : "Barbie" })])),
+    });
+    const { queryClient } = renderRoute("/");
+
+    const hero = await screen.findByRole("region", { name: "Featured" });
+    expect(await within(hero).findByRole("heading", { name: "Oppenheimer" })).toBeInTheDocument();
+    await queryClient.refetchQueries({ queryKey: ["media", "movie", "popular"] });
+    expect(calls).toBe(2);
+    expect(within(hero).getByRole("heading", { name: "Oppenheimer" })).toBeInTheDocument();
+  });
+
   it("lets a failing row retry on its own", async () => {
     let calls = 0;
     mockApi({

@@ -65,11 +65,15 @@ const REGIONAL_CATEGORIES: readonly string[] = ["now_playing", "upcoming"];
 // Genres, countries and services barely change; one fetch per session is plenty.
 const STATIC = { staleTime: Infinity, gcTime: Infinity } as const;
 
+/** The key of a list of titles; main.tsx also reads the home banner's from the saved cache. */
+export const mediaListKey = (mediaType: MediaType, category: string, region: string | null) =>
+  ["media", mediaType, category, region] as const;
+
 export const useMediaList = <M extends MediaType>(mediaType: M, category: Category<M>) => {
   const userRegion = useRegion();
   const region = mediaType === "movie" && REGIONAL_CATEGORIES.includes(category) ? userRegion : null;
   return useQuery({
-    queryKey: ["media", mediaType, category, region],
+    queryKey: mediaListKey(mediaType, category, region),
     queryFn: ({ signal }) =>
       getJson<Page<MediaSummary>>(`${mediaType}?category=${category}${region ? `&region=${region}` : ""}`, signal),
     select: (page) => page.results,

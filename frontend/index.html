@@ -36,25 +36,28 @@
   </head>
   <body style="margin: 0; background: #0a0a0c">
     <!--
-      Splash, painted before any script or stylesheet arrives; main.tsx fades it out once the first
-      page is ready. The CSP allows no inline <style>, hence style attributes and SVG animations.
+      Splash, painted before any script runs; main.tsx fades it out once the first page and the
+      images on screen are ready. The CSP allows no inline <style>, hence style attributes for the
+      layout; the motion (.splash-*) is in index.css, as CSS animations of transform and opacity:
+      they run off the main thread and start at first paint, while SVG <animate> waited for the
+      load event (a cold backend delays it) and then stuttered as the app started.
     -->
     <div
       id="splash"
       aria-hidden="true"
-      style="position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: #0a0a0c; transition: opacity 0.3s ease-out"
+      style="position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: #0a0a0c; transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)"
     >
-      <svg width="72" height="92" viewBox="0 0 72 92">
-        <g>
-          <rect width="72" height="72" rx="18" fill="#f5b83d" />
-          <path d="M28 22.5v27l21.5-13.5z" fill="#0a0a0c" />
-          <animate attributeName="opacity" values="1;0.7;1" dur="1.8s" repeatCount="indefinite" />
-        </g>
-        <rect x="16" y="88" width="40" height="3" rx="1.5" fill="#ffffff" fill-opacity="0.08" />
-        <rect y="88" width="14" height="3" rx="1.5" fill="#f5b83d">
-          <animate attributeName="x" values="16;42;16" dur="1.4s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1" />
-        </rect>
-      </svg>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 16px">
+        <div class="splash-logo" style="width: 72px; height: 72px">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <rect width="72" height="72" rx="18" fill="#f5b83d" />
+            <path d="M28 22.5v27l21.5-13.5z" fill="#0a0a0c" />
+          </svg>
+        </div>
+        <div style="width: 40px; height: 3px; overflow: hidden; border-radius: 1.5px; background: rgba(255, 255, 255, 0.08)">
+          <div class="splash-bar" style="width: 14px; height: 3px; border-radius: 1.5px; background: #f5b83d"></div>
+        </div>
+      </div>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

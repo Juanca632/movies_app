@@ -5,6 +5,7 @@ import { useMediaDetail } from "../api/queries";
 import { closeTrailer, useTrailerRequest, type TrailerRequest } from "../lib/trailer";
 import ErrorState from "./ErrorState";
 import { CloseIcon } from "./icons";
+import { lockScroll } from "../lib/scrollLock";
 
 function TrailerDialog({ request }: { request: TrailerRequest }) {
   const { data, isPending, isError, refetch } = useMediaDetail(request.mediaType, String(request.id));
@@ -12,8 +13,7 @@ function TrailerDialog({ request }: { request: TrailerRequest }) {
 
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockScroll();
     closeButton.current?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -22,8 +22,8 @@ function TrailerDialog({ request }: { request: TrailerRequest }) {
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previousFocus?.focus?.();
+      unlock();
+      previousFocus?.focus?.({ preventScroll: true });
     };
   }, []);
 

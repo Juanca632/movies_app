@@ -5,6 +5,7 @@ import type { Pick } from "../api/types";
 import { ASK_EXAMPLES, ASK_PARAM, useAskPanel } from "../lib/askPanel";
 import { ask, canAsk, MAX_QUESTION, MAX_TURNS, MIN_QUESTION, newChat, retry, useChat, type ChatTurn } from "../lib/chat";
 import { useRegion } from "../lib/region";
+import { lockScroll } from "../lib/scrollLock";
 import { imageUrl, isAdTier, mediaHref, year } from "../lib/tmdb";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import ErrorState from "./ErrorState";
@@ -17,21 +18,30 @@ const DISMISS_PX = 90;
 /** Matches --animate-slide-down / --animate-slide-out-right. */
 const EXIT_MS = 200;
 
+/** Less than this between the layout and the visible viewport is browser UI, not a keyboard. */
+const KEYBOARD_MIN_PX = 120;
+
 /**
- * How much of the layout viewport the on-screen keyboard (or browser UI) covers at the bottom.
+ * Where the visible area is while the on-screen keyboard is up, in layout-viewport pixels.
  * iOS Safari doesn't shrink `position: fixed` / dvh for the keyboard, so without this the sheet's
  * input would sit behind it, or iOS would pan the whole sheet up, hiding its header. (Android
- * resizes the layout itself, `interactive-widget=resizes-content`, so this stays 0 there.)
+ * resizes the layout itself, `interactive-widget=resizes-content`, so this stays null there.)
  */
 function useKeyboardInset(enabled: boolean) {
-  const [inset, setInset] = useState<{ bottom: number; height: number } | null>(null);
+  const [inset, setInset] = useState<{ top: number; bottom: number; height: number } | null>(null);
   useEffect(() => {
     const viewport = window.visualViewport;
     if (!enabled || !viewport) return;
     const update = () => {
-      const bottom = Math.round(window.innerHeight - viewport.height - viewport.offsetTop);
-      // Small differences are just the browser's toolbars, which dvh already accounts for.
-      setInset(bottom > 40 ? { bottom, height: Math.round(viewport.height) } : null);
+      // The keyboard is told apart by the visible height alone: when iOS pans the page to show the
+      // focused input, the gap under the visible area drops to 0 while the keyboard is still up.
+      // A pinch-zoom also shrinks the visible area, but isn't a keyboard.
+      if (window.innerHeight - viewport.height < KEYBOARD_MIN_PX || viewport.scale > 1.01) return setInset(null);
+      setInset({
+        top: Math.round(viewport.offsetTop),
+        bottom: Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop)),
+        height: Math.round(viewport.height),
+      });
     };
     update();
     viewport.addEventListener("resize", update);
@@ -158,7 +168,10 @@ function Panel({ leaving, close }: PanelProps) {
   const dragStart = useRef<number | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
-  const keyboard = useKeyboardInset(!wide);
+  const list = useRef<HTMLDivElement>(null);
+  // A phone held sideways gets the wide card, but its keyboard is just as much in the way.
+  const short = useMediaQuery("(max-height: 500px)");
+  const keyboard = useKeyboardInset(!wide || short);
 
   // `close` is a new function on every render; Escape always uses the latest one.
   const closeRef = useRef(close);
@@ -205,15 +218,28 @@ function Panel({ leaving, close }: PanelProps) {
   }, [wide]);
 
   // The sheet covers the page on phones: don't let the page scroll underneath it.
+  useEffect(() => (wide ? undefined : lockScroll()), [wide]);
+
+  // When the list gets shorter (the keyboard coming up, the toolbar sliding in) while it is scrolled
+  // to the end, keep the end in view instead of letting the newest messages slip under the input.
   useEffect(() => {
-    if (wide) return;
-    const root = document.documentElement;
-    const previous = root.style.overflow;
-    root.style.overflow = "hidden";
-    return () => {
-      root.style.overflow = previous;
+    const element = list.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    let atEnd = false;
+    const onScroll = () => {
+      atEnd = element.scrollHeight - element.scrollTop - element.clientHeight < 24;
     };
-  }, [wide]);
+    const observer = new ResizeObserver(() => {
+      if (atEnd) element.scrollTop = element.scrollHeight;
+    });
+    onScroll();
+    element.addEventListener("scroll", onScroll, { passive: true });
+    observer.observe(element);
+    return () => {
+      element.removeEventListener("scroll", onScroll);
+      observer.disconnect();
+    };
+  }, []);
 
   // Opening shows the latest turn; a new question scrolls to it.
   const turnCount = chat.length;
@@ -262,8 +288,13 @@ function Panel({ leaving, close }: PanelProps) {
       ? { transform: "translateY(100%)", transition: `transform ${EXIT_MS}ms ease-in` }
       : { transform: `translateY(${dragY}px)` }
     : undefined;
-  // With the keyboard up, the sheet rests on it and shrinks to the space left above it.
-  const keyboardStyle = keyboard ? { bottom: keyboard.bottom, maxHeight: keyboard.height - 12 } : undefined;
+  // With the keyboard up, the sheet rests on it and shrinks to the space left above it; the
+  // sideways card fits between the top of the visible area and the keyboard.
+  const keyboardStyle = !keyboard
+    ? undefined
+    : wide
+      ? { top: keyboard.top + 12, bottom: keyboard.bottom + 12 }
+      : { bottom: keyboard.bottom, maxHeight: keyboard.height - 12 };
   const motion = dragY ? "" : leaving ? "animate-slide-down sm:animate-slide-out-right" : "animate-slide-up sm:animate-slide-in-right";
 
   return (
@@ -319,7 +350,7 @@ function Panel({ leaving, close }: PanelProps) {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-5">
+        <div ref={list} className="flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-5">
           {chat.length === 0 ? (
             <div className="space-y-5">
               <div>
